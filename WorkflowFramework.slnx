@@ -28,6 +28,11 @@
     <Project Path="src/WorkflowFramework.Extensions.Hosting/WorkflowFramework.Extensions.Hosting.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Http/WorkflowFramework.Extensions.Http.csproj" />
     <Project Path="src/WorkflowFramework.Analyzers/WorkflowFramework.Analyzers.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Plugins/WorkflowFramework.Extensions.Plugins.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Expressions/WorkflowFramework.Extensions.Expressions.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Events/WorkflowFramework.Extensions.Events.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.HumanTasks/WorkflowFramework.Extensions.HumanTasks.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.AI/WorkflowFramework.Extensions.AI.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />

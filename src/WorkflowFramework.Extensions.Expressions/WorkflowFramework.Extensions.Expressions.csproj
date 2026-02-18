@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Expressions</RootNamespace>
+    <Description>Expression engine for dynamic evaluation in workflow conditions and data transformations.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+  </ItemGroup>
+</Project>

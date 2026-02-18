@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Events</RootNamespace>
+    <Description>Event-driven extensions for WorkflowFramework with event bus, correlation, and event sourcing.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+  </ItemGroup>
+</Project>

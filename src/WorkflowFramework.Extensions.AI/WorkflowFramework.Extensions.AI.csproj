@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.AI</RootNamespace>
+    <Description>AI and agent integration for WorkflowFramework with LLM, planning, and decision steps.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+  </ItemGroup>
+</Project>

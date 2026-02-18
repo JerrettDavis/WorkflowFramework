@@ -280,6 +280,12 @@
       "workflowframework": {
         "type": "Project"
       },
+      "workflowframework.extensions.ai": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.configuration": {
         "type": "Project",
         "dependencies": {
@@ -307,6 +313,18 @@
           "WorkflowFramework": "[1.0.0, )"
         }
       },
+      "workflowframework.extensions.events": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.expressions": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.hosting": {
         "type": "Project",
         "dependencies": {
@@ -318,6 +336,12 @@
         }
       },
       "workflowframework.extensions.http": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.humantasks": {
         "type": "Project",
         "dependencies": {
           "WorkflowFramework": "[1.0.0, )"
@@ -347,6 +371,13 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Data.Sqlite": "[9.0.6, )",
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.plugins": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )"
         }
       },
@@ -780,6 +811,12 @@
       "workflowframework": {
         "type": "Project"
       },
+      "workflowframework.extensions.ai": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.configuration": {
         "type": "Project",
         "dependencies": {
@@ -810,6 +847,18 @@
           "WorkflowFramework": "[1.0.0, )"
         }
       },
+      "workflowframework.extensions.events": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.expressions": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.hosting": {
         "type": "Project",
         "dependencies": {
@@ -821,6 +870,12 @@
         }
       },
       "workflowframework.extensions.http": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.humantasks": {
         "type": "Project",
         "dependencies": {
           "WorkflowFramework": "[1.0.0, )"
@@ -852,6 +907,13 @@
         "dependencies": {
           "Microsoft.Data.Sqlite": "[9.0.6, )",
           "System.Text.Json": "[10.0.1, )",
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.plugins": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )"
         }
       },
@@ -1303,6 +1365,12 @@
       "workflowframework": {
         "type": "Project"
       },
+      "workflowframework.extensions.ai": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.configuration": {
         "type": "Project",
         "dependencies": {
@@ -1333,6 +1401,18 @@
           "WorkflowFramework": "[1.0.0, )"
         }
       },
+      "workflowframework.extensions.events": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.expressions": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.hosting": {
         "type": "Project",
         "dependencies": {
@@ -1344,6 +1424,12 @@
         }
       },
       "workflowframework.extensions.http": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.humantasks": {
         "type": "Project",
         "dependencies": {
           "WorkflowFramework": "[1.0.0, )"
@@ -1375,6 +1461,13 @@
         "dependencies": {
           "Microsoft.Data.Sqlite": "[9.0.6, )",
           "System.Text.Json": "[10.0.1, )",
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.plugins": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )"
         }
       },

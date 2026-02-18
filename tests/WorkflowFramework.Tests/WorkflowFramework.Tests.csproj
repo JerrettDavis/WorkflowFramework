@@ -21,6 +21,11 @@
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Distributed\WorkflowFramework.Extensions.Distributed.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Hosting\WorkflowFramework.Extensions.Hosting.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Http\WorkflowFramework.Extensions.Http.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Plugins\WorkflowFramework.Extensions.Plugins.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Expressions\WorkflowFramework.Extensions.Expressions.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Events\WorkflowFramework.Extensions.Events.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.HumanTasks\WorkflowFramework.Extensions.HumanTasks.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.AI\WorkflowFramework.Extensions.AI.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
