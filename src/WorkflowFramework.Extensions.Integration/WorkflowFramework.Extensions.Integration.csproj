@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Integration</RootNamespace>
+    <Description>Enterprise Integration Pattern steps for WorkflowFramework — content-based routing, scatter-gather, splitter, aggregator, claim check, dead letter, wire tap, and more.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Integration.Abstractions\WorkflowFramework.Extensions.Integration.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

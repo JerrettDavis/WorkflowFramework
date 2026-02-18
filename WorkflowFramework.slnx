@@ -33,6 +33,8 @@
     <Project Path="src/WorkflowFramework.Extensions.Events/WorkflowFramework.Extensions.Events.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.HumanTasks/WorkflowFramework.Extensions.HumanTasks.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.AI/WorkflowFramework.Extensions.AI.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Integration.Abstractions/WorkflowFramework.Extensions.Integration.Abstractions.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Integration/WorkflowFramework.Extensions.Integration.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />

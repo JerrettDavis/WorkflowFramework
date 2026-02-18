@@ -347,6 +347,19 @@
           "WorkflowFramework": "[1.0.0, )"
         }
       },
+      "workflowframework.extensions.integration": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )",
+          "WorkflowFramework.Extensions.Integration.Abstractions": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.integration.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.persistence": {
         "type": "Project",
         "dependencies": {
@@ -876,6 +889,19 @@
         }
       },
       "workflowframework.extensions.humantasks": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.integration": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )",
+          "WorkflowFramework.Extensions.Integration.Abstractions": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.integration.abstractions": {
         "type": "Project",
         "dependencies": {
           "WorkflowFramework": "[1.0.0, )"
@@ -1430,6 +1456,19 @@
         }
       },
       "workflowframework.extensions.humantasks": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.integration": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )",
+          "WorkflowFramework.Extensions.Integration.Abstractions": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.integration.abstractions": {
         "type": "Project",
         "dependencies": {
           "WorkflowFramework": "[1.0.0, )"
