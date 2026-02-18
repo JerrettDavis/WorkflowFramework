@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.DataMapping.Formats</RootNamespace>
+    <Description>Format conversion extensions for WorkflowFramework DataMapping — JSON, XML, CSV, YAML converters.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework.Extensions.DataMapping\WorkflowFramework.Extensions.DataMapping.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" />
+  </ItemGroup>
+</Project>

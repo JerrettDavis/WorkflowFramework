@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Connectors.Messaging</RootNamespace>
+    <Description>Message broker connector abstractions for WorkflowFramework — RabbitMQ, Azure Service Bus, and Kafka configuration models and interfaces.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Connectors.Abstractions\WorkflowFramework.Extensions.Connectors.Abstractions.csproj" />
+  </ItemGroup>
+</Project>

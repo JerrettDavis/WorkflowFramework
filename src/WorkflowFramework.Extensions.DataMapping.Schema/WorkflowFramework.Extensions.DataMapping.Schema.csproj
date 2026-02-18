@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.DataMapping.Schema</RootNamespace>
+    <Description>Schema validation and management for WorkflowFramework DataMapping — JSON Schema, XSD validation, schema registry.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework.Extensions.DataMapping\WorkflowFramework.Extensions.DataMapping.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+</Project>

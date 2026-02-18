@@ -293,6 +293,44 @@
           "YamlDotNet": "[16.3.0, )"
         }
       },
+      "workflowframework.extensions.connectors.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.connectors.grpc": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.Connectors.Abstractions": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.connectors.messaging": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.Connectors.Abstractions": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.datamapping": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.datamapping.formats": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.DataMapping": "[1.0.0, )",
+          "YamlDotNet": "[16.3.0, )"
+        }
+      },
+      "workflowframework.extensions.datamapping.schema": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.DataMapping": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.dependencyinjection": {
         "type": "Project",
         "dependencies": {
@@ -836,6 +874,46 @@
           "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )",
           "YamlDotNet": "[16.3.0, )"
+        }
+      },
+      "workflowframework.extensions.connectors.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.connectors.grpc": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.Connectors.Abstractions": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.connectors.messaging": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.Connectors.Abstractions": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.datamapping": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "System.Text.Json": "[10.0.1, )",
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.datamapping.formats": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.DataMapping": "[1.0.0, )",
+          "YamlDotNet": "[16.3.0, )"
+        }
+      },
+      "workflowframework.extensions.datamapping.schema": {
+        "type": "Project",
+        "dependencies": {
+          "System.Text.Json": "[10.0.1, )",
+          "WorkflowFramework.Extensions.DataMapping": "[1.0.0, )"
         }
       },
       "workflowframework.extensions.dependencyinjection": {
@@ -1403,6 +1481,46 @@
           "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )",
           "YamlDotNet": "[16.3.0, )"
+        }
+      },
+      "workflowframework.extensions.connectors.abstractions": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.connectors.grpc": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.Connectors.Abstractions": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.connectors.messaging": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.Connectors.Abstractions": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.datamapping": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "System.Text.Json": "[10.0.1, )",
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.datamapping.formats": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework.Extensions.DataMapping": "[1.0.0, )",
+          "YamlDotNet": "[16.3.0, )"
+        }
+      },
+      "workflowframework.extensions.datamapping.schema": {
+        "type": "Project",
+        "dependencies": {
+          "System.Text.Json": "[10.0.1, )",
+          "WorkflowFramework.Extensions.DataMapping": "[1.0.0, )"
         }
       },
       "workflowframework.extensions.dependencyinjection": {
