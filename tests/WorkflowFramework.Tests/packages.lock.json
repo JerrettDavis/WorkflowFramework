@@ -159,6 +159,12 @@
       "workflowframework": {
         "type": "Project"
       },
+      "workflowframework.extensions.configuration": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.dependencyinjection": {
         "type": "Project",
         "dependencies": {
@@ -169,6 +175,7 @@
       "workflowframework.extensions.diagnostics": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )"
         }
       },
@@ -191,6 +198,30 @@
           "WorkflowFramework": "[1.0.0, )"
         }
       },
+      "workflowframework.extensions.reactive": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.scheduling": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.visualization": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.testing": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.tests.common": {
         "type": "Project",
         "dependencies": {
@@ -202,6 +233,15 @@
         "requested": "[10.0.3, )",
         "resolved": "10.0.3",
         "contentHash": "bwGMrRcAMWx2s/RDgja97p27rxSz2pEQW0+rX5cWAUWVETVJ/eyxGfjAl8vuG5a+lckWmPIE+vcuaZNVB5YDdw=="
+      },
+      "Microsoft.Extensions.Logging.Abstractions": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "lxl0WLk7ROgBFAsjcOYjQ8/DVK+VMszxGBzUhgtQmAsTNldLL5pk9NG/cWTsXHq0lUhUEAtZkEE7jOGOA8bGKQ==",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.3"
+        }
       },
       "Polly.Core": {
         "type": "CentralTransitive",
@@ -325,6 +365,16 @@
         "resolved": "6.0.0",
         "contentHash": "lcyUiXTsETK2ALsZrX+nWuHSIQeazhqPphLfaRxzdGaG93+0kELqpgEHtwWOlQe7+jSFnKwaCAgL4kjeZCQJnw=="
       },
+      "System.IO.Pipelines": {
+        "type": "Transitive",
+        "resolved": "10.0.1",
+        "contentHash": "26LbFXHKd7PmRnWlkjnYgmjd5B6HYVG+1MpTO25BdxTJnx6D0O16JPAC/S4YBqjtt4YpfGj1QO/Ss6SPMGEGQw=="
+      },
+      "System.Text.Encodings.Web": {
+        "type": "Transitive",
+        "resolved": "10.0.1",
+        "contentHash": "cVAka0o1rJJ5/De0pjNs7jcaZk5hUGf1HGzUyVmE2MEB1Vf0h/8qsWxImk1zjitCbeD2Avaq2P2+usdvqgbeVQ=="
+      },
       "xunit.abstractions": {
         "type": "Transitive",
         "resolved": "2.0.3",
@@ -368,6 +418,13 @@
       "workflowframework": {
         "type": "Project"
       },
+      "workflowframework.extensions.configuration": {
+        "type": "Project",
+        "dependencies": {
+          "System.Text.Json": "[10.0.1, )",
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.dependencyinjection": {
         "type": "Project",
         "dependencies": {
@@ -378,6 +435,7 @@
       "workflowframework.extensions.diagnostics": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.3, )",
           "System.Diagnostics.DiagnosticSource": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )"
         }
@@ -401,6 +459,30 @@
           "WorkflowFramework": "[1.0.0, )"
         }
       },
+      "workflowframework.extensions.reactive": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.scheduling": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.visualization": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.testing": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.tests.common": {
         "type": "Project",
         "dependencies": {
@@ -413,6 +495,16 @@
         "resolved": "10.0.3",
         "contentHash": "bwGMrRcAMWx2s/RDgja97p27rxSz2pEQW0+rX5cWAUWVETVJ/eyxGfjAl8vuG5a+lckWmPIE+vcuaZNVB5YDdw=="
       },
+      "Microsoft.Extensions.Logging.Abstractions": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "lxl0WLk7ROgBFAsjcOYjQ8/DVK+VMszxGBzUhgtQmAsTNldLL5pk9NG/cWTsXHq0lUhUEAtZkEE7jOGOA8bGKQ==",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.3",
+          "System.Diagnostics.DiagnosticSource": "10.0.3"
+        }
+      },
       "Polly.Core": {
         "type": "CentralTransitive",
         "requested": "[8.6.0, )",
@@ -424,6 +516,16 @@
         "requested": "[10.0.3, )",
         "resolved": "10.0.3",
         "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A=="
+      },
+      "System.Text.Json": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.1, )",
+        "resolved": "10.0.1",
+        "contentHash": "EsgwDgU1PFqhrFA9l5n+RBu76wFhNGCEwu8ITrBNhjPP3MxLyklroU5GIF8o6JYpYg6T4KD/VICfMdgPAvNp5g==",
+        "dependencies": {
+          "System.IO.Pipelines": "10.0.1",
+          "System.Text.Encodings.Web": "10.0.1"
+        }
       }
     },
     "net9.0": {
@@ -541,6 +643,16 @@
         "resolved": "6.0.0",
         "contentHash": "lcyUiXTsETK2ALsZrX+nWuHSIQeazhqPphLfaRxzdGaG93+0kELqpgEHtwWOlQe7+jSFnKwaCAgL4kjeZCQJnw=="
       },
+      "System.IO.Pipelines": {
+        "type": "Transitive",
+        "resolved": "10.0.1",
+        "contentHash": "26LbFXHKd7PmRnWlkjnYgmjd5B6HYVG+1MpTO25BdxTJnx6D0O16JPAC/S4YBqjtt4YpfGj1QO/Ss6SPMGEGQw=="
+      },
+      "System.Text.Encodings.Web": {
+        "type": "Transitive",
+        "resolved": "10.0.1",
+        "contentHash": "cVAka0o1rJJ5/De0pjNs7jcaZk5hUGf1HGzUyVmE2MEB1Vf0h/8qsWxImk1zjitCbeD2Avaq2P2+usdvqgbeVQ=="
+      },
       "xunit.abstractions": {
         "type": "Transitive",
         "resolved": "2.0.3",
@@ -584,6 +696,13 @@
       "workflowframework": {
         "type": "Project"
       },
+      "workflowframework.extensions.configuration": {
+        "type": "Project",
+        "dependencies": {
+          "System.Text.Json": "[10.0.1, )",
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.dependencyinjection": {
         "type": "Project",
         "dependencies": {
@@ -594,6 +713,7 @@
       "workflowframework.extensions.diagnostics": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.3, )",
           "System.Diagnostics.DiagnosticSource": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )"
         }
@@ -617,6 +737,30 @@
           "WorkflowFramework": "[1.0.0, )"
         }
       },
+      "workflowframework.extensions.reactive": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.scheduling": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.visualization": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.testing": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.tests.common": {
         "type": "Project",
         "dependencies": {
@@ -629,6 +773,16 @@
         "resolved": "10.0.3",
         "contentHash": "bwGMrRcAMWx2s/RDgja97p27rxSz2pEQW0+rX5cWAUWVETVJ/eyxGfjAl8vuG5a+lckWmPIE+vcuaZNVB5YDdw=="
       },
+      "Microsoft.Extensions.Logging.Abstractions": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "lxl0WLk7ROgBFAsjcOYjQ8/DVK+VMszxGBzUhgtQmAsTNldLL5pk9NG/cWTsXHq0lUhUEAtZkEE7jOGOA8bGKQ==",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.3",
+          "System.Diagnostics.DiagnosticSource": "10.0.3"
+        }
+      },
       "Polly.Core": {
         "type": "CentralTransitive",
         "requested": "[8.6.0, )",
@@ -640,6 +794,16 @@
         "requested": "[10.0.3, )",
         "resolved": "10.0.3",
         "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A=="
+      },
+      "System.Text.Json": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.1, )",
+        "resolved": "10.0.1",
+        "contentHash": "EsgwDgU1PFqhrFA9l5n+RBu76wFhNGCEwu8ITrBNhjPP3MxLyklroU5GIF8o6JYpYg6T4KD/VICfMdgPAvNp5g==",
+        "dependencies": {
+          "System.IO.Pipelines": "10.0.1",
+          "System.Text.Encodings.Web": "10.0.1"
+        }
       }
     }
   }

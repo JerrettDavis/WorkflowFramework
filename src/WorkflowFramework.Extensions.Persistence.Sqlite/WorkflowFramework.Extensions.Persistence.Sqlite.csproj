@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Persistence.Sqlite</RootNamespace>
+    <Description>SQLite persistence provider for WorkflowFramework.</Description>
+    <!-- Microsoft.Data.Sqlite doesn't support netstandard2.0 well -->
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+</Project>

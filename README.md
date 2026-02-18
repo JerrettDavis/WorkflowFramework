@@ -20,6 +20,20 @@ A fluent, extensible workflow/pipeline engine for .NET with async-first design, 
 - **OpenTelemetry** — built-in tracing and timing diagnostics
 - **Polly Integration** — resilience policies via Polly v8
 - **Multi-targeting** — netstandard2.0, netstandard2.1, net8.0, net9.0, net10.0
+- **Looping** — `ForEach`, `While`, `DoWhile`, `Retry` for iteration patterns
+- **Error Handling DSL** — `Try/Catch/Finally` blocks in your workflow
+- **Sub-Workflows** — compose workflows from smaller workflows
+- **Typed Pipelines** — `IPipelineStep<TIn, TOut>` with chained input/output types
+- **Workflow Registry** — register and resolve workflows by name with versioning
+- **Step Attributes** — `[StepName]`, `[StepTimeout]`, `[StepRetry]`, `[StepOrder]`
+- **Validation** — `IWorkflowValidator` / `IStepValidator` for pre-execution validation
+- **Visualization** — export workflows to Mermaid and DOT/Graphviz diagrams
+- **Scheduling** — cron expressions and delayed execution
+- **Approval Steps** — human interaction with `IApprovalService`
+- **Audit Trail** — `AuditMiddleware` with `IAuditStore`
+- **Testing Utilities** — `WorkflowTestHarness`, `FakeStep`, `StepTestBuilder`
+- **Configuration DSL** — define workflows in JSON (YAML coming soon)
+- **SQLite Persistence** — durable state store via SQLite
 
 ## Quick Start
 
@@ -194,6 +208,12 @@ public class MyEventHandler : WorkflowEventsBase
 | `WorkflowFramework.Extensions.Persistence.InMemory` | In-memory state store |
 | `WorkflowFramework.Extensions.Diagnostics` | OpenTelemetry tracing + timing |
 | `WorkflowFramework.Generators` | Source generators for step discovery |
+| `WorkflowFramework.Extensions.Configuration` | JSON/YAML workflow definitions |
+| `WorkflowFramework.Extensions.Scheduling` | Cron scheduling, approvals, delayed execution |
+| `WorkflowFramework.Extensions.Visualization` | Mermaid + DOT diagram export |
+| `WorkflowFramework.Extensions.Reactive` | Async streams / `IAsyncEnumerable` support |
+| `WorkflowFramework.Extensions.Persistence.Sqlite` | SQLite state store |
+| `WorkflowFramework.Testing` | Test harness, fake steps, event capture |
 
 ### Polly Integration
 
@@ -241,6 +261,154 @@ using WorkflowFramework.Extensions.DependencyInjection;
 services.AddWorkflowFramework();
 services.AddStep<ValidateInput>();
 services.AddWorkflowMiddleware<LoggingMiddleware>();
+```
+
+### Looping & Iteration
+
+```csharp
+using WorkflowFramework.Builder;
+
+Workflow.Create()
+    .ForEach<string>(
+        ctx => (List<string>)ctx.Properties["Items"]!,
+        body => body.Step("Process", ctx =>
+        {
+            var item = (string)ctx.Properties["ForEach.Current"]!;
+            Console.WriteLine($"Processing: {item}");
+            return Task.CompletedTask;
+        }))
+    .Build();
+
+// While loop
+Workflow.Create()
+    .While(ctx => (int)ctx.Properties["Count"]! < 10,
+        body => body.Step("Increment", ctx =>
+        {
+            ctx.Properties["Count"] = (int)ctx.Properties["Count"]! + 1;
+            return Task.CompletedTask;
+        }))
+    .Build();
+
+// Retry group
+Workflow.Create()
+    .Retry(body => body.Step<FlakyStep>(), maxAttempts: 3)
+    .Build();
+```
+
+### Try/Catch/Finally
+
+```csharp
+Workflow.Create()
+    .Try(body => body.Step<RiskyStep>())
+    .Catch<InvalidOperationException>((ctx, ex) =>
+    {
+        Console.WriteLine($"Caught: {ex.Message}");
+        return Task.CompletedTask;
+    })
+    .Finally(body => body.Step("Cleanup", _ => { /* cleanup */ return Task.CompletedTask; }))
+    .Build();
+```
+
+### Sub-Workflows
+
+```csharp
+var validation = Workflow.Create("Validation")
+    .Step<ValidateInput>()
+    .Step<ValidatePermissions>()
+    .Build();
+
+var main = Workflow.Create("Main")
+    .SubWorkflow(validation)
+    .Step<ProcessData>()
+    .Build();
+```
+
+### Typed Pipeline
+
+```csharp
+using WorkflowFramework.Pipeline;
+
+var pipeline = Pipeline.Create<string>()
+    .Pipe<int>((s, ct) => Task.FromResult(int.Parse(s)))
+    .Pipe<string>((n, ct) => Task.FromResult($"Value: {n * 2}"))
+    .Build();
+
+var result = await pipeline("21", CancellationToken.None); // "Value: 42"
+```
+
+### Workflow Registry & Versioning
+
+```csharp
+using WorkflowFramework.Registry;
+using WorkflowFramework.Versioning;
+
+var registry = new WorkflowRegistry();
+registry.Register("OrderProcessing", () => BuildOrderWorkflow());
+
+var runner = new WorkflowRunner(registry);
+var result = await runner.RunAsync("OrderProcessing", context);
+
+// Versioned workflows
+var versionedRegistry = new VersionedWorkflowRegistry();
+versionedRegistry.Register("OrderProcessing", 1, () => BuildV1());
+versionedRegistry.Register("OrderProcessing", 2, () => BuildV2());
+var latest = versionedRegistry.Resolve("OrderProcessing"); // Returns v2
+```
+
+### Visualization
+
+```csharp
+using WorkflowFramework.Extensions.Visualization;
+
+var workflow = Workflow.Create("MyWorkflow")
+    .Step<StepA>()
+    .Step<StepB>()
+    .Build();
+
+Console.WriteLine(workflow.ToMermaid());  // Mermaid diagram
+Console.WriteLine(workflow.ToDot());      // Graphviz DOT format
+```
+
+### JSON Configuration
+
+```csharp
+using WorkflowFramework.Extensions.Configuration;
+
+var loader = new JsonWorkflowDefinitionLoader();
+var definition = loader.LoadFromFile("workflow.json");
+
+var stepRegistry = new StepRegistry();
+stepRegistry.Register<ValidateOrder>();
+stepRegistry.Register<ChargePayment>();
+
+var builder = new WorkflowDefinitionBuilder(stepRegistry);
+var workflow = builder.Build(definition);
+```
+
+### Testing
+
+```csharp
+using WorkflowFramework.Testing;
+
+// Override specific steps in tests
+var harness = new WorkflowTestHarness()
+    .OverrideStep("ChargePayment", ctx =>
+    {
+        ctx.Properties["PaymentCharged"] = true;
+        return Task.CompletedTask;
+    });
+
+var result = await harness.ExecuteAsync(workflow, new WorkflowContext());
+
+// Capture events for assertions
+var events = new InMemoryWorkflowEvents();
+var workflow = Workflow.Create()
+    .WithEvents(events)
+    .Step<MyStep>()
+    .Build();
+
+await workflow.ExecuteAsync(new WorkflowContext());
+Assert.Single(events.StepCompleted);
 ```
 
 ## Building

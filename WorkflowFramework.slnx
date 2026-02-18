@@ -15,7 +15,13 @@
     <Project Path="src/WorkflowFramework.Extensions.Polly/WorkflowFramework.Extensions.Polly.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Persistence/WorkflowFramework.Extensions.Persistence.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Persistence.InMemory/WorkflowFramework.Extensions.Persistence.InMemory.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Persistence.Sqlite/WorkflowFramework.Extensions.Persistence.Sqlite.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Diagnostics/WorkflowFramework.Extensions.Diagnostics.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Configuration/WorkflowFramework.Extensions.Configuration.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Scheduling/WorkflowFramework.Extensions.Scheduling.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Visualization/WorkflowFramework.Extensions.Visualization.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Reactive/WorkflowFramework.Extensions.Reactive.csproj" />
+    <Project Path="src/WorkflowFramework.Testing/WorkflowFramework.Testing.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />
@@ -27,5 +33,7 @@
   </Folder>
   <Folder Name="/samples/">
     <Project Path="samples/WorkflowFramework.Samples/WorkflowFramework.Samples.csproj" />
+    <Project Path="samples/WorkflowFramework.Samples.OrderProcessing/WorkflowFramework.Samples.OrderProcessing.csproj" />
+    <Project Path="samples/WorkflowFramework.Samples.DataPipeline/WorkflowFramework.Samples.DataPipeline.csproj" />
   </Folder>
 </Solution>

@@ -11,6 +11,11 @@
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Polly\WorkflowFramework.Extensions.Polly.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.DependencyInjection\WorkflowFramework.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="..\WorkflowFramework.Tests.Common\WorkflowFramework.Tests.Common.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Configuration\WorkflowFramework.Extensions.Configuration.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Scheduling\WorkflowFramework.Extensions.Scheduling.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Visualization\WorkflowFramework.Extensions.Visualization.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Reactive\WorkflowFramework.Extensions.Reactive.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Testing\WorkflowFramework.Testing.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
