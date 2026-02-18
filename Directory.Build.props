@@ -1,0 +1,62 @@
+<Project>
+    <PropertyGroup>
+        <TargetFrameworks>netstandard2.0;netstandard2.1;net8.0;net9.0;net10.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests')) OR $([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests.Common')) OR $([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests.Integration')) OR $([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Benchmarks')) OR $([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Samples'))">net8.0;net9.0;net10.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Generators'))">netstandard2.0</TargetFrameworks>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <LangVersion>preview</LangVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <Deterministic>true</Deterministic>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>$(NoWarn);1591</NoWarn>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Authors>Jerrett Davis and contributors</Authors>
+        <Company>JDH Productions LLC.</Company>
+        <Product>WorkflowFramework</Product>
+        <Description>A fluent, extensible workflow/pipeline engine for .NET with async-first design, middleware, branching, parallel execution, saga/compensation, and rich extensibility.</Description>
+        <PackageTags>workflow;pipeline;fluent;fluent-api;dotnet;async;middleware;saga;orchestration</PackageTags>
+
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/JerrettDavis/WorkflowFramework</RepositoryUrl>
+        <PackageProjectUrl>https://github.com/JerrettDavis/WorkflowFramework</PackageProjectUrl>
+
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+
+        <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <IsPackable Condition="$([System.String]::Copy('$(MSBuildProjectName)').StartsWith('WorkflowFramework')) AND !$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests')) AND !$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests.Common')) AND !$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests.Integration')) AND !$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Benchmarks')) AND !$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Samples'))">true</IsPackable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" />
+    </ItemGroup>
+
+    <!-- PolySharp for netstandard targets -->
+    <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1'">
+        <PackageReference Include="PolySharp" PrivateAssets="All" />
+    </ItemGroup>
+
+    <!-- Microsoft.Extensions.* version management for multi-targeting -->
+    <PropertyGroup>
+        <MicrosoftExtensionsVersion Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1'">8.0.2</MicrosoftExtensionsVersion>
+        <MicrosoftExtensionsVersion Condition="'$(MicrosoftExtensionsVersion)' == ''">10.0.3</MicrosoftExtensionsVersion>
+    </PropertyGroup>
+</Project>

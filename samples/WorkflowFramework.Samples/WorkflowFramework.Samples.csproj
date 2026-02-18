@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>WorkflowFramework.Samples</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkflowFramework\WorkflowFramework.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Diagnostics\WorkflowFramework.Extensions.Diagnostics.csproj" />
+  </ItemGroup>
+</Project>

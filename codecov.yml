@@ -1,0 +1,5 @@
+ignore:
+  - "**/*.Tests/**"
+  - "**/*Tests*/**"
+  - "**/*.Benchmarks/**"
+  - "**/*.Samples/**"

@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework</RootNamespace>
+    <Description>Core abstractions and fluent builder for WorkflowFramework - a workflow/pipeline engine for .NET.</Description>
+  </PropertyGroup>
+</Project>

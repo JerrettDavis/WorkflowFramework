@@ -1,0 +1,31 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+    <File Path=".github\workflows\ci.yml" />
+    <File Path="GitVersion.yml" />
+    <File Path="codecov.yml" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/WorkflowFramework/WorkflowFramework.csproj" />
+    <Project Path="src/WorkflowFramework.Generators/WorkflowFramework.Generators.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.DependencyInjection/WorkflowFramework.Extensions.DependencyInjection.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Polly/WorkflowFramework.Extensions.Polly.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Persistence/WorkflowFramework.Extensions.Persistence.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Persistence.InMemory/WorkflowFramework.Extensions.Persistence.InMemory.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Diagnostics/WorkflowFramework.Extensions.Diagnostics.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Tests.Integration/WorkflowFramework.Tests.Integration.csproj" />
+    <Project Path="tests/WorkflowFramework.Tests.Common/WorkflowFramework.Tests.Common.csproj" />
+  </Folder>
+  <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/WorkflowFramework.Benchmarks/WorkflowFramework.Benchmarks.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/WorkflowFramework.Samples/WorkflowFramework.Samples.csproj" />
+  </Folder>
+</Solution>
