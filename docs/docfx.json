@@ -1,0 +1,27 @@
+﻿{
+  "metadata": [
+    {
+      "src": [
+        {
+          "files": ["src/**/*.csproj"],
+          "src": ".."
+        }
+      ],
+      "dest": "api"
+    }
+  ],
+  "build": {
+    "content": [
+      { "files": ["api/**.yml", "api/index.md"] },
+      { "files": ["**.md", "**/toc.yml"], "exclude": ["_site/**", "api/**"] }
+    ],
+    "resource": [{ "files": ["images/**"] }],
+    "dest": "_site",
+    "globalMetadata": {
+      "_appTitle": "WorkflowFramework",
+      "_appFooter": "WorkflowFramework - MIT License",
+      "_enableSearch": true
+    },
+    "template": ["default", "modern"]
+  }
+}

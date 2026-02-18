@@ -22,6 +22,12 @@
     <Project Path="src/WorkflowFramework.Extensions.Visualization/WorkflowFramework.Extensions.Visualization.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Reactive/WorkflowFramework.Extensions.Reactive.csproj" />
     <Project Path="src/WorkflowFramework.Testing/WorkflowFramework.Testing.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Persistence.EntityFramework/WorkflowFramework.Extensions.Persistence.EntityFramework.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Distributed/WorkflowFramework.Extensions.Distributed.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Distributed.Redis/WorkflowFramework.Extensions.Distributed.Redis.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Hosting/WorkflowFramework.Extensions.Hosting.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Http/WorkflowFramework.Extensions.Http.csproj" />
+    <Project Path="src/WorkflowFramework.Analyzers/WorkflowFramework.Analyzers.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />
@@ -35,5 +41,6 @@
     <Project Path="samples/WorkflowFramework.Samples/WorkflowFramework.Samples.csproj" />
     <Project Path="samples/WorkflowFramework.Samples.OrderProcessing/WorkflowFramework.Samples.OrderProcessing.csproj" />
     <Project Path="samples/WorkflowFramework.Samples.DataPipeline/WorkflowFramework.Samples.DataPipeline.csproj" />
+    <Project Path="samples/WorkflowFramework.Samples.WebApi/WorkflowFramework.Samples.WebApi.csproj" />
   </Folder>
 </Solution>

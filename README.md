@@ -1,7 +1,9 @@
 # WorkflowFramework
 
 [![CI](https://github.com/JerrettDavis/WorkflowFramework/actions/workflows/ci.yml/badge.svg)](https://github.com/JerrettDavis/WorkflowFramework/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/JerrettDavis/WorkflowFramework/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/JerrettDavis/WorkflowFramework/actions/workflows/codeql-analysis.yml)
 [![codecov](https://codecov.io/gh/JerrettDavis/WorkflowFramework/graph/badge.svg)](https://codecov.io/gh/JerrettDavis/WorkflowFramework)
+[![NuGet](https://img.shields.io/nuget/v/WorkflowFramework.svg)](https://www.nuget.org/packages/WorkflowFramework)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A fluent, extensible workflow/pipeline engine for .NET with async-first design, middleware, branching, parallel execution, saga/compensation, and rich extensibility.
@@ -197,6 +199,35 @@ public class MyEventHandler : WorkflowEventsBase
 }
 ```
 
+## Architecture
+
+```mermaid
+graph TD
+    A[Workflow.Create] --> B[IWorkflowBuilder]
+    B --> C[Add Steps]
+    B --> D[Add Middleware]
+    B --> E[Add Events]
+    B --> F[Build]
+    F --> G[WorkflowEngine]
+    G --> H{Execute Steps}
+    H --> I[Middleware Pipeline]
+    I --> J[Step.ExecuteAsync]
+    J --> K[Context / Properties]
+    H --> L{Compensation?}
+    L -->|Yes| M[Reverse Compensate]
+    H --> N[WorkflowResult]
+```
+
+## Why WorkflowFramework?
+
+- **Zero dependencies in core** — the core package has no external dependencies
+- **Multi-target** — supports netstandard2.0 through net10.0
+- **Async-first** — every API is async from the ground up
+- **Composable** — middleware, events, sub-workflows, typed pipelines
+- **Testable** — built-in test harness, fake steps, and assertions
+- **Production-ready** — persistence, scheduling, distributed locking, health checks
+- **Extensible** — clean interfaces for custom steps, middleware, persistence, and more
+
 ## Extensions
 
 | Package | Description |
@@ -214,6 +245,12 @@ public class MyEventHandler : WorkflowEventsBase
 | `WorkflowFramework.Extensions.Reactive` | Async streams / `IAsyncEnumerable` support |
 | `WorkflowFramework.Extensions.Persistence.Sqlite` | SQLite state store |
 | `WorkflowFramework.Testing` | Test harness, fake steps, event capture |
+| `WorkflowFramework.Extensions.Persistence.EntityFramework` | EF Core state store |
+| `WorkflowFramework.Extensions.Distributed` | Distributed locking and queuing abstractions |
+| `WorkflowFramework.Extensions.Distributed.Redis` | Redis lock and queue implementations |
+| `WorkflowFramework.Extensions.Hosting` | ASP.NET Core hosting integration + health checks |
+| `WorkflowFramework.Extensions.Http` | HTTP request steps with fluent builder |
+| `WorkflowFramework.Analyzers` | Roslyn analyzers for common mistakes |
 
 ### Polly Integration
 
@@ -410,6 +447,16 @@ var workflow = Workflow.Create()
 await workflow.ExecuteAsync(new WorkflowContext());
 Assert.Single(events.StepCompleted);
 ```
+
+## Performance
+
+Run benchmarks with:
+
+```bash
+dotnet run -c Release --project benchmarks/WorkflowFramework.Benchmarks
+```
+
+Benchmarks cover workflow execution, middleware pipeline overhead, and typed pipeline throughput.
 
 ## Building
 

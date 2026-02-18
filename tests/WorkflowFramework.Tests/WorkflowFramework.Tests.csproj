@@ -17,6 +17,10 @@
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Reactive\WorkflowFramework.Extensions.Reactive.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Persistence.Sqlite\WorkflowFramework.Extensions.Persistence.Sqlite.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Testing\WorkflowFramework.Testing.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Persistence.EntityFramework\WorkflowFramework.Extensions.Persistence.EntityFramework.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Distributed\WorkflowFramework.Extensions.Distributed.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Hosting\WorkflowFramework.Extensions.Hosting.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Http\WorkflowFramework.Extensions.Http.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -26,5 +30,6 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
   </ItemGroup>
 </Project>

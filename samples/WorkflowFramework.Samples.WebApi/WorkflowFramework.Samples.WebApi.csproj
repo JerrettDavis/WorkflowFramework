@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Samples.WebApi</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkflowFramework\WorkflowFramework.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Hosting\WorkflowFramework.Extensions.Hosting.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.DependencyInjection\WorkflowFramework.Extensions.DependencyInjection.csproj" />
+  </ItemGroup>
+</Project>
