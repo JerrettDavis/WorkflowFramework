@@ -1,5 +1,7 @@
 using System.Text.Json;
 using WorkflowFramework.Builder;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace WorkflowFramework.Extensions.Configuration;
 
@@ -112,6 +114,33 @@ public sealed class JsonWorkflowDefinitionLoader : IWorkflowDefinitionLoader
 }
 
 /// <summary>
+/// YAML implementation of <see cref="IWorkflowDefinitionLoader"/>.
+/// </summary>
+public sealed class YamlWorkflowDefinitionLoader : IWorkflowDefinitionLoader
+{
+    private static readonly IDeserializer Deserializer = new DeserializerBuilder()
+        .WithNamingConvention(CamelCaseNamingConvention.Instance)
+        .IgnoreUnmatchedProperties()
+        .Build();
+
+    /// <inheritdoc />
+    public WorkflowDefinition Load(string content)
+    {
+        if (content == null) throw new ArgumentNullException(nameof(content));
+        return Deserializer.Deserialize<WorkflowDefinition>(content)
+            ?? throw new InvalidOperationException("Failed to deserialize YAML workflow definition.");
+    }
+
+    /// <inheritdoc />
+    public WorkflowDefinition LoadFromFile(string filePath)
+    {
+        if (filePath == null) throw new ArgumentNullException(nameof(filePath));
+        var content = File.ReadAllText(filePath);
+        return Load(content);
+    }
+}
+
+/// <summary>
 /// Builds an <see cref="IWorkflow"/> from a <see cref="WorkflowDefinition"/> and an <see cref="IStepRegistry"/>.
 /// </summary>
 public sealed class WorkflowDefinitionBuilder
@@ -134,12 +163,21 @@ public sealed class WorkflowDefinitionBuilder
     /// <returns>The built workflow.</returns>
     public IWorkflow Build(WorkflowDefinition definition)
     {
+        if (definition == null) throw new ArgumentNullException(nameof(definition));
+
         var builder = Workflow.Create(definition.Name);
 
         if (definition.Compensation)
             builder.WithCompensation();
 
-        foreach (var stepDef in definition.Steps)
+        BuildSteps(builder, definition.Steps);
+
+        return builder.Build();
+    }
+
+    private void BuildSteps(IWorkflowBuilder builder, List<StepDefinition> steps)
+    {
+        foreach (var stepDef in steps)
         {
             if (stepDef.Parallel != null && stepDef.Parallel.Count > 0)
             {
@@ -151,13 +189,38 @@ public sealed class WorkflowDefinitionBuilder
                     }
                 });
             }
+            else if (stepDef.Condition != null && stepDef.Then != null)
+            {
+                // Conditional step: condition is a step type name used as a property key check
+                var thenStep = _stepRegistry.Resolve(stepDef.Then);
+                if (stepDef.Else != null)
+                {
+                    var elseStep = _stepRegistry.Resolve(stepDef.Else);
+                    builder.If(ctx =>
+                    {
+                        ctx.Properties.TryGetValue(stepDef.Condition, out var val);
+                        return val is true or "true";
+                    }).Then(thenStep).Else(elseStep);
+                }
+                else
+                {
+                    builder.If(ctx =>
+                    {
+                        ctx.Properties.TryGetValue(stepDef.Condition, out var val);
+                        return val is true or "true";
+                    }).Then(thenStep).EndIf();
+                }
+            }
+            else if (stepDef.Retry != null && !string.IsNullOrEmpty(stepDef.Type))
+            {
+                var retryStep = _stepRegistry.Resolve(stepDef.Type);
+                builder.Retry(b => b.Step(retryStep), stepDef.Retry.MaxAttempts);
+            }
             else
             {
                 var step = _stepRegistry.Resolve(stepDef.Type);
                 builder.Step(step);
             }
         }
-
-        return builder.Build();
     }
 }

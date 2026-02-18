@@ -84,6 +84,42 @@ public sealed class StepDefinition
     /// </summary>
     [JsonPropertyName("parallel")]
     public List<string>? Parallel { get; set; }
+
+    /// <summary>
+    /// Gets or sets loop configuration (for While/DoWhile steps).
+    /// </summary>
+    [JsonPropertyName("loop")]
+    public LoopDefinition? Loop { get; set; }
+
+    /// <summary>
+    /// Gets or sets sub-workflow name.
+    /// </summary>
+    [JsonPropertyName("subWorkflow")]
+    public string? SubWorkflow { get; set; }
+
+    /// <summary>
+    /// Gets or sets the child steps (for loop body, conditional branches, etc.).
+    /// </summary>
+    [JsonPropertyName("steps")]
+    public List<StepDefinition>? Steps { get; set; }
+}
+
+/// <summary>
+/// Loop configuration in a workflow definition.
+/// </summary>
+public sealed class LoopDefinition
+{
+    /// <summary>
+    /// Gets or sets the loop type (forEach, while, doWhile).
+    /// </summary>
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "while";
+
+    /// <summary>
+    /// Gets or sets the maximum iterations (safety limit).
+    /// </summary>
+    [JsonPropertyName("maxIterations")]
+    public int MaxIterations { get; set; } = 1000;
 }
 
 /// <summary>

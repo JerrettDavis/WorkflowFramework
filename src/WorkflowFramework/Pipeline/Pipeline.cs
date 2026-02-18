@@ -11,7 +11,7 @@ public static class Pipeline
     /// <typeparam name="TInput">The initial input type.</typeparam>
     /// <returns>A new pipeline builder.</returns>
     public static IPipelineBuilder<TInput, TInput> Create<TInput>() =>
-        new PipelineBuilder<TInput, TInput>(input => Task.FromResult(input));
+        new PipelineBuilder<TInput, TInput>((input, _) => Task.FromResult(input));
 }
 
 /// <summary>
@@ -54,9 +54,9 @@ public interface IPipelineBuilder<TIn, TCurrent>
 
 internal sealed class PipelineBuilder<TIn, TCurrent> : IPipelineBuilder<TIn, TCurrent>
 {
-    private readonly Func<TIn, Task<TCurrent>> _chain;
+    private readonly Func<TIn, CancellationToken, Task<TCurrent>> _chain;
 
-    internal PipelineBuilder(Func<TIn, Task<TCurrent>> chain)
+    internal PipelineBuilder(Func<TIn, CancellationToken, Task<TCurrent>> chain)
     {
         _chain = chain;
     }
@@ -66,27 +66,30 @@ internal sealed class PipelineBuilder<TIn, TCurrent> : IPipelineBuilder<TIn, TCu
 
     public IPipelineBuilder<TIn, TOut> Pipe<TOut>(IPipelineStep<TCurrent, TOut> step)
     {
+        if (step == null) throw new ArgumentNullException(nameof(step));
         var prev = _chain;
-        return new PipelineBuilder<TIn, TOut>(async input =>
+        return new PipelineBuilder<TIn, TOut>(async (input, ct) =>
         {
-            var current = await prev(input).ConfigureAwait(false);
-            return await step.ExecuteAsync(current).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            var current = await prev(input, ct).ConfigureAwait(false);
+            return await step.ExecuteAsync(current, ct).ConfigureAwait(false);
         });
     }
 
     public IPipelineBuilder<TIn, TOut> Pipe<TOut>(Func<TCurrent, CancellationToken, Task<TOut>> transform)
     {
+        if (transform == null) throw new ArgumentNullException(nameof(transform));
         var prev = _chain;
-        return new PipelineBuilder<TIn, TOut>(async input =>
+        return new PipelineBuilder<TIn, TOut>(async (input, ct) =>
         {
-            var current = await prev(input).ConfigureAwait(false);
-            return await transform(current, CancellationToken.None).ConfigureAwait(false);
+            ct.ThrowIfCancellationRequested();
+            var current = await prev(input, ct).ConfigureAwait(false);
+            return await transform(current, ct).ConfigureAwait(false);
         });
     }
 
     public Func<TIn, CancellationToken, Task<TCurrent>> Build()
     {
-        var chain = _chain;
-        return (input, _) => chain(input);
+        return _chain;
     }
 }

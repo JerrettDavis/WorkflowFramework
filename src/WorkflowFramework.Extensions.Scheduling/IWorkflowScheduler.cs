@@ -227,10 +227,104 @@ public sealed class InMemoryWorkflowScheduler : IWorkflowScheduler
         }
     }
 
+    /// <summary>
+    /// Starts the scheduler background pump that checks for due schedules.
+    /// </summary>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    public Task StartAsync(CancellationToken cancellationToken = default)
+    {
+        if (_disposed) throw new ObjectDisposedException(nameof(InMemoryWorkflowScheduler));
+        _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _pumpTask = PumpAsync(_cts.Token);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Stops the scheduler background pump.
+    /// </summary>
+    public async Task StopAsync()
+    {
+        _cts?.Cancel();
+        if (_pumpTask != null)
+        {
+            try { await _pumpTask.ConfigureAwait(false); } catch (OperationCanceledException) { }
+        }
+    }
+
+    /// <summary>
+    /// Manually ticks the scheduler, executing any due workflows. Useful for testing.
+    /// </summary>
+    public async Task TickAsync()
+    {
+        List<ScheduleEntry> dueEntries;
+        lock (_lock)
+        {
+            dueEntries = _entries
+                .Where(e => e.ExecuteAt.HasValue && e.ExecuteAt.Value <= DateTimeOffset.UtcNow)
+                .ToList();
+        }
+
+        foreach (var entry in dueEntries)
+        {
+            try
+            {
+                var workflow = _registry.Resolve(entry.WorkflowName);
+                var context = entry.Context ?? entry.ContextFactory?.Invoke() ?? new WorkflowContext();
+                await workflow.ExecuteAsync(context).ConfigureAwait(false);
+                ExecutedCount++;
+            }
+            catch
+            {
+                // Swallow execution errors in scheduler
+            }
+
+            lock (_lock)
+            {
+                if (entry.IsRecurring && entry.CronExpression != null)
+                {
+                    var next = CronParser.GetNextOccurrence(entry.CronExpression, DateTimeOffset.UtcNow);
+                    if (next.HasValue)
+                    {
+                        entry.ExecuteAt = next.Value;
+                        entry.Context = entry.ContextFactory?.Invoke();
+                    }
+                    else
+                    {
+                        _entries.Remove(entry);
+                    }
+                }
+                else
+                {
+                    _entries.Remove(entry);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the number of workflows executed by the scheduler. Useful for testing.
+    /// </summary>
+    public int ExecutedCount { get; private set; }
+
+    private CancellationTokenSource? _cts;
+    private Task? _pumpTask;
+
+    private async Task PumpAsync(CancellationToken ct)
+    {
+        while (!ct.IsCancellationRequested)
+        {
+            await TickAsync().ConfigureAwait(false);
+            try { await Task.Delay(TimeSpan.FromSeconds(1), ct).ConfigureAwait(false); }
+            catch (OperationCanceledException) { break; }
+        }
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {
         _disposed = true;
+        _cts?.Cancel();
+        _cts?.Dispose();
     }
 
     private sealed class ScheduleEntry

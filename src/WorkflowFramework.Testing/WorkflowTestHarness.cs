@@ -58,6 +58,7 @@ public sealed class WorkflowTestHarness
 
     /// <summary>
     /// Executes a typed workflow using the configured overrides.
+    /// If step overrides are configured, the workflow is rebuilt with the overridden steps.
     /// </summary>
     /// <typeparam name="TData">The workflow data type.</typeparam>
     /// <param name="workflow">The workflow to execute.</param>
@@ -67,7 +68,27 @@ public sealed class WorkflowTestHarness
     public async Task<WorkflowResult<TData>> ExecuteAsync<TData>(IWorkflow<TData> workflow, TData data, CancellationToken cancellationToken = default) where TData : class
     {
         var context = new WorkflowContext<TData>(data, cancellationToken);
-        // For typed workflows, we execute directly (overrides require untyped IWorkflow)
+
+        if (_stepOverrides.Count > 0)
+        {
+            // Build an untyped workflow with overrides, then wrap it as typed
+            var builder = Workflow.Create(workflow.Name);
+            // Try to get steps from the workflow if it exposes them via IWorkflow
+            if (workflow is IWorkflow untypedWorkflow)
+            {
+                foreach (var step in untypedWorkflow.Steps)
+                {
+                    if (_stepOverrides.TryGetValue(step.Name, out var replacement))
+                        builder.Step(replacement);
+                    else
+                        builder.Step(step);
+                }
+                var rebuilt = builder.Build();
+                var result = await rebuilt.ExecuteAsync(context).ConfigureAwait(false);
+                return new WorkflowResult<TData>(result.Status, context);
+            }
+        }
+
         return await workflow.ExecuteAsync(context).ConfigureAwait(false);
     }
 }
