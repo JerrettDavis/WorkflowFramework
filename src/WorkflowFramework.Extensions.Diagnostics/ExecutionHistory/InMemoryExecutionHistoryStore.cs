@@ -12,7 +12,7 @@ public sealed class InMemoryExecutionHistoryStore : IExecutionHistoryStore
     /// <inheritdoc />
     public Task RecordRunAsync(WorkflowRunRecord record, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(record);
+        if (record is null) throw new ArgumentNullException(nameof(record));
         lock (_lock) _records.Add(record);
         return Task.CompletedTask;
     }

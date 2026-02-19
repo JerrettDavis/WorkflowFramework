@@ -16,7 +16,7 @@ public static class ExecutionHistoryBuilderExtensions
     /// <returns>This builder for chaining.</returns>
     public static IWorkflowBuilder WithExecutionHistory(this IWorkflowBuilder builder, IExecutionHistoryStore store)
     {
-        ArgumentNullException.ThrowIfNull(store);
+        if (store is null) throw new ArgumentNullException(nameof(store));
         return builder
             .Use(new ExecutionHistoryMiddleware())
             .WithEvents(new ExecutionHistoryEvents(store));
@@ -43,7 +43,7 @@ public static class ExecutionHistoryBuilderExtensions
     /// <returns>This builder for chaining.</returns>
     public static IWorkflowBuilder<TData> WithExecutionHistory<TData>(this IWorkflowBuilder<TData> builder, IExecutionHistoryStore store) where TData : class
     {
-        ArgumentNullException.ThrowIfNull(store);
+        if (store is null) throw new ArgumentNullException(nameof(store));
         return builder
             .Use(new ExecutionHistoryMiddleware())
             .WithEvents(new ExecutionHistoryEvents(store));
