@@ -1,0 +1,77 @@
+.toolbar-btn {
+    @apply px-2 py-1 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors;
+}
+
+/* React Flow overrides for dark theme */
+.react-flow {
+    background: #111827 !important;
+}
+.react-flow__minimap {
+    background: #1f2937 !important;
+}
+.react-flow__controls button {
+    background: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #d1d5db !important;
+}
+.react-flow__controls button:hover {
+    background: #4b5563 !important;
+}
+
+/* Custom node styles */
+.workflow-node {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 2px solid;
+    min-width: 140px;
+    font-size: 13px;
+    color: #f3f4f6;
+    background: #1f2937;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.workflow-node.selected {
+    box-shadow: 0 0 0 2px #3b82f6, 0 2px 12px rgba(59,130,246,0.3);
+}
+.workflow-node .node-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+.workflow-node .node-icon {
+    font-size: 16px;
+}
+.workflow-node .node-type {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-top: 2px;
+}
+.workflow-node .node-status {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #1f2937;
+}
+.workflow-node .node-status.running { background: #eab308; animation: pulse 1s infinite; }
+.workflow-node .node-status.success { background: #22c55e; }
+.workflow-node .node-status.error { background: #ef4444; }
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Handle styles */
+.react-flow__handle {
+    width: 8px !important;
+    height: 8px !important;
+    background: #6b7280 !important;
+    border: 2px solid #374151 !important;
+}
+.react-flow__handle:hover {
+    background: #3b82f6 !important;
+}

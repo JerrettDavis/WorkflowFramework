@@ -1,0 +1,76 @@
+<div class="w-72 bg-gray-800 border-l border-gray-700 overflow-y-auto flex-shrink-0">
+    @if (SelectedNodeId is null)
+    {
+        <div class="p-4 text-gray-500 text-sm text-center mt-8">
+            <p class="text-2xl mb-2">👈</p>
+            <p>Select a step on the canvas to edit its properties</p>
+        </div>
+    }
+    else
+    {
+        var stepDef = Steps.FirstOrDefault(s => s.Type == SelectedNodeType);
+        <div class="p-3 border-b border-gray-700">
+            <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Properties</h2>
+            <p class="text-xs text-gray-500 mt-1">@(stepDef?.Icon) @(stepDef?.Name ?? SelectedNodeType)</p>
+        </div>
+        <div class="p-3 space-y-3">
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Step Name</label>
+                <input type="text" value="@(NodeConfig.GetValueOrDefault("label")?.ToString() ?? string.Empty)"
+                       @oninput='e => UpdateConfig("label", e.Value)'
+                       class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+            @if (stepDef is not null)
+            {
+                @foreach (var prop in stepDef.Properties)
+                {
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">
+                            @prop.Label
+                            @if (prop.Required) { <span class="text-red-400">*</span> }
+                        </label>
+                        @if (prop.Type == "select" && prop.Options is not null)
+                        {
+                            <select value="@(NodeConfig.GetValueOrDefault(prop.Name)?.ToString() ?? prop.DefaultValue ?? string.Empty)"
+                                    @onchange='e => UpdateConfig(prop.Name, e.Value)'
+                                    class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                @foreach (var opt in prop.Options)
+                                {
+                                    <option value="@opt">@opt</option>
+                                }
+                            </select>
+                        }
+                        else if (prop.Type == "bool")
+                        {
+                            <input type="checkbox"
+                                   checked="@(NodeConfig.GetValueOrDefault(prop.Name)?.ToString() == "true")"
+                                   @onchange='e => UpdateConfig(prop.Name, e.Value)'
+                                   class="rounded bg-gray-700" />
+                        }
+                        else
+                        {
+                            <input type="@(prop.Type == "number" ? "number" : "text")"
+                                   value="@(NodeConfig.GetValueOrDefault(prop.Name)?.ToString() ?? prop.DefaultValue ?? string.Empty)"
+                                   @oninput='e => UpdateConfig(prop.Name, e.Value)'
+                                   class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        }
+                    </div>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? SelectedNodeId { get; set; }
+    [Parameter] public string? SelectedNodeType { get; set; }
+    [Parameter] public List<StepDefinition> Steps { get; set; } = [];
+    [Parameter] public Dictionary<string, object?> NodeConfig { get; set; } = new();
+    [Parameter] public EventCallback<Dictionary<string, object?>> OnConfigChanged { get; set; }
+
+    private async Task UpdateConfig(string key, object? value)
+    {
+        var newConfig = new Dictionary<string, object?>(NodeConfig) { [key] = value };
+        await OnConfigChanged.InvokeAsync(newConfig);
+    }
+}

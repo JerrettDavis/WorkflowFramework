@@ -1,0 +1,133 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="flex flex-col h-full">
+    <WorkflowToolbar WorkflowName="@_workflowName"
+                     OnWorkflowNameChanged="name => { _workflowName = name; _dirty = true; }"
+                     IsDirty="_dirty"
+                     OnNew="HandleNew"
+                     OnSave="HandleSave"
+                     OnRun="HandleRun"
+                     OnExport="HandleExport"
+                     OnFitView="HandleFitView" />
+
+    <div class="flex flex-1 overflow-hidden">
+        <StepPalette Steps="StepCatalog.GetAll()" />
+
+        <div class="flex-1 relative" id="workflow-canvas"></div>
+
+        <PropertiesPanel SelectedNodeId="@_selectedNodeId"
+                         SelectedNodeType="@_selectedNodeType"
+                         Steps="StepCatalog.GetAll()"
+                         NodeConfig="_selectedNodeConfig"
+                         OnConfigChanged="HandleConfigChanged" />
+    </div>
+
+    <ExecutionPanel IsVisible="_showExecutionPanel"
+                    OnToggle="() => _showExecutionPanel = !_showExecutionPanel"
+                    LogEntries="_logEntries" />
+</div>
+
+@code {
+    private DotNetObjectReference<WorkflowDesigner>? _dotNetRef;
+    private string _workflowName = "Untitled Workflow";
+    private bool _dirty;
+    private string? _selectedNodeId;
+    private string? _selectedNodeType;
+    private Dictionary<string, object?> _selectedNodeConfig = new();
+    private bool _showExecutionPanel;
+    private List<string> _logEntries = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("workflowEditor.initialize", "workflow-canvas", _dotNetRef, Array.Empty<object>(), Array.Empty<object>());
+        }
+    }
+
+    [JSInvokable]
+    public void OnNodeSelected(string? nodeId, string? nodeType, Dictionary<string, object?>? config)
+    {
+        _selectedNodeId = nodeId;
+        _selectedNodeType = nodeType;
+        _selectedNodeConfig = config ?? new();
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnNodeAdded(string nodeId, string nodeType, double x, double y)
+    {
+        _dirty = true;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnNodeRemoved(string nodeId)
+    {
+        if (_selectedNodeId == nodeId) { _selectedNodeId = null; _selectedNodeType = null; }
+        _dirty = true;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnEdgeCreated(string sourceId, string targetId) { _dirty = true; StateHasChanged(); }
+
+    [JSInvokable]
+    public void OnEdgeRemoved(string edgeId) { _dirty = true; StateHasChanged(); }
+
+    [JSInvokable]
+    public void OnCanvasChanged() { _dirty = true; StateHasChanged(); }
+
+    private async Task HandleNew()
+    {
+        _workflowName = "Untitled Workflow";
+        _dirty = false;
+        _selectedNodeId = null;
+        _selectedNodeType = null;
+        await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", Array.Empty<object>(), Array.Empty<object>());
+    }
+
+    private async Task HandleSave()
+    {
+        var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
+        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Saved workflow: {_workflowName}");
+        _dirty = false;
+    }
+
+    private async Task HandleRun()
+    {
+        _showExecutionPanel = true;
+        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Running workflow: {_workflowName}...");
+        var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
+        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Workflow execution started (mock)");
+    }
+
+    private async Task HandleExport()
+    {
+        var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
+        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Exported workflow definition");
+    }
+
+    private async Task HandleFitView()
+    {
+        await JS.InvokeVoidAsync("workflowEditor.fitView");
+    }
+
+    private async Task HandleConfigChanged(Dictionary<string, object?> config)
+    {
+        _selectedNodeConfig = config;
+        _dirty = true;
+        if (_selectedNodeId is not null)
+        {
+            await JS.InvokeVoidAsync("workflowEditor.updateNode", _selectedNodeId, config);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _dotNetRef?.Dispose();
+        try { await JS.InvokeVoidAsync("workflowEditor.destroy"); } catch { }
+    }
+}

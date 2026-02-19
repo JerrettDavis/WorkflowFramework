@@ -50,6 +50,10 @@
     <Project Path="src/WorkflowFramework.Serialization/WorkflowFramework.Serialization.csproj" />
     <Project Path="src/WorkflowFramework.Cli/WorkflowFramework.Cli.csproj" />
     <Project Path="src/WorkflowFramework.Dashboard/WorkflowFramework.Dashboard.csproj" />
+    <Project Path="src/WorkflowFramework.Dashboard.AppHost/WorkflowFramework.Dashboard.AppHost.csproj" />
+    <Project Path="src/WorkflowFramework.Dashboard.ServiceDefaults/WorkflowFramework.Dashboard.ServiceDefaults.csproj" />
+    <Project Path="src/WorkflowFramework.Dashboard.Api/WorkflowFramework.Dashboard.Api.csproj" />
+    <Project Path="src/WorkflowFramework.Dashboard.Web/WorkflowFramework.Dashboard.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />
