@@ -9,6 +9,9 @@
     <Description>CLI tool for scaffolding, running, listing, and validating WorkflowFramework workflows.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="WorkflowFramework.Cli.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
     <ProjectReference Include="..\WorkflowFramework.Serialization\WorkflowFramework.Serialization.csproj" />
   </ItemGroup>

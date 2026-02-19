@@ -1,5 +1,6 @@
 using FluentAssertions;
 using WorkflowFramework.Cli.Commands;
+using Xunit;
 
 namespace WorkflowFramework.Cli.Tests;
 
