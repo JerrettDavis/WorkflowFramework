@@ -20,7 +20,9 @@
         <Description>A fluent, extensible workflow/pipeline engine for .NET with async-first design, middleware, branching, parallel execution, saga/compensation, and rich extensibility.</Description>
         <PackageTags>workflow;pipeline;fluent;fluent-api;dotnet;async;middleware;saga;orchestration</PackageTags>
 
+        <Copyright>© $([System.DateTime]::Now.Year) Jerrett Davis. All rights reserved.</Copyright>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageIcon>icon.png</PackageIcon>
 
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/JerrettDavis/WorkflowFramework</RepositoryUrl>
@@ -43,6 +45,7 @@
 
     <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\"/>
+        <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="\"/>
     </ItemGroup>
 
     <ItemGroup>

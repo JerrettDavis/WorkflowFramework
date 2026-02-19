@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="connectionString">The PostgreSQL connection string.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddWorkflowPostgreSql(
+    public static IServiceCollection AddPostgreSqlPersistence(
         this IServiceCollection services,
         string connectionString)
     {
