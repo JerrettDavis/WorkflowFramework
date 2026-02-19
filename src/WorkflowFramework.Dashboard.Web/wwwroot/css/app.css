@@ -1,5 +1,16 @@
 .toolbar-btn {
-    @apply px-2 py-1 text-xs text-gray-300 hover:text-white hover:bg-gray-700 rounded transition-colors;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #d1d5db;
+    border-radius: 4px;
+    transition: all 0.15s;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+.toolbar-btn:hover {
+    color: white;
+    background: #374151;
 }
 
 /* React Flow overrides for dark theme */
