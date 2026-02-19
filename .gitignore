@@ -43,3 +43,6 @@ BenchmarkDotNet.Artifacts/
 # OS files
 .DS_Store
 Thumbs.db
+
+docs/_site/
+docs/api/

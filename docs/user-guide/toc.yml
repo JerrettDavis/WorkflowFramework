@@ -1,40 +1,76 @@
-﻿- name: Branching
-  href: branching.md
-- name: Configuration
-  href: configuration.md
-- name: Core Concepts
-  href: core-concepts.md
-- name: Dependency Injection
-  href: dependency-injection.md
-- name: Diagnostics
-  href: diagnostics.md
-- name: Error Handling
-  href: error-handling.md
-- name: Extensibility
-  href: extensibility.md
-- name: Fluent Builder
-  href: fluent-builder.md
 - name: Getting Started
   href: getting-started.md
-- name: Loops
-  href: loops.md
-- name: Middleware
-  href: middleware.md
-- name: Parallel
-  href: parallel.md
-- name: Persistence
-  href: persistence.md
+- name: Core Concepts
+  href: core-concepts.md
+
+- name: Building Workflows
+  items:
+    - name: Fluent Builder
+      href: fluent-builder.md
+    - name: Branching
+      href: branching.md
+    - name: Loops
+      href: loops.md
+    - name: Parallel Execution
+      href: parallel.md
+    - name: Typed Pipelines
+      href: typed-pipelines.md
+    - name: Dynamic Expressions
+      href: expressions.md
+
+- name: Reliability & Operations
+  items:
+    - name: Error Handling
+      href: error-handling.md
+    - name: Middleware
+      href: middleware.md
+    - name: Resilience (Polly)
+      href: resilience.md
+    - name: Persistence
+      href: persistence.md
+    - name: Scheduling
+      href: scheduling.md
+    - name: Hosting
+      href: hosting.md
+
+- name: Integration
+  items:
+    - name: Enterprise Integration Patterns
+      href: integration-patterns.md
+    - name: Connectors
+      href: connectors.md
+    - name: Data Mapping
+      href: data-mapping.md
+    - name: Event-Driven Workflows
+      href: events.md
+    - name: Reactive Extensions
+      href: reactive.md
+
+- name: AI & Human Tasks
+  items:
+    - name: AI Agents
+      href: ai-agents.md
+    - name: Human-in-the-Loop
+      href: human-tasks.md
+
+- name: Advanced
+  items:
+    - name: Configuration
+      href: configuration.md
+    - name: Dependency Injection
+      href: dependency-injection.md
+    - name: Diagnostics
+      href: diagnostics.md
+    - name: Extensibility
+      href: extensibility.md
+    - name: Validation
+      href: validation.md
+    - name: Versioning
+      href: versioning.md
+    - name: Visualization
+      href: visualization.md
+    - name: Testing
+      href: testing.md
+
 - name: Samples
   href: samples.md
-- name: Scheduling
-  href: scheduling.md
-- name: Testing
-  href: testing.md
-- name: Typed Pipelines
-  href: typed-pipelines.md
-- name: Validation
-  href: validation.md
-- name: Versioning
-  href: versioning.md
-- name: Visualization
-  href: visualization.md
