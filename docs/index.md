@@ -46,6 +46,14 @@ A fluent, extensible workflow and pipeline engine for .NET.
 - [AI Agents](user-guide/ai-agents.md) — LLM calls, AI routing decisions, autonomous planning (Ollama, Semantic Kernel)
 - [Human-in-the-Loop](user-guide/human-tasks.md) — Approval gates, task inbox, escalation, delegation
 
+## Agentic
+
+- [Agentic Workflows](user-guide/agents.md) — Autonomous agent loops, tool registries, context sources
+- [Hook Lifecycle System](user-guide/hooks.md) — Intercept, audit, and control agent execution
+- [Context Compaction](user-guide/compaction.md) — Manage long conversations with auto-compaction and checkpointing
+- [MCP Server Integration](user-guide/mcp.md) — Connect to Model Context Protocol servers
+- [Agent Skills](user-guide/skills.md) — Load reusable agent instructions from SKILL.md files
+
 ## Advanced
 
 - [Configuration](user-guide/configuration.md) — YAML/JSON workflow definitions
@@ -73,6 +81,9 @@ Steps → Middleware → Context → Runner
 |---------|-------------|
 | `WorkflowFramework` | Core engine, builder, runner |
 | `WorkflowFramework.Extensions.AI` | LLM/Agent integration |
+| `WorkflowFramework.Extensions.Agents` | Autonomous agent loops, tool registries |
+| `WorkflowFramework.Extensions.Agents.Mcp` | MCP server integration |
+| `WorkflowFramework.Extensions.Agents.Skills` | Agent Skills standard support |
 | `WorkflowFramework.Extensions.Integration` | Enterprise Integration Patterns |
 | `WorkflowFramework.Extensions.DataMapping` | Data transformation engine |
 | `WorkflowFramework.Extensions.Connectors.*` | External system connectors |

@@ -53,6 +53,19 @@
     - name: Human-in-the-Loop
       href: human-tasks.md
 
+- name: Agentic
+  items:
+    - name: Agentic Workflows
+      href: agents.md
+    - name: Hook Lifecycle System
+      href: hooks.md
+    - name: Context Compaction
+      href: compaction.md
+    - name: MCP Server Integration
+      href: mcp.md
+    - name: Agent Skills
+      href: skills.md
+
 - name: Advanced
   items:
     - name: Configuration
