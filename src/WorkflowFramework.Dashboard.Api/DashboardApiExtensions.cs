@@ -20,6 +20,7 @@ public static class DashboardApiExtensions
         services.AddSingleton<IWorkflowDefinitionStore, InMemoryWorkflowDefinitionStore>();
         services.AddSingleton(StepTypeRegistry.CreateDefault());
         services.AddSingleton<WorkflowRunService>();
+        services.AddSingleton<IWorkflowTemplateLibrary, InMemoryWorkflowTemplateLibrary>();
         return services;
     }
 
@@ -32,6 +33,7 @@ public static class DashboardApiExtensions
         MapStepEndpoints(endpoints);
         MapRunEndpoints(endpoints);
         MapPluginEndpoints(endpoints);
+        MapTemplateEndpoints(endpoints);
         return endpoints;
     }
 
@@ -164,5 +166,43 @@ public static class DashboardApiExtensions
             };
             return Results.Ok(connectors);
         }).WithTags("Connectors").WithName("ListConnectors");
+    }
+
+    private static void MapTemplateEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        var group = endpoints.MapGroup("/api/templates").WithTags("Templates");
+
+        group.MapGet("/", async (string? category, string? tag, IWorkflowTemplateLibrary library, CancellationToken ct) =>
+        {
+            var templates = await library.GetTemplatesAsync(category, tag, ct);
+            return Results.Ok(templates);
+        }).WithName("ListTemplates");
+
+        group.MapGet("/categories", async (IWorkflowTemplateLibrary library, CancellationToken ct) =>
+        {
+            var categories = await library.GetCategoriesAsync(ct);
+            return Results.Ok(categories);
+        }).WithName("ListTemplateCategories");
+
+        group.MapGet("/{id}", async (string id, IWorkflowTemplateLibrary library, CancellationToken ct) =>
+        {
+            var template = await library.GetTemplateAsync(id, ct);
+            return template is null ? Results.NotFound() : Results.Ok(template);
+        }).WithName("GetTemplate");
+
+        group.MapPost("/{id}/use", async (string id, IWorkflowTemplateLibrary library, IWorkflowDefinitionStore store, CancellationToken ct) =>
+        {
+            var template = await library.GetTemplateAsync(id, ct);
+            if (template is null)
+                return Results.NotFound();
+
+            var request = new CreateWorkflowRequest
+            {
+                Description = template.Description,
+                Definition = template.Definition
+            };
+            var created = await store.CreateAsync(request, ct);
+            return Results.Created($"/api/workflows/{created.Id}", created);
+        }).WithName("UseTemplate");
     }
 }
