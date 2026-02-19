@@ -2,7 +2,7 @@
     <PropertyGroup>
         <TargetFrameworks>netstandard2.0;netstandard2.1;net8.0;net9.0;net10.0</TargetFrameworks>
         <TargetFrameworks Condition="$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests')) OR $([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests.Common')) OR $([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Tests.Integration')) OR $([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Benchmarks')) OR $([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Samples'))">net8.0;net9.0;net10.0</TargetFrameworks>
-        <TargetFrameworks Condition="$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Generators'))">netstandard2.0</TargetFrameworks>
+        <TargetFrameworks Condition="$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Generators')) OR $([System.String]::Copy('$(MSBuildProjectName)').EndsWith('.Analyzers'))">netstandard2.0</TargetFrameworks>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <LangVersion>preview</LangVersion>
