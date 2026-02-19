@@ -49,9 +49,9 @@ public sealed class TemplateSteps
     [When("I select a template")]
     public async Task WhenISelectATemplate()
     {
+        // Use JS click to bypass viewport issues with modal overlays
         var template = Page.Locator("[data-testid='template-card']").First;
-        if (await template.IsVisibleAsync())
-            await template.ClickAsync();
+        await template.EvaluateAsync("el => el.click()");
     }
 
     [When("I click {string}")]

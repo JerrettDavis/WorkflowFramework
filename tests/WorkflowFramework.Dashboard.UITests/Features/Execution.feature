@@ -10,7 +10,7 @@ Feature: Workflow Execution
     Then the execution panel should appear
     And I should see step status updates
 
-  @screenshot:run-history @screenshot:overview
+  @screenshot:overview
   Scenario: View run history
     Given the dashboard is running
     And I have completed workflow runs

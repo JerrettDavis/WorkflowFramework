@@ -33,7 +33,7 @@ public sealed class BrowserHooks
         _scenarioContext.Set(page);
     }
 
-    [AfterScenario]
+    [AfterScenario(Order = 20000)]
     public async Task ClosePage()
     {
         if (_scenarioContext.TryGetValue<IPage>(out var page))

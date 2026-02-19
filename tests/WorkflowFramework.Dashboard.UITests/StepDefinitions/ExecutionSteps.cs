@@ -50,10 +50,14 @@ public sealed class ExecutionSteps
         await openBtn.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { Timeout = 5_000 });
-        var item = Page.Locator("[data-testid='workflow-list']").Locator("text=Valid Test Workflow").First;
-        if (await item.IsVisibleAsync())
-            await item.ClickAsync();
-        await Page.WaitForTimeoutAsync(1000);
+        // Click on the workflow item in the list dialog
+        var dialogContent = Page.Locator("[data-testid='workflow-list']");
+        var item = dialogContent.Locator("div.cursor-pointer", new LocatorLocatorOptions { HasText = "Valid Test Workflow" }).First;
+        await item.ClickAsync();
+        // Wait for the dialog to close
+        await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
+            new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 10_000 });
+        await Page.WaitForTimeoutAsync(500);
     }
 
     [When("I run the workflow")]
