@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using WorkflowFramework.Extensions.AI;
 using WorkflowFramework.Extensions.DependencyInjection;
+#pragma warning disable CA1860 // Avoid using 'Enumerable.Any()' extension method
 using WorkflowFramework.Samples.TaskStream.Agents;
 using WorkflowFramework.Samples.TaskStream.Hooks;
 using WorkflowFramework.Samples.TaskStream.Models;
@@ -22,7 +23,8 @@ public static class TaskStreamServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddTaskStream(
         this IServiceCollection services,
-        IEnumerable<SourceMessage> sampleMessages)
+        IEnumerable<SourceMessage> sampleMessages,
+        IEnumerable<string>? args = null)
     {
         // Core framework
         services.AddWorkflowFramework();
@@ -47,9 +49,19 @@ public static class TaskStreamServiceCollectionExtensions
         services.AddSingleton<IAgentTool, DeploymentTool>();
         services.AddSingleton<IAgentTool, FileSystemTool>();
 
-        // Agent provider
-        services.AddSingleton<IAgentProvider>(sp =>
-            new TaskStreamAgentProvider(sp.GetServices<IAgentTool>()));
+        // Agent provider — use Ollama if requested, otherwise rule-based mock
+        var argsList = args?.ToList() ?? [];
+        var useOllama = Environment.GetEnvironmentVariable("USE_OLLAMA")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+                        || argsList.Contains("--use-ollama", StringComparer.OrdinalIgnoreCase);
+        if (useOllama)
+        {
+            services.AddSingleton<IAgentProvider>(new OllamaAgentProvider(new OllamaOptions()));
+        }
+        else
+        {
+            services.AddSingleton<IAgentProvider>(sp =>
+                new TaskStreamAgentProvider(sp.GetServices<IAgentTool>()));
+        }
 
         // Steps
         services.AddTransient<CollectSourcesStep>();

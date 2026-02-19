@@ -35,7 +35,7 @@ var sampleMessages = new List<SourceMessage>
 
 // 2. Set up DI
 var services = new ServiceCollection();
-services.AddTaskStream(sampleMessages);
+services.AddTaskStream(sampleMessages, args);
 using var sp = services.BuildServiceProvider();
 
 // 3. Run the pipeline
