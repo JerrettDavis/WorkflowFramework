@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Serialization</RootNamespace>
+    <Description>JSON and YAML workflow serialization for WorkflowFramework (no external dependencies).</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1'">
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
+</Project>
