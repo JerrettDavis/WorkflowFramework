@@ -46,6 +46,7 @@
     <Project Path="src/WorkflowFramework.Extensions.Agents.Skills/WorkflowFramework.Extensions.Agents.Skills.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Persistence.PostgreSQL/WorkflowFramework.Extensions.Persistence.PostgreSQL.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Persistence.SqlServer/WorkflowFramework.Extensions.Persistence.SqlServer.csproj" />
+    <Project Path="src/WorkflowFramework.Serialization/WorkflowFramework.Serialization.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />

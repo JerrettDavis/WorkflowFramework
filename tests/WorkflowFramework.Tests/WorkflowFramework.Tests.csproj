@@ -39,6 +39,7 @@
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Agents.Skills\WorkflowFramework.Extensions.Agents.Skills.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Persistence.PostgreSQL\WorkflowFramework.Extensions.Persistence.PostgreSQL.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Persistence.SqlServer\WorkflowFramework.Extensions.Persistence.SqlServer.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Serialization\WorkflowFramework.Serialization.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
