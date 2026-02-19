@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Persistence.SqlServer</RootNamespace>
+    <Description>SQL Server persistence provider for WorkflowFramework using Entity Framework Core.</Description>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Persistence.EntityFramework\WorkflowFramework.Extensions.Persistence.EntityFramework.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+</Project>
