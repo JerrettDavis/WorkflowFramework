@@ -1,4 +1,4 @@
-﻿{
+{
   "metadata": [
     {
       "src": [
@@ -19,8 +19,15 @@
     "dest": "_site",
     "globalMetadata": {
       "_appTitle": "WorkflowFramework",
-      "_appFooter": "WorkflowFramework - MIT License",
-      "_enableSearch": true
+      "_appFooter": "WorkflowFramework — MIT License",
+      "_enableSearch": true,
+      "_gitContribute": {
+        "repo": "https://github.com/JerrettDavis/WorkflowFramework",
+        "branch": "main",
+        "apiSpecFolder": "docs/api"
+      },
+      "_appLogoPath": "",
+      "_disableContribution": false
     },
     "template": ["default", "modern"]
   }

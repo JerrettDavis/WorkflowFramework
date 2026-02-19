@@ -1,4 +1,6 @@
+#pragma warning disable SKEXP0070
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.SemanticKernel;
 using WorkflowFramework.Extensions.AI;
 using WorkflowFramework.Extensions.DependencyInjection;
 #pragma warning disable CA1860 // Avoid using 'Enumerable.Any()' extension method
@@ -49,11 +51,28 @@ public static class TaskStreamServiceCollectionExtensions
         services.AddSingleton<IAgentTool, DeploymentTool>();
         services.AddSingleton<IAgentTool, FileSystemTool>();
 
-        // Agent provider — use Ollama if requested, otherwise rule-based mock
+        // Agent provider — use SK, Ollama, or rule-based mock
         var argsList = args?.ToList() ?? [];
         var useOllama = Environment.GetEnvironmentVariable("USE_OLLAMA")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
                         || argsList.Contains("--use-ollama", StringComparer.OrdinalIgnoreCase);
-        if (useOllama)
+        var useSemanticKernel = Environment.GetEnvironmentVariable("USE_SEMANTIC_KERNEL")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true
+                                || argsList.Contains("--use-sk", StringComparer.OrdinalIgnoreCase);
+        if (useSemanticKernel)
+        {
+            services.AddSingleton<IAgentProvider>(sp =>
+            {
+                var tools = sp.GetServices<IAgentTool>();
+                var plugin = new TaskStreamPlugin(tools);
+
+                var builder = Kernel.CreateBuilder();
+                builder.AddOllamaChatCompletion("qwen3:30b-instruct", new Uri("http://localhost:11434"));
+                builder.Plugins.AddFromObject(plugin, "TaskStream");
+                var kernel = builder.Build();
+
+                return new SemanticKernelAgentProvider(kernel);
+            });
+        }
+        else if (useOllama)
         {
             services.AddSingleton<IAgentProvider>(new OllamaAgentProvider(new OllamaOptions()));
         }

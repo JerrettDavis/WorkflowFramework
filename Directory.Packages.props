@@ -52,6 +52,10 @@
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="$(MicrosoftExtensionsVersion)" />
 
+    <!-- Semantic Kernel -->
+    <PackageVersion Include="Microsoft.SemanticKernel" Version="1.71.0" />
+    <PackageVersion Include="Microsoft.SemanticKernel.Connectors.Ollama" Version="1.71.0-alpha" />
+
     <!-- Benchmarks -->
     <PackageVersion Include="BenchmarkDotNet" Version="0.15.8" />
   </ItemGroup>

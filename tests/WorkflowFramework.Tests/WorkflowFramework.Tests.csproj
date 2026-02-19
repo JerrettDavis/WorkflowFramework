@@ -44,5 +44,6 @@
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.SemanticKernel" />
   </ItemGroup>
 </Project>
