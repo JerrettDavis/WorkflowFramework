@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\src\WorkflowFramework.Testing\WorkflowFramework.Testing.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Persistence.EntityFramework\WorkflowFramework.Extensions.Persistence.EntityFramework.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Distributed\WorkflowFramework.Extensions.Distributed.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Distributed.PostgreSQL\WorkflowFramework.Extensions.Distributed.PostgreSQL.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Hosting\WorkflowFramework.Extensions.Hosting.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Http\WorkflowFramework.Extensions.Http.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Plugins\WorkflowFramework.Extensions.Plugins.csproj" />

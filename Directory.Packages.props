@@ -47,6 +47,9 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.6" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
 
+    <!-- PostgreSQL -->
+    <PackageVersion Include="Npgsql" Version="9.0.3" />
+
     <!-- Redis -->
     <PackageVersion Include="StackExchange.Redis" Version="2.8.41" />
 
