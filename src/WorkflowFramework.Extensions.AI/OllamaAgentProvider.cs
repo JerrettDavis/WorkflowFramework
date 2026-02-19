@@ -90,7 +90,7 @@ public sealed class OllamaAgentProvider : IAgentProvider, IDisposable
                     Description = t.Description,
                     Parameters = string.IsNullOrEmpty(t.ParametersSchema)
                         ? null
-                        : JsonSerializer.Deserialize<JsonElement>(t.ParametersSchema)
+                        : JsonSerializer.Deserialize<JsonElement>(t.ParametersSchema!)
                 }
             }).ToList();
         }
@@ -176,7 +176,7 @@ public sealed class OllamaAgentProvider : IAgentProvider, IDisposable
         using var httpResponse = await _http.PostAsync(url, content, ct).ConfigureAwait(false);
         httpResponse.EnsureSuccessStatusCode();
 
-        var responseJson = await httpResponse.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
+        var responseJson = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);
         return JsonSerializer.Deserialize<OllamaChatResponse>(responseJson, JsonOptions)
                ?? throw new InvalidOperationException("Ollama returned null response");
     }

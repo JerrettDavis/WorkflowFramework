@@ -6,4 +6,7 @@
   <ItemGroup>
     <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1'">
+    <PackageReference Include="System.Text.Json" />
+  </ItemGroup>
 </Project>

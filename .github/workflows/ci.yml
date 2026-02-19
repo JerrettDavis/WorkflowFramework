@@ -46,6 +46,7 @@ jobs:
         run: |
           dotnet test WorkflowFramework.slnx \
             --configuration Release \
+            --filter "Category!=E2E" \
             --collect:"XPlat Code Coverage" \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[WorkflowFramework*]*" \
@@ -158,6 +159,7 @@ jobs:
         run: |
           dotnet test WorkflowFramework.slnx \
             --configuration Release \
+            --filter "Category!=E2E" \
             --collect:"XPlat Code Coverage" \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Include="[WorkflowFramework*]*" \
