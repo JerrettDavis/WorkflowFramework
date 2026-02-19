@@ -1,10 +1,11 @@
 @inject DashboardApiClient Api
 
-<div class="w-56 bg-gray-800 border-r border-gray-700 overflow-y-auto flex-shrink-0">
+<div class="w-56 bg-gray-800 border-r border-gray-700 overflow-y-auto flex-shrink-0" data-testid="step-palette">
     <div class="p-3 border-b border-gray-700">
         <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Steps</h2>
         <input type="text" placeholder="Search steps..."
                @oninput="e => _filter = e.Value?.ToString() ?? string.Empty"
+               data-testid="step-search"
                class="mt-2 w-full bg-gray-700 text-gray-200 text-xs px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
     </div>
 
@@ -22,7 +23,7 @@
                 </h3>
                 @foreach (var step in group)
                 {
-                    <div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-grab hover:bg-gray-700 text-sm"
+                    <div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-grab hover:bg-gray-700 text-sm" data-testid="step-item"
                          draggable="true"
                          data-step-type="@step.Type"
                          data-step-name="@step.Name"

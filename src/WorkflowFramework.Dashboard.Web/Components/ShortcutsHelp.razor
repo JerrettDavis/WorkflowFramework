@@ -2,7 +2,7 @@
 
 @if (IsVisible)
 {
-    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" @onclick="Close">
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" data-testid="shortcuts-modal" @onclick="Close">
         <div class="bg-gray-800 rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-gray-700" @onclick:stopPropagation>
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-white">⌨️ Keyboard Shortcuts</h2>

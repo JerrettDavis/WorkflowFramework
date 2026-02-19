@@ -2,7 +2,7 @@
 
 @if (IsVisible)
 {
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60" data-testid="template-browser">
         <div class="bg-gray-800 rounded-lg shadow-xl w-[900px] max-h-[80vh] flex flex-col border border-gray-600">
             <div class="flex items-center justify-between px-5 py-3 border-b border-gray-700">
                 <h2 class="text-lg font-semibold text-white">New from Template</h2>
@@ -23,7 +23,7 @@
                     @foreach (var cat in _categories)
                     {
                         <button @onclick='() => _selectedCategory = cat'
-                                class="@CategoryBtnClass(cat)">@cat</button>
+                                class="@CategoryBtnClass(cat)" data-testid="template-category">@cat</button>
                     }
                 </div>
 
@@ -62,7 +62,7 @@
                             @foreach (var t in filtered)
                             {
                                 <div @onclick="() => SelectTemplate(t)"
-                                     class="bg-gray-750 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors">
+                                     class="bg-gray-750 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" data-testid="template-card">
                                     <h4 class="text-white font-semibold text-sm mb-1">@t.Name</h4>
                                     <p class="text-gray-400 text-xs mb-2 line-clamp-2">@t.Description</p>
                                     <div class="flex items-center gap-2">

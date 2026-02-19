@@ -45,6 +45,38 @@ public sealed class StepDefinitionApiDto
     [JsonPropertyName("steps")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<StepDefinitionApiDto>? Steps { get; set; }
+
+    [JsonPropertyName("then")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public StepDefinitionApiDto? Then { get; set; }
+
+    [JsonPropertyName("else")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public StepDefinitionApiDto? Else { get; set; }
+
+    [JsonPropertyName("inner")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public StepDefinitionApiDto? Inner { get; set; }
+
+    [JsonPropertyName("maxAttempts")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public int MaxAttempts { get; set; }
+
+    [JsonPropertyName("timeoutSeconds")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double TimeoutSeconds { get; set; }
+
+    [JsonPropertyName("tryBody")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<StepDefinitionApiDto>? TryBody { get; set; }
+
+    [JsonPropertyName("catchTypes")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<string>? CatchTypes { get; set; }
+
+    [JsonPropertyName("finallyBody")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public List<StepDefinitionApiDto>? FinallyBody { get; set; }
 }
 
 public sealed class CreateWorkflowRequest

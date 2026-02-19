@@ -1,5 +1,6 @@
-<div class="flex items-center gap-2 px-4 py-2 bg-gray-800 border-b border-gray-700">
+<div class="flex items-center gap-2 px-4 py-2 bg-gray-800 border-b border-gray-700" data-testid="toolbar">
     <input type="text" value="@WorkflowName"
+           data-testid="workflow-name"
            @oninput="e => OnWorkflowNameChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty)"
            class="bg-gray-700 text-white px-3 py-1 rounded text-sm font-semibold w-56 focus:outline-none focus:ring-2 focus:ring-blue-500" />
 
@@ -10,27 +11,27 @@
 
     <div class="w-px h-6 bg-gray-600 mx-1"></div>
 
-    <button @onclick="OnNew" class="toolbar-btn" title="New">📄 New</button>
-    <button @onclick="OnOpen" class="toolbar-btn" title="Open">📂 Open</button>
-    <button @onclick="OnSave" class="toolbar-btn" title="Save">💾 Save</button>
-    <button @onclick="OnTemplates" class="toolbar-btn" title="New from Template">📋 Templates</button>
+    <button @onclick="OnNew" class="toolbar-btn" title="New" data-testid="btn-new">📄 New</button>
+    <button @onclick="OnOpen" class="toolbar-btn" title="Open" data-testid="btn-open">📂 Open</button>
+    <button @onclick="OnSave" class="toolbar-btn" title="Save" data-testid="btn-save">💾 Save</button>
+    <button @onclick="OnTemplates" class="toolbar-btn" title="New from Template" data-testid="btn-templates">📋 Templates</button>
 
     <div class="w-px h-6 bg-gray-600 mx-1"></div>
 
-    <button @onclick="OnValidate" class="toolbar-btn text-blue-400 relative" title="Validate">
+    <button @onclick="OnValidate" class="toolbar-btn text-blue-400 relative" title="Validate" data-testid="btn-validate">
         🔍 Validate
         @if (ValidationErrorCount > 0)
         {
-            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">@ValidationErrorCount</span>
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center" data-testid="validation-badge">@ValidationErrorCount</span>
         }
     </button>
-    <button @onclick="OnRun" class="toolbar-btn text-green-400" title="Run">▶ Run</button>
+    <button @onclick="OnRun" class="toolbar-btn text-green-400" title="Run" data-testid="btn-run">▶ Run</button>
 
     <div class="w-px h-6 bg-gray-600 mx-1"></div>
 
-    <button @onclick="OnFitView" class="toolbar-btn" title="Fit View">🔍 Fit</button>
-    <button @onclick="OnExportJson" class="toolbar-btn" title="Export JSON">📤 JSON</button>
-    <button @onclick="OnExportYaml" class="toolbar-btn" title="Export YAML">📤 YAML</button>
+    <button @onclick="OnFitView" class="toolbar-btn" title="Fit View" data-testid="btn-fit">🔍 Fit</button>
+    <button @onclick="OnExportJson" class="toolbar-btn" title="Export JSON" data-testid="btn-export-json">📤 JSON</button>
+    <button @onclick="OnExportYaml" class="toolbar-btn" title="Export YAML" data-testid="btn-export-yaml">📤 YAML</button>
     <label class="toolbar-btn cursor-pointer" title="Import">
         📥 Import
         <InputFile OnChange="OnImportFile" style="display:none" accept=".json,.yaml,.yml" />

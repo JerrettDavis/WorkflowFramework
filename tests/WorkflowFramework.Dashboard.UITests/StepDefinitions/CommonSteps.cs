@@ -23,7 +23,6 @@ public sealed class CommonSteps
     [Given("the dashboard is running")]
     public async Task GivenTheDashboardIsRunning()
     {
-        // Verify the web app is reachable
         var response = await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
         response.Should().NotBeNull();
         response!.Ok.Should().BeTrue();
@@ -32,17 +31,19 @@ public sealed class CommonSteps
     [When("I navigate to the designer")]
     public async Task WhenINavigateToTheDesigner()
     {
-        await Page.GotoAsync($"{WebUrl}/designer", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        // The designer is at the root — Home.razor renders WorkflowDesigner directly
+        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
         // Wait for canvas to load
-        await Page.WaitForSelectorAsync("#workflow-canvas, [data-testid='workflow-canvas'], .react-flow",
+        await Page.WaitForSelectorAsync("#workflow-canvas",
             new PageWaitForSelectorOptions { Timeout = 15_000 });
     }
 
     [When("I navigate to run history")]
     public async Task WhenINavigateToRunHistory()
     {
-        await Page.GotoAsync($"{WebUrl}/runs", new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
-        await Page.WaitForSelectorAsync("[data-testid='run-history'], .run-history, table",
+        // No separate run history page — execution panel is on the main page
+        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        await Page.WaitForSelectorAsync("[data-testid='execution-panel']",
             new PageWaitForSelectorOptions { Timeout = 10_000 });
     }
 

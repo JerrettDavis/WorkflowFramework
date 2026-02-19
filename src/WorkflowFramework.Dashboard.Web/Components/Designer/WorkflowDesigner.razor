@@ -307,9 +307,7 @@
         _workflowName = saved.Definition.Name;
         _dirty = false;
         _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Loaded template as workflow: {_workflowName}");
-        // Load the workflow definition into canvas - template creates a new workflow
-        // For now just reset canvas; the nodes from template would need to be mapped to canvas format
-        await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", Array.Empty<object>(), Array.Empty<object>());
+        await LoadDefinitionIntoCanvas(saved.Definition);
     }
 
     private async Task HandleWorkflowOpened(SavedWorkflowDefinition saved)
@@ -320,7 +318,172 @@
         _selectedNodeId = null;
         _selectedNodeType = null;
         _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Opened workflow: {_workflowName}");
-        await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", Array.Empty<object>(), Array.Empty<object>());
+        await LoadDefinitionIntoCanvas(saved.Definition);
+    }
+
+    /// <summary>
+    /// Converts a WorkflowDefinitionDto into canvas nodes + edges and loads them into React Flow.
+    /// </summary>
+    private async Task LoadDefinitionIntoCanvas(WorkflowDefinitionDto definition)
+    {
+        var nodes = new List<object>();
+        var edges = new List<object>();
+        int nodeCounter = 0;
+        
+        string NextId() => $"node_{++nodeCounter}";
+
+        // Step type → category/color/icon mapping
+        static (string category, string color, string icon) GetStepVisuals(string type) => type.ToLowerInvariant() switch
+        {
+            "action" => ("Core", "#3b82f6", "⬡"),
+            "conditional" => ("Core", "#3b82f6", "◇"),
+            "parallel" => ("Core", "#3b82f6", "⫘"),
+            "foreach" or "while" or "dowhile" => ("Core", "#3b82f6", "↻"),
+            "retry" => ("Core", "#3b82f6", "🔄"),
+            "trycatch" => ("Core", "#3b82f6", "🛡"),
+            "timeout" => ("Core", "#3b82f6", "⏱"),
+            "delay" => ("Core", "#3b82f6", "⏱"),
+            "saga" => ("Core", "#3b82f6", "📜"),
+            "contentbasedrouter" or "messagefilter" or "splitter" or "aggregator" 
+                or "recipientlist" or "wiretap" or "deadletterchannel" or "enricher" 
+                or "normalizer" or "claimcheck" or "dynamicrouter" or "routingslip"
+                => ("Integration", "#22c55e", "🔀"),
+            "httpstep" => ("HTTP", "#14b8a6", "🌐"),
+            "llmcallstep" or "agentdecisionstep" => ("AI/Agents", "#a855f7", "🤖"),
+            "agentloopstep" or "toolcallstep" => ("AI/Agents", "#a855f7", "🧠"),
+            "datamapstep" or "validatestep" or "schemavalidatestep" => ("Data", "#f97316", "🗺"),
+            "publisheventstep" or "subscribeeventstep" => ("Events", "#eab308", "⚡"),
+            "humantaskstep" or "approvalstep" => ("Human Tasks", "#ec4899", "✅"),
+            _ => ("Core", "#3b82f6", "⬡")
+        };
+
+        int edgeCounter = 0;
+        void AddEdge(string source, string target, string? label = null)
+        {
+            edges.Add(new { id = $"edge_{++edgeCounter}", source, target, label });
+        }
+
+        // Recursively flatten steps into positioned nodes, returning the IDs of entry and exit nodes
+        (string entryId, string exitId) LayoutStep(StepDefinitionApiDto step, double x, double y)
+        {
+            var (cat, color, icon) = GetStepVisuals(step.Type);
+            var nodeId = NextId();
+
+            // For container types, create the main node then layout children
+            if (step.Type.Equals("Conditional", StringComparison.OrdinalIgnoreCase))
+            {
+                nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = new Dictionary<string, object?>() });
+                string lastId = nodeId;
+
+                if (step.Then is not null)
+                {
+                    var (thenEntry, thenExit) = LayoutStep(step.Then, x + 200, y - 60);
+                    AddEdge(nodeId, thenEntry, "then");
+                    lastId = thenExit;
+                }
+                if (step.Else is not null)
+                {
+                    var (elseEntry, elseExit) = LayoutStep(step.Else, x + 200, y + 60);
+                    AddEdge(nodeId, elseEntry, "else");
+                    // Merge node
+                    var mergeId = NextId();
+                    nodes.Add(new { id = mergeId, type = "action", label = "↪ Merge", icon = "↪", category = "Core", color = "#6b7280", x = x + 400, y, config = new Dictionary<string, object?>() });
+                    AddEdge(lastId, mergeId);
+                    AddEdge(elseExit, mergeId);
+                    return (nodeId, mergeId);
+                }
+
+                return (nodeId, lastId);
+            }
+            
+            if (step.Type.Equals("Parallel", StringComparison.OrdinalIgnoreCase) && step.Steps is { Count: > 0 })
+            {
+                nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = new Dictionary<string, object?>() });
+                var joinId = NextId();
+                double branchY = y - ((step.Steps.Count - 1) * 40.0);
+                var branchExits = new List<string>();
+                
+                foreach (var child in step.Steps)
+                {
+                    var (childEntry, childExit) = LayoutStep(child, x + 200, branchY);
+                    AddEdge(nodeId, childEntry);
+                    branchExits.Add(childExit);
+                    branchY += 80;
+                }
+
+                nodes.Add(new { id = joinId, type = "action", label = "↪ Join", icon = "↪", category = "Core", color = "#6b7280", x = x + 400, y, config = new Dictionary<string, object?>() });
+                foreach (var exit in branchExits) AddEdge(exit, joinId);
+                return (nodeId, joinId);
+            }
+
+            if ((step.Type.Equals("Retry", StringComparison.OrdinalIgnoreCase) 
+                || step.Type.Equals("ForEach", StringComparison.OrdinalIgnoreCase)
+                || step.Type.Equals("While", StringComparison.OrdinalIgnoreCase)
+                || step.Type.Equals("DoWhile", StringComparison.OrdinalIgnoreCase)
+                || step.Type.Equals("Saga", StringComparison.OrdinalIgnoreCase))
+                && step.Steps is { Count: > 0 })
+            {
+                nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = new Dictionary<string, object?>() });
+                string lastChild = nodeId;
+                double childX = x + 200;
+                foreach (var child in step.Steps)
+                {
+                    var (childEntry, childExit) = LayoutStep(child, childX, y);
+                    AddEdge(lastChild, childEntry);
+                    lastChild = childExit;
+                    childX += 200;
+                }
+                return (nodeId, lastChild);
+            }
+
+            if (step.Type.Equals("TryCatch", StringComparison.OrdinalIgnoreCase) && step.TryBody is { Count: > 0 })
+            {
+                nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = new Dictionary<string, object?>() });
+                string lastTry = nodeId;
+                double childX = x + 200;
+                foreach (var child in step.TryBody)
+                {
+                    var (childEntry, childExit) = LayoutStep(child, childX, y);
+                    AddEdge(lastTry, childEntry);
+                    lastTry = childExit;
+                    childX += 200;
+                }
+                if (step.FinallyBody is { Count: > 0 })
+                {
+                    foreach (var fin in step.FinallyBody)
+                    {
+                        var (finEntry, finExit) = LayoutStep(fin, childX, y + 80);
+                        AddEdge(lastTry, finEntry);
+                        lastTry = finExit;
+                        childX += 200;
+                    }
+                }
+                return (nodeId, lastTry);
+            }
+
+            // Simple leaf node
+            nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = new Dictionary<string, object?>() });
+            return (nodeId, nodeId);
+        }
+
+        // Layout top-level steps sequentially
+        double currentX = 0;
+        string? previousExit = null;
+
+        foreach (var step in definition.Steps)
+        {
+            var (entryId, exitId) = LayoutStep(step, currentX, 100);
+            if (previousExit is not null) AddEdge(previousExit, entryId);
+            previousExit = exitId;
+            
+            // Advance X based on how many nodes were added at this level
+            currentX += step.Steps?.Count > 0 || step.Then is not null || step.TryBody?.Count > 0 
+                ? 600 
+                : 200;
+        }
+
+        await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", nodes.ToArray(), edges.ToArray());
+        await JS.InvokeVoidAsync("workflowEditor.fitView");
     }
 
     private async Task HandleStepStatusChanged((string StepName, string Status) stepStatus)

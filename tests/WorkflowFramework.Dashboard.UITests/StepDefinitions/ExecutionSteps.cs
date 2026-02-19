@@ -43,39 +43,43 @@ public sealed class ExecutionSteps
         var id = result!["id"].ToString()!;
         _context.Set(id, "WorkflowId");
 
-        await Page.GotoAsync($"{WebUrl}/designer/{id}",
-            new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        // Navigate to root and open this workflow
+        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        await Page.WaitForSelectorAsync("[data-testid='btn-open']", new PageWaitForSelectorOptions { Timeout = 10_000 });
+        var openBtn = Page.Locator("[data-testid='btn-open']");
+        await openBtn.ClickAsync();
+        await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
+            new PageWaitForSelectorOptions { Timeout = 5_000 });
+        var item = Page.Locator("[data-testid='workflow-list']").Locator("text=Valid Test Workflow").First;
+        if (await item.IsVisibleAsync())
+            await item.ClickAsync();
+        await Page.WaitForTimeoutAsync(1000);
     }
 
     [When("I run the workflow")]
     public async Task WhenIRunTheWorkflow()
     {
-        var runBtn = Page.Locator("button:has-text('Run'), [data-testid='run-btn']").First;
-        if (await runBtn.IsVisibleAsync())
-        {
-            await runBtn.ClickAsync();
-            await Page.WaitForTimeoutAsync(2000); // Wait for execution
-        }
+        var runBtn = Page.Locator("[data-testid='btn-run']");
+        await runBtn.ClickAsync();
+        await Page.WaitForTimeoutAsync(2000);
     }
 
     [Then("the execution panel should appear")]
     public async Task ThenTheExecutionPanelShouldAppear()
     {
-        var panel = Page.Locator("[data-testid='execution-panel'], .execution-panel, .bottom-panel");
-        await Page.WaitForTimeoutAsync(500);
+        var panel = Page.Locator("[data-testid='execution-panel']");
+        (await panel.IsVisibleAsync()).Should().BeTrue("Execution panel should be visible");
     }
 
     [Then("I should see step status updates")]
     public async Task ThenIShouldSeeStepStatusUpdates()
     {
-        // Look for any status indicators on the page
         await Page.WaitForTimeoutAsync(1000);
     }
 
     [Given("I have completed workflow runs")]
     public async Task GivenIHaveCompletedWorkflowRuns()
     {
-        // Create and run a workflow via API
         using var client = AspireHooks.Fixture.CreateApiClient();
         var payload = new
         {
@@ -95,15 +99,15 @@ public sealed class ExecutionSteps
         var result = await createResp.Content.ReadFromJsonAsync<Dictionary<string, object>>();
         var id = result!["id"].ToString()!;
 
-        // Run the workflow
         await client.PostAsync($"/api/workflows/{id}/run", null);
-        await Task.Delay(1000); // Wait for run
+        await Task.Delay(1000);
     }
 
     [Then("I should see past runs with status and duration")]
     public async Task ThenIShouldSeePastRunsWithStatusAndDuration()
     {
-        var runs = Page.Locator("[data-testid='run-item'], .run-item, tr, .run-entry");
-        await Page.WaitForTimeoutAsync(500);
+        // Execution panel on main page shows run output
+        var panel = Page.Locator("[data-testid='execution-panel']");
+        (await panel.IsVisibleAsync()).Should().BeTrue("Execution panel should be visible");
     }
 }

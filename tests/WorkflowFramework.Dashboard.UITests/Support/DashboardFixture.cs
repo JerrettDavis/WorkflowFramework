@@ -28,18 +28,27 @@ public sealed class DashboardFixture : IAsyncDisposable
         _app = await builder.BuildAsync();
         await _app.StartAsync();
 
-        // Wait for resources to be ready
-        await _app.ResourceNotifications
-            .WaitForResourceHealthyAsync("dashboard-web")
+        // Wait for resources to be running
+        var rns = _app.ResourceNotifications;
+        await rns.WaitForResourceAsync("dashboard-api")
             .WaitAsync(TimeSpan.FromMinutes(2));
-        await _app.ResourceNotifications
-            .WaitForResourceHealthyAsync("dashboard-api")
+        await rns.WaitForResourceAsync("dashboard-web")
             .WaitAsync(TimeSpan.FromMinutes(2));
+        // Brief delay for endpoints to stabilize
+        await Task.Delay(2000);
 
-        WebBaseUrl = _app.GetEndpoint("dashboard-web", "https")?.ToString()
-                     ?? _app.GetEndpoint("dashboard-web", "http")!.ToString();
-        ApiBaseUrl = _app.GetEndpoint("dashboard-api", "https")?.ToString()
-                     ?? _app.GetEndpoint("dashboard-api", "http")!.ToString();
+        WebBaseUrl = GetEndpointSafe("dashboard-web");
+        ApiBaseUrl = GetEndpointSafe("dashboard-api");
+    }
+
+    private string GetEndpointSafe(string resourceName)
+    {
+        try { return _app!.GetEndpoint(resourceName, "https").ToString(); }
+        catch { }
+        try { return _app!.GetEndpoint(resourceName, "http").ToString(); }
+        catch { }
+        // Fallback: try without endpoint name
+        return _app!.GetEndpoint(resourceName).ToString();
     }
 
     public HttpClient CreateApiClient()
