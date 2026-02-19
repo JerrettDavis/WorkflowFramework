@@ -1,5 +1,7 @@
 @inject IJSRuntime JS
 @inject DashboardApiClient Api
+@inject ToastService Toast
+@inject KeyboardShortcutService Shortcuts
 @implements IAsyncDisposable
 
 <div class="flex flex-col h-full">
@@ -14,7 +16,11 @@
                      OnExportYaml="HandleExportYaml"
                      OnImportFile="HandleImport"
                      OnFitView="HandleFitView"
-                     OnTemplates="() => _showTemplateBrowser = true" />
+                     OnTemplates="() => _showTemplateBrowser = true"
+                     OnValidate="HandleValidate"
+                     ValidationErrorCount="ValidationErrorCount"
+                     OnSettings="() => _showSettings = true"
+                     OnShortcutsHelp="() => _showShortcutsHelp = true" />
 
     <div class="flex flex-1 overflow-hidden">
         <StepPalette />
@@ -27,11 +33,15 @@
                          OnConfigChanged="HandleConfigChanged" />
     </div>
 
+    <ValidationPanel ValidationErrors="_validationErrors"
+                     OnErrorClicked="HandleValidationErrorClicked" />
+
     <ExecutionPanel IsVisible="_showExecutionPanel"
                     OnToggle="() => _showExecutionPanel = !_showExecutionPanel"
                     LogEntries="_logEntries"
                     ActiveRunId="@_activeRunId"
-                    OnRunStatusChanged="HandleRunStatusChanged" />
+                    OnRunStatusChanged="HandleRunStatusChanged"
+                    OnStepStatusChanged="HandleStepStatusChanged" />
 </div>
 
 <TemplateBrowser IsVisible="_showTemplateBrowser"
@@ -42,7 +52,14 @@
                     OnClose="() => _showOpenDialog = false"
                     OnWorkflowSelected="HandleWorkflowOpened" />
 
+<ShortcutsHelp IsVisible="_showShortcutsHelp"
+               OnClose="() => _showShortcutsHelp = false" />
+
+<ToastContainer />
+
 @code {
+    private bool _showShortcutsHelp;
+    private bool _showSettings;
     private DotNetObjectReference<WorkflowDesigner>? _dotNetRef;
     private string _workflowName = "Untitled Workflow";
     private string? _currentWorkflowId;
@@ -55,6 +72,9 @@
     private bool _showTemplateBrowser;
     private bool _showOpenDialog;
     private string? _activeRunId;
+    private List<ValidationErrorDto> _validationErrors = [];
+
+    private int ValidationErrorCount => _validationErrors.Count(e => e.Severity == "Error");
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -62,6 +82,17 @@
         {
             _dotNetRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("workflowEditor.initialize", "workflow-canvas", _dotNetRef, Array.Empty<object>(), Array.Empty<object>());
+
+            // Initialize keyboard shortcuts
+            Shortcuts.Register("Ctrl+S", HandleSave);
+            Shortcuts.Register("Ctrl+N", HandleNew);
+            Shortcuts.Register("Ctrl+O", () => { _showOpenDialog = true; StateHasChanged(); return Task.CompletedTask; });
+            Shortcuts.Register("Ctrl+Enter", HandleRun);
+            Shortcuts.Register("Escape", () => { _showShortcutsHelp = false; _showOpenDialog = false; _showTemplateBrowser = false; _showSettings = false; _selectedNodeId = null; StateHasChanged(); return Task.CompletedTask; });
+            Shortcuts.Register("Delete", () => JS.InvokeVoidAsync("workflowEditor.deleteSelected").AsTask());
+            Shortcuts.Register("Backspace", () => JS.InvokeVoidAsync("workflowEditor.deleteSelected").AsTask());
+            Shortcuts.OnShowHelp += () => { _showShortcutsHelp = true; InvokeAsync(StateHasChanged); return Task.CompletedTask; };
+            await Shortcuts.InitializeAsync();
         }
     }
 
@@ -139,9 +170,52 @@
         }
     }
 
+    private async Task HandleValidate()
+    {
+        try
+        {
+            if (_currentWorkflowId is not null)
+            {
+                var result = await Api.ValidateWorkflowAsync(_currentWorkflowId);
+                _validationErrors = result?.Errors ?? [];
+            }
+            else
+            {
+                var definition = new WorkflowDefinitionDto { Name = _workflowName };
+                var result = await Api.ValidateDefinitionAsync(definition);
+                _validationErrors = result?.Errors ?? [];
+            }
+
+            if (_validationErrors.Count == 0)
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] ✅ Validation passed");
+            else
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Validation: {_validationErrors.Count(e => e.Severity == "Error")} error(s), {_validationErrors.Count(e => e.Severity == "Warning")} warning(s)");
+        }
+        catch (Exception ex)
+        {
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Validation failed: {ex.Message}");
+        }
+    }
+
+    private async Task HandleValidationErrorClicked(string? stepName)
+    {
+        if (stepName is not null)
+        {
+            await JS.InvokeVoidAsync("workflowEditor.selectNodeByName", stepName);
+        }
+    }
+
     private async Task HandleRun()
     {
         _showExecutionPanel = true;
+
+        // Validate before running
+        await HandleValidate();
+        if (_validationErrors.Any(e => e.Severity == "Error"))
+        {
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] ❌ Cannot run: fix validation errors first");
+            return;
+        }
 
         if (_currentWorkflowId is null)
         {
@@ -243,6 +317,15 @@
         _selectedNodeType = null;
         _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Opened workflow: {_workflowName}");
         await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", Array.Empty<object>(), Array.Empty<object>());
+    }
+
+    private async Task HandleStepStatusChanged((string StepName, string Status) stepStatus)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("workflowEditor.updateNodeStatus", stepStatus.StepName, stepStatus.Status);
+        }
+        catch { /* JS interop may fail if canvas not ready */ }
     }
 
     private void HandleRunStatusChanged(string status)

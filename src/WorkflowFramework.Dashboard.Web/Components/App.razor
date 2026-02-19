@@ -7,11 +7,39 @@
     <base href="/" />
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <link href="css/app.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/reactflow@11/dist/style.min.css" rel="stylesheet" />
+    <style>
+        @@keyframes wf-pulse {
+            0%, 100% { box-shadow: 0 0 4px rgba(234,179,8,0.3); }
+            50% { box-shadow: 0 0 16px rgba(234,179,8,0.6); }
+        }
+        @@keyframes wf-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        @@keyframes wf-edge-flow {
+            to { stroke-dashoffset: -10; }
+        }
+        .react-flow__controls button {
+            background: #1f2937 !important;
+            color: #f3f4f6 !important;
+            border-color: #374151 !important;
+        }
+        .react-flow__controls button:hover {
+            background: #374151 !important;
+        }
+    </style>
     <HeadOutlet @rendermode="InteractiveServer" />
 </head>
 <body class="bg-gray-900 text-gray-100 h-screen overflow-hidden">
     <Routes @rendermode="InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
-    <script src="js/workflow-editor.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/reactflow@11/dist/umd/index.js" crossorigin></script>
+    <script src="https://cdn.jsdelivr.net/npm/dagre@0.8.5/dist/dagre.min.js"></script>
+    <script src="js/react-flow-editor.js"></script>
+    <script src="js/keyboard-shortcuts.js"></script>
 </body>
 </html>

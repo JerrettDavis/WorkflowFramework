@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\WorkflowFramework.Dashboard.ServiceDefaults\WorkflowFramework.Dashboard.ServiceDefaults.csproj" />
   </ItemGroup>
 
