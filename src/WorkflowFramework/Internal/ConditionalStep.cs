@@ -3,23 +3,17 @@ namespace WorkflowFramework.Internal;
 /// <summary>
 /// A step that conditionally executes one of two branches.
 /// </summary>
-internal sealed class ConditionalStep : IStep
+internal sealed class ConditionalStep(
+    Func<IWorkflowContext, bool> condition,
+    IStep thenStep,
+    IStep? elseStep
+)
+    : IStep
 {
-    private readonly Func<IWorkflowContext, bool> _condition;
-    private readonly IStep _thenStep;
-    private readonly IStep? _elseStep;
+    private readonly Func<IWorkflowContext, bool> _condition = condition ?? throw new ArgumentNullException(nameof(condition));
+    private readonly IStep _thenStep = thenStep ?? throw new ArgumentNullException(nameof(thenStep));
 
-    public ConditionalStep(
-        Func<IWorkflowContext, bool> condition,
-        IStep thenStep,
-        IStep? elseStep)
-    {
-        _condition = condition ?? throw new ArgumentNullException(nameof(condition));
-        _thenStep = thenStep ?? throw new ArgumentNullException(nameof(thenStep));
-        _elseStep = elseStep;
-    }
-
-    public string Name => $"If({_thenStep.Name}" + (_elseStep != null ? $"/{_elseStep.Name}" : "") + ")";
+    public string Name => $"If({_thenStep.Name}" + (elseStep != null ? $"/{elseStep.Name}" : "") + ")";
 
     public async Task ExecuteAsync(IWorkflowContext context)
     {
@@ -27,9 +21,9 @@ internal sealed class ConditionalStep : IStep
         {
             await _thenStep.ExecuteAsync(context).ConfigureAwait(false);
         }
-        else if (_elseStep != null)
+        else if (elseStep != null)
         {
-            await _elseStep.ExecuteAsync(context).ConfigureAwait(false);
+            await elseStep.ExecuteAsync(context).ConfigureAwait(false);
         }
     }
 }
@@ -37,23 +31,18 @@ internal sealed class ConditionalStep : IStep
 /// <summary>
 /// A typed step that conditionally executes one of two branches.
 /// </summary>
-internal sealed class ConditionalStep<TData> : IStep where TData : class
+internal sealed class ConditionalStep<TData>(
+    Func<IWorkflowContext<TData>, bool> condition,
+    IStep<TData> thenStep,
+    IStep<TData>? elseStep
+)
+    : IStep
+    where TData : class
 {
-    private readonly Func<IWorkflowContext<TData>, bool> _condition;
-    private readonly IStep<TData> _thenStep;
-    private readonly IStep<TData>? _elseStep;
+    private readonly Func<IWorkflowContext<TData>, bool> _condition = condition ?? throw new ArgumentNullException(nameof(condition));
+    private readonly IStep<TData> _thenStep = thenStep ?? throw new ArgumentNullException(nameof(thenStep));
 
-    public ConditionalStep(
-        Func<IWorkflowContext<TData>, bool> condition,
-        IStep<TData> thenStep,
-        IStep<TData>? elseStep)
-    {
-        _condition = condition ?? throw new ArgumentNullException(nameof(condition));
-        _thenStep = thenStep ?? throw new ArgumentNullException(nameof(thenStep));
-        _elseStep = elseStep;
-    }
-
-    public string Name => $"If({_thenStep.Name}" + (_elseStep != null ? $"/{_elseStep.Name}" : "") + ")";
+    public string Name => $"If({_thenStep.Name}" + (elseStep != null ? $"/{elseStep.Name}" : "") + ")";
 
     public async Task ExecuteAsync(IWorkflowContext context)
     {
@@ -62,9 +51,9 @@ internal sealed class ConditionalStep<TData> : IStep where TData : class
         {
             await _thenStep.ExecuteAsync(typedContext).ConfigureAwait(false);
         }
-        else if (_elseStep != null)
+        else if (elseStep != null)
         {
-            await _elseStep.ExecuteAsync(typedContext).ConfigureAwait(false);
+            await elseStep.ExecuteAsync(typedContext).ConfigureAwait(false);
         }
     }
 }

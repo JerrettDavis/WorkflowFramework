@@ -577,18 +577,10 @@ public class IntegrationPatternsTests
 
     #region Helpers
 
-    private sealed class TestStep : IStep
+    private sealed class TestStep(string name, Func<IWorkflowContext, Task> action) : IStep
     {
-        private readonly Func<IWorkflowContext, Task> _action;
-
-        public TestStep(string name, Func<IWorkflowContext, Task> action)
-        {
-            Name = name;
-            _action = action;
-        }
-
-        public string Name { get; }
-        public Task ExecuteAsync(IWorkflowContext context) => _action(context);
+        public string Name { get; } = name;
+        public Task ExecuteAsync(IWorkflowContext context) => action(context);
     }
 
     private sealed class InMemoryClaimCheckStore : IClaimCheckStore

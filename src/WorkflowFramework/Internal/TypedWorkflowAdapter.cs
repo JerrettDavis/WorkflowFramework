@@ -3,14 +3,10 @@ namespace WorkflowFramework.Internal;
 /// <summary>
 /// Adapts an <see cref="IWorkflow"/> to an <see cref="IWorkflow{TData}"/>.
 /// </summary>
-internal sealed class TypedWorkflowAdapter<TData> : IWorkflow<TData> where TData : class
+internal sealed class TypedWorkflowAdapter<TData>(IWorkflow inner) : IWorkflow<TData>
+    where TData : class
 {
-    private readonly IWorkflow _inner;
-
-    public TypedWorkflowAdapter(IWorkflow inner)
-    {
-        _inner = inner ?? throw new ArgumentNullException(nameof(inner));
-    }
+    private readonly IWorkflow _inner = inner ?? throw new ArgumentNullException(nameof(inner));
 
     public string Name => _inner.Name;
 

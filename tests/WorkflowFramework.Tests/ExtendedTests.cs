@@ -218,25 +218,21 @@ steps:
         context.Properties["B_ran"].Should().Be(true);
     }
 
-    private class PropertySetStep : IStep
+    private class PropertySetStep(string name, string key, object value) : IStep
     {
-        private readonly string _key;
-        private readonly object _value;
-        public PropertySetStep(string name, string key, object value) { Name = name; _key = key; _value = value; }
-        public string Name { get; }
+        public string Name { get; } = name;
+
         public Task ExecuteAsync(IWorkflowContext context)
         {
-            context.Properties[_key] = _value;
+            context.Properties[key] = value;
             return Task.CompletedTask;
         }
     }
 
-    private class DelegateTestStep : IStep
+    private class DelegateTestStep(string name, Func<IWorkflowContext, Task> action) : IStep
     {
-        private readonly Func<IWorkflowContext, Task> _action;
-        public DelegateTestStep(string name, Func<IWorkflowContext, Task> action) { Name = name; _action = action; }
-        public string Name { get; }
-        public Task ExecuteAsync(IWorkflowContext context) => _action(context);
+        public string Name { get; } = name;
+        public Task ExecuteAsync(IWorkflowContext context) => action(context);
     }
 }
 
@@ -506,10 +502,9 @@ public class ErrorHandlingEdgeCaseTests
         result.IsSuccess.Should().BeTrue();
     }
 
-    private class TryCatchInnerStep : IStep
+    private class TryCatchInnerStep(Action onCatch) : IStep
     {
-        private readonly Action _onCatch;
-        public TryCatchInnerStep(Action onCatch) { _onCatch = onCatch; }
+        private readonly Action _onCatch = onCatch;
         public string Name => "InnerTryCatch";
         public Task ExecuteAsync(IWorkflowContext context) => Task.CompletedTask;
     }

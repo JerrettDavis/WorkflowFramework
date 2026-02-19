@@ -77,14 +77,13 @@ public class ReactiveExtensionsTests
         act.Should().Throw<ArgumentNullException>();
     }
 
-    private sealed class TestAsyncStep : IAsyncStep<int>
+    private sealed class TestAsyncStep(string name, int[] items) : IAsyncStep<int>
     {
-        private readonly int[] _items;
-        public TestAsyncStep(string name, int[] items) { Name = name; _items = items; }
-        public string Name { get; }
+        public string Name { get; } = name;
+
         public async IAsyncEnumerable<int> ExecuteStreamingAsync(IWorkflowContext context)
         {
-            foreach (var item in _items)
+            foreach (var item in items)
             {
                 await Task.Yield();
                 yield return item;
@@ -92,17 +91,16 @@ public class ReactiveExtensionsTests
         }
     }
 
-    private sealed class CancellableAsyncStep : IAsyncStep<int>
+    private sealed class CancellableAsyncStep(string name, CancellationTokenSource cts) : IAsyncStep<int>
     {
-        private readonly CancellationTokenSource _cts;
-        public CancellableAsyncStep(string name, CancellationTokenSource cts) { Name = name; _cts = cts; }
-        public string Name { get; }
+        public string Name { get; } = name;
+
         public async IAsyncEnumerable<int> ExecuteStreamingAsync(IWorkflowContext context)
         {
             for (var i = 0; ; i++)
             {
-                _cts.Token.ThrowIfCancellationRequested();
-                await Task.Delay(20, _cts.Token);
+                cts.Token.ThrowIfCancellationRequested();
+                await Task.Delay(20, cts.Token);
                 yield return i;
             }
         }

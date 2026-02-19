@@ -30,26 +30,16 @@ public sealed class RedisDistributedLock : IDistributedLock
         return acquired ? new RedisLockHandle(_database, lockKey, lockValue) : null;
     }
 
-    private sealed class RedisLockHandle : IAsyncDisposable
+    private sealed class RedisLockHandle(IDatabase database, string key, string value) : IAsyncDisposable
     {
-        private readonly IDatabase _database;
-        private readonly string _key;
-        private readonly string _value;
         private int _disposed;
-
-        public RedisLockHandle(IDatabase database, string key, string value)
-        {
-            _database = database;
-            _key = key;
-            _value = value;
-        }
 
         public async ValueTask DisposeAsync()
         {
             if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
             {
                 var script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
-                await _database.ScriptEvaluateAsync(script, new RedisKey[] { _key }, new RedisValue[] { _value })
+                await database.ScriptEvaluateAsync(script, new RedisKey[] { key }, new RedisValue[] { value })
                     .ConfigureAwait(false);
             }
         }

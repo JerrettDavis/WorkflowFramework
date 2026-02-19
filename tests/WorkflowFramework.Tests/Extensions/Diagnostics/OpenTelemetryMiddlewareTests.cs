@@ -61,7 +61,10 @@ public class OpenTelemetryMiddlewareTests
     }
 
     private static TestCtx CreateCtx() => new();
-    private class TestStep : IStep { public TestStep(string n) { Name = n; } public string Name { get; } public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
+    private class TestStep(string n) : IStep
+    {
+        public string Name { get; } = n;
+        public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
     private class TestCtx : IWorkflowContext
     {
         public string WorkflowId { get; set; } = "w"; public string CorrelationId { get; set; } = "c";

@@ -54,15 +54,9 @@ public class BrokerMessageTests
     }
 }
 
-internal class MockConnector : IConnector
+internal class MockConnector(string name, string type) : IConnector
 {
-    public MockConnector(string name, string type)
-    {
-        Name = name;
-        Type = type;
-    }
-
-    public string Name { get; }
-    public string Type { get; }
+    public string Name { get; } = name;
+    public string Type { get; } = type;
     public Task<bool> TestConnectionAsync(CancellationToken cancellationToken = default) => Task.FromResult(true);
 }

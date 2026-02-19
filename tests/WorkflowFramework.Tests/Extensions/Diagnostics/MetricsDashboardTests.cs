@@ -42,7 +42,10 @@ public class MetricsMiddlewareTests
         new MetricsMiddleware().AverageDuration.Should().Be(TimeSpan.Zero);
     }
 
-    private class St : IStep { public St(string n) { Name = n; } public string Name { get; } public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
+    private class St(string n) : IStep
+    {
+        public string Name { get; } = n;
+        public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
     private class C : IWorkflowContext
     {
         public string WorkflowId { get; set; } = "w"; public string CorrelationId { get; set; } = "c";
@@ -75,7 +78,10 @@ public class MetricsDashboardDataProviderTests
         summary.FailedSteps.Should().Be(0);
     }
 
-    private class St : IStep { public St(string n) { Name = n; } public string Name { get; } public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
+    private class St(string n) : IStep
+    {
+        public string Name { get; } = n;
+        public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
     private class C : IWorkflowContext
     {
         public string WorkflowId { get; set; } = "w"; public string CorrelationId { get; set; } = "c";

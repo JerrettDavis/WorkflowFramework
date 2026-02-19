@@ -7,12 +7,7 @@ namespace WorkflowFramework.Tests;
 
 public class SqlitePersistenceTests : IDisposable
 {
-    private readonly SqliteWorkflowStateStore _store;
-
-    public SqlitePersistenceTests()
-    {
-        _store = new SqliteWorkflowStateStore("Data Source=:memory:");
-    }
+    private readonly SqliteWorkflowStateStore _store = new("Data Source=:memory:");
 
     public void Dispose() => _store.Dispose();
 

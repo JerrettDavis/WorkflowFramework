@@ -3,14 +3,9 @@ namespace WorkflowFramework.Tests.Common;
 /// <summary>
 /// A simple step that appends its name to a list in the context properties.
 /// </summary>
-public class TrackingStep : IStep
+public class TrackingStep(string name = "TrackingStep") : IStep
 {
-    public TrackingStep(string name = "TrackingStep")
-    {
-        Name = name;
-    }
-
-    public string Name { get; }
+    public string Name { get; } = name;
 
     public Task ExecuteAsync(IWorkflowContext context)
     {
@@ -44,14 +39,9 @@ public class FailingStep : IStep
 /// <summary>
 /// A compensating step that tracks execution and compensation.
 /// </summary>
-public class CompensatingTrackingStep : ICompensatingStep
+public class CompensatingTrackingStep(string name = "CompensatingTrackingStep") : ICompensatingStep
 {
-    public CompensatingTrackingStep(string name = "CompensatingTrackingStep")
-    {
-        Name = name;
-    }
-
-    public string Name { get; }
+    public string Name { get; } = name;
 
     public Task ExecuteAsync(IWorkflowContext context)
     {
@@ -69,14 +59,10 @@ public class CompensatingTrackingStep : ICompensatingStep
 /// <summary>
 /// A typed step for testing.
 /// </summary>
-public class TypedTrackingStep<TData> : IStep<TData> where TData : class
+public class TypedTrackingStep<TData>(string name = "TypedTrackingStep") : IStep<TData>
+    where TData : class
 {
-    public TypedTrackingStep(string name = "TypedTrackingStep")
-    {
-        Name = name;
-    }
-
-    public string Name { get; }
+    public string Name { get; } = name;
 
     public Task ExecuteAsync(IWorkflowContext<TData> context)
     {

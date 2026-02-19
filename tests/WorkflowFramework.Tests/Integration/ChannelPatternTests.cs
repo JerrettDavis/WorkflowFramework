@@ -184,12 +184,10 @@ public class ChannelPatternTests
 
     #region Helpers
 
-    private sealed class TestStep : IStep
+    private sealed class TestStep(string name, Func<IWorkflowContext, Task>? action = null) : IStep
     {
-        private readonly Func<IWorkflowContext, Task>? _action;
-        public TestStep(string name, Func<IWorkflowContext, Task>? action = null) { Name = name; _action = action; }
-        public string Name { get; }
-        public Task ExecuteAsync(IWorkflowContext context) => _action?.Invoke(context) ?? Task.CompletedTask;
+        public string Name { get; } = name;
+        public Task ExecuteAsync(IWorkflowContext context) => action?.Invoke(context) ?? Task.CompletedTask;
     }
 
     #endregion

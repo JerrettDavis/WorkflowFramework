@@ -45,7 +45,10 @@ public class LoggingMiddlewareTests
 
     private static IWorkflowContext Ctx() => new C();
     private static IStep Step(string n) => new St(n);
-    private class St : IStep { public St(string n) { Name = n; } public string Name { get; } public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
+    private class St(string n) : IStep
+    {
+        public string Name { get; } = n;
+        public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
     private class C : IWorkflowContext
     {
         public string WorkflowId { get; set; } = "w"; public string CorrelationId { get; set; } = "c";

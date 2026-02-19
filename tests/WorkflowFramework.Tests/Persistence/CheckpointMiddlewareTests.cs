@@ -30,10 +30,9 @@ public class CheckpointMiddlewareTests
         saved.Status.Should().Be(WorkflowStatus.Running);
     }
 
-    private sealed class TestStep : IStep
+    private sealed class TestStep(string name) : IStep
     {
-        public TestStep(string name) => Name = name;
-        public string Name { get; }
+        public string Name { get; } = name;
         public Task ExecuteAsync(IWorkflowContext context) => Task.CompletedTask;
     }
 }

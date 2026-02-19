@@ -9,10 +9,8 @@ public class PluginManagerTests
 {
     private static int _configOrder;
 
-    private class OrderedPlugin : WorkflowPluginBase
+    private class OrderedPlugin(string name, params string[] deps) : WorkflowPluginBase
     {
-        private readonly string _name;
-        private readonly string[] _deps;
         public int Order { get; private set; }
         public bool WasConfigured { get; private set; }
         public bool WasInitialized { get; private set; }
@@ -20,9 +18,8 @@ public class PluginManagerTests
         public bool WasStopped { get; private set; }
         public bool WasDisposed { get; private set; }
 
-        public OrderedPlugin(string name, params string[] deps) { _name = name; _deps = deps; }
-        public override string Name => _name;
-        public override IReadOnlyList<string> Dependencies => _deps;
+        public override string Name => name;
+        public override IReadOnlyList<string> Dependencies => deps;
         public override void Configure(IWorkflowPluginContext context) { WasConfigured = true; Order = Interlocked.Increment(ref _configOrder); }
         public override Task InitializeAsync(CancellationToken ct) { WasInitialized = true; return Task.CompletedTask; }
         public override Task StartAsync(CancellationToken ct) { WasStarted = true; return Task.CompletedTask; }

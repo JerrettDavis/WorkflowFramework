@@ -165,10 +165,9 @@ public class WorkflowDefinitionBuilderTests
         workflow.Steps.Should().HaveCount(1);
     }
 
-    private sealed class TestStep : IStep
+    private sealed class TestStep(string name) : IStep
     {
-        public TestStep(string name) => Name = name;
-        public string Name { get; }
+        public string Name { get; } = name;
         public Task ExecuteAsync(IWorkflowContext context) => Task.CompletedTask;
     }
 }

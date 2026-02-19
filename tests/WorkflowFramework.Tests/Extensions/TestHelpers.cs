@@ -13,15 +13,10 @@ internal class TestWorkflowContext : IWorkflowContext
     public IList<WorkflowError> Errors { get; } = new List<WorkflowError>();
 }
 
-internal class TestStep : IStep
+internal class TestStep(string name, Func<IWorkflowContext, Task>? action = null) : IStep
 {
-    private readonly Func<IWorkflowContext, Task> _action;
-    public TestStep(string name, Func<IWorkflowContext, Task>? action = null)
-    {
-        Name = name;
-        _action = action ?? (_ => Task.CompletedTask);
-    }
-    public string Name { get; }
+    private readonly Func<IWorkflowContext, Task> _action = action ?? (_ => Task.CompletedTask);
+    public string Name { get; } = name;
     public Task ExecuteAsync(IWorkflowContext context) => _action(context);
 }
 

@@ -11,15 +11,11 @@ namespace WorkflowFramework.Tests.E2E;
 
 [Collection("Ollama")]
 [Trait("Category", "E2E")]
-public class OllamaE2ETests
+public class OllamaE2ETests(OllamaFixture fixture)
 {
-    private readonly OllamaFixture _fixture;
-
-    public OllamaE2ETests(OllamaFixture fixture) => _fixture = fixture;
-
     private void SkipIfUnavailable()
     {
-        if (!_fixture.IsAvailable)
+        if (!fixture.IsAvailable)
             Assert.Fail("SKIP: Ollama is not available at localhost:11434");
     }
 
@@ -28,7 +24,7 @@ public class OllamaE2ETests
     {
         SkipIfUnavailable();
 
-        var step = new LlmCallStep(_fixture.Provider, new LlmCallOptions
+        var step = new LlmCallStep(fixture.Provider, new LlmCallOptions
         {
             StepName = "Math",
             PromptTemplate = "What is 2+2? Reply with just the number."
@@ -47,7 +43,7 @@ public class OllamaE2ETests
     {
         SkipIfUnavailable();
 
-        var step = new AgentDecisionStep(_fixture.Provider, new AgentDecisionOptions
+        var step = new AgentDecisionStep(fixture.Provider, new AgentDecisionOptions
         {
             StepName = "Route",
             Prompt = "A user submitted a simple request to change their display name. Should this be approved, rejected, or escalated?",
@@ -67,7 +63,7 @@ public class OllamaE2ETests
     {
         SkipIfUnavailable();
 
-        var provider = _fixture.Provider;
+        var provider = fixture.Provider;
 
         var extract = new LlmCallStep(provider, new LlmCallOptions
         {
@@ -124,7 +120,7 @@ public class OllamaE2ETests
         // Replace the agent provider with Ollama — remove existing registrations first
         var existing = services.Where(d => d.ServiceType == typeof(IAgentProvider)).ToList();
         foreach (var d in existing) services.Remove(d);
-        services.AddSingleton<IAgentProvider>(_fixture.Provider);
+        services.AddSingleton<IAgentProvider>(fixture.Provider);
 
         // Remove MockEmailTaskSource to keep the test fast (only our 1 message)
         var mockSources = services.Where(d =>
@@ -150,7 +146,7 @@ public class OllamaE2ETests
     {
         SkipIfUnavailable();
 
-        var step = new AgentPlanStep(_fixture.Provider, "Planner");
+        var step = new AgentPlanStep(fixture.Provider, "Planner");
 
         var context = new WorkflowContext();
         context.Properties["goal"] = "Deploy a new microservice to production";

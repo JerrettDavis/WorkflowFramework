@@ -79,11 +79,9 @@ public class AuditMiddlewareTests
         count.Should().Be(1);
     }
 
-    private class FakeStepImpl : IStep
+    private class FakeStepImpl(string name, Action action) : IStep
     {
-        private readonly Action _action;
-        public FakeStepImpl(string name, Action action) { Name = name; _action = action; }
-        public string Name { get; }
-        public Task ExecuteAsync(IWorkflowContext context) { _action(); return Task.CompletedTask; }
+        public string Name { get; } = name;
+        public Task ExecuteAsync(IWorkflowContext context) { action(); return Task.CompletedTask; }
     }
 }

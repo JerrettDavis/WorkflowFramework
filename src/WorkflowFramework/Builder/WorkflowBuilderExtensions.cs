@@ -168,17 +168,9 @@ public interface ITryCatchBuilder
     IWorkflowBuilder EndTry();
 }
 
-internal sealed class TryCatchBuilderImpl : ITryCatchBuilder
+internal sealed class TryCatchBuilderImpl(IWorkflowBuilder parent, IStep[] tryBody) : ITryCatchBuilder
 {
-    private readonly IWorkflowBuilder _parent;
-    private readonly IStep[] _tryBody;
     private readonly Dictionary<Type, Func<IWorkflowContext, Exception, Task>> _catchHandlers = new();
-
-    public TryCatchBuilderImpl(IWorkflowBuilder parent, IStep[] tryBody)
-    {
-        _parent = parent;
-        _tryBody = tryBody;
-    }
 
     public ITryCatchBuilder Catch<TException>(Func<IWorkflowContext, Exception, Task> handler) where TException : Exception
     {
@@ -191,14 +183,14 @@ internal sealed class TryCatchBuilderImpl : ITryCatchBuilder
         var finallyBuilder = new WorkflowBuilder();
         configure(finallyBuilder);
         var finallyBody = finallyBuilder.Build();
-        var step = new TryCatchStep("Try", _tryBody, _catchHandlers, finallyBody.Steps.ToArray());
-        return _parent.Step(step);
+        var step = new TryCatchStep("Try", tryBody, _catchHandlers, finallyBody.Steps.ToArray());
+        return parent.Step(step);
     }
 
     public IWorkflowBuilder EndTry()
     {
-        var step = new TryCatchStep("Try", _tryBody, _catchHandlers, null);
-        return _parent.Step(step);
+        var step = new TryCatchStep("Try", tryBody, _catchHandlers, null);
+        return parent.Step(step);
     }
 }
 

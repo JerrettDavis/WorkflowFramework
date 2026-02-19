@@ -96,10 +96,8 @@ public sealed class InMemoryEventBus : IEventBus
         }
     }
 
-    private sealed class Subscription : IDisposable
+    private sealed class Subscription(Action unsubscribe) : IDisposable
     {
-        private readonly Action _unsubscribe;
-        public Subscription(Action unsubscribe) => _unsubscribe = unsubscribe;
-        public void Dispose() => _unsubscribe();
+        public void Dispose() => unsubscribe();
     }
 }

@@ -7,12 +7,7 @@ namespace WorkflowFramework.Tests.Persistence;
 
 public class SqliteStateStoreTests : IDisposable
 {
-    private readonly SqliteWorkflowStateStore _store;
-
-    public SqliteStateStoreTests()
-    {
-        _store = new SqliteWorkflowStateStore("Data Source=:memory:");
-    }
+    private readonly SqliteWorkflowStateStore _store = new("Data Source=:memory:");
 
     [Fact]
     public async Task SaveAndLoad_RoundTrip()

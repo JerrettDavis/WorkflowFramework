@@ -96,47 +96,28 @@ public sealed class WorkflowBuilder : IWorkflowBuilder
 
     internal void AddStep(IStep step) => _steps.Add(step);
 
-    private sealed class ConditionalBuilderImpl : IConditionalBuilder
+    private sealed class ConditionalBuilderImpl(WorkflowBuilder parent, Func<IWorkflowContext, bool> condition) : IConditionalBuilder
     {
-        private readonly WorkflowBuilder _parent;
-        private readonly Func<IWorkflowContext, bool> _condition;
-
-        public ConditionalBuilderImpl(WorkflowBuilder parent, Func<IWorkflowContext, bool> condition)
-        {
-            _parent = parent;
-            _condition = condition;
-        }
-
         public IElseBuilder Then<TStep>() where TStep : IStep, new() => Then(new TStep());
 
-        public IElseBuilder Then(IStep step) => new ElseBuilderImpl(_parent, _condition, step);
+        public IElseBuilder Then(IStep step) => new ElseBuilderImpl(parent, condition, step);
     }
 
-    private sealed class ElseBuilderImpl : IElseBuilder
+    private sealed class ElseBuilderImpl(WorkflowBuilder parent, Func<IWorkflowContext, bool> condition, IStep thenStep)
+        : IElseBuilder
     {
-        private readonly WorkflowBuilder _parent;
-        private readonly Func<IWorkflowContext, bool> _condition;
-        private readonly IStep _thenStep;
-
-        public ElseBuilderImpl(WorkflowBuilder parent, Func<IWorkflowContext, bool> condition, IStep thenStep)
-        {
-            _parent = parent;
-            _condition = condition;
-            _thenStep = thenStep;
-        }
-
         public IWorkflowBuilder Else<TStep>() where TStep : IStep, new() => Else(new TStep());
 
         public IWorkflowBuilder Else(IStep step)
         {
-            _parent.AddStep(new ConditionalStep(_condition, _thenStep, step));
-            return _parent;
+            parent.AddStep(new ConditionalStep(condition, thenStep, step));
+            return parent;
         }
 
         public IWorkflowBuilder EndIf()
         {
-            _parent.AddStep(new ConditionalStep(_condition, _thenStep, null));
-            return _parent;
+            parent.AddStep(new ConditionalStep(condition, thenStep, null));
+            return parent;
         }
     }
 

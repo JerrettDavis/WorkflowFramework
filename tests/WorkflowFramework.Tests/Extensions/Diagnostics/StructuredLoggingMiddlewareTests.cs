@@ -45,7 +45,10 @@ public class StructuredLoggingMiddlewareTests
     }
 
     private static TestCtx CreateCtx() => new();
-    private class S : IStep { public S(string n) { Name = n; } public string Name { get; } public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
+    private class S(string n) : IStep
+    {
+        public string Name { get; } = n;
+        public Task ExecuteAsync(IWorkflowContext c) => Task.CompletedTask; }
     private class TestCtx : IWorkflowContext
     {
         public string WorkflowId { get; set; } = "w"; public string CorrelationId { get; set; } = "c";

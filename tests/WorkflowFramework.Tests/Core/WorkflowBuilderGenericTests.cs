@@ -23,14 +23,12 @@ public class WorkflowBuilderGenericTests
         }
     }
 
-    private class LogStep : IStep<OrderData>
+    private class LogStep(string msg = "LogStep") : IStep<OrderData>
     {
-        private readonly string _msg;
-        public LogStep(string msg = "LogStep") => _msg = msg;
-        public string Name => _msg;
+        public string Name => msg;
         public Task ExecuteAsync(IWorkflowContext<OrderData> context)
         {
-            context.Data.Log.Add(_msg);
+            context.Data.Log.Add(msg);
             return Task.CompletedTask;
         }
     }

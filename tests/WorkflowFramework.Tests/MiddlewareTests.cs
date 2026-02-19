@@ -6,17 +6,13 @@ namespace WorkflowFramework.Tests;
 
 public class MiddlewareTests
 {
-    private class OrderTrackingMiddleware : IWorkflowMiddleware
+    private class OrderTrackingMiddleware(string name) : IWorkflowMiddleware
     {
-        private readonly string _name;
-
-        public OrderTrackingMiddleware(string name) => _name = name;
-
         public async Task InvokeAsync(IWorkflowContext context, IStep step, StepDelegate next)
         {
-            TrackingStep.GetLog(context).Add($"{_name}:Before");
+            TrackingStep.GetLog(context).Add($"{name}:Before");
             await next(context);
-            TrackingStep.GetLog(context).Add($"{_name}:After");
+            TrackingStep.GetLog(context).Add($"{name}:After");
         }
     }
 

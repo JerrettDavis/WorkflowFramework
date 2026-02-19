@@ -214,23 +214,19 @@ public class WorkflowEngineTests
     }
 
     // Helper classes
-    private class DelegateTestStep : IStep
+    private class DelegateTestStep(string name, Func<IWorkflowContext, Task> action) : IStep
     {
-        private readonly Func<IWorkflowContext, Task> _action;
-        public DelegateTestStep(string name, Func<IWorkflowContext, Task> action) { Name = name; _action = action; }
-        public string Name { get; }
-        public Task ExecuteAsync(IWorkflowContext context) => _action(context);
+        public string Name { get; } = name;
+        public Task ExecuteAsync(IWorkflowContext context) => action(context);
     }
 
-    private class TestMiddleware : IWorkflowMiddleware
+    private class TestMiddleware(List<string> log) : IWorkflowMiddleware
     {
-        private readonly List<string> _log;
-        public TestMiddleware(List<string> log) => _log = log;
         public async Task InvokeAsync(IWorkflowContext context, IStep step, StepDelegate next)
         {
-            _log.Add("Before");
+            log.Add("Before");
             await next(context);
-            _log.Add("After");
+            log.Add("After");
         }
     }
 
@@ -239,16 +235,13 @@ public class WorkflowEngineTests
         public Task InvokeAsync(IWorkflowContext context, IStep step, StepDelegate next) => Task.CompletedTask;
     }
 
-    private class OrderedMiddleware : IWorkflowMiddleware
+    private class OrderedMiddleware(string name, List<string> log) : IWorkflowMiddleware
     {
-        private readonly string _name;
-        private readonly List<string> _log;
-        public OrderedMiddleware(string name, List<string> log) { _name = name; _log = log; }
         public async Task InvokeAsync(IWorkflowContext context, IStep step, StepDelegate next)
         {
-            _log.Add($"{_name}:Before");
+            log.Add($"{name}:Before");
             await next(context);
-            _log.Add($"{_name}:After");
+            log.Add($"{name}:After");
         }
     }
 
@@ -263,10 +256,9 @@ public class WorkflowEngineTests
         public override Task OnStepFailedAsync(IWorkflowContext context, IStep step, Exception ex) { Log.Add($"StepFailed:{step.Name}"); return Task.CompletedTask; }
     }
 
-    private class FailingCompensatingStep : ICompensatingStep
+    private class FailingCompensatingStep(string name) : ICompensatingStep
     {
-        public FailingCompensatingStep(string name) => Name = name;
-        public string Name { get; }
+        public string Name { get; } = name;
         public Task ExecuteAsync(IWorkflowContext context) { TrackingStep.GetLog(context).Add($"{Name}:Execute"); return Task.CompletedTask; }
         public Task CompensateAsync(IWorkflowContext context) => throw new InvalidOperationException("Compensation failed");
     }

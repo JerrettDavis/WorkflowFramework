@@ -623,9 +623,9 @@ public class EnterpriseExtensionsTests
 
     private static int _configureCounter;
 
-    private class TestPlugin : WorkflowPluginBase
+    private class TestPlugin(string name, string[]? dependencies = null) : WorkflowPluginBase
     {
-        private readonly string[] _deps;
+        private readonly string[] _deps = dependencies ?? Array.Empty<string>();
         public bool Configured { get; private set; }
         public bool Initialized { get; private set; }
         public bool Started { get; private set; }
@@ -633,14 +633,7 @@ public class EnterpriseExtensionsTests
         public bool Disposed { get; private set; }
         public int ConfigureOrder { get; private set; }
 
-        public TestPlugin(string name, string[]? dependencies = null)
-        {
-            _name = name;
-            _deps = dependencies ?? Array.Empty<string>();
-        }
-
-        private readonly string _name;
-        public override string Name => _name;
+        public override string Name => name;
         public override IReadOnlyList<string> Dependencies => _deps;
 
         public override void Configure(IWorkflowPluginContext context)
@@ -655,12 +648,10 @@ public class EnterpriseExtensionsTests
         public override ValueTask DisposeAsync() { Disposed = true; return default; }
     }
 
-    private class InlineStep : IStep
+    private class InlineStep(string name, Func<IWorkflowContext, Task> action) : IStep
     {
-        private readonly Func<IWorkflowContext, Task> _action;
-        public InlineStep(string name, Func<IWorkflowContext, Task> action) { Name = name; _action = action; }
-        public string Name { get; }
-        public Task ExecuteAsync(IWorkflowContext context) => _action(context);
+        public string Name { get; } = name;
+        public Task ExecuteAsync(IWorkflowContext context) => action(context);
     }
 
     // WorkflowContext helper with CorrelationId setter

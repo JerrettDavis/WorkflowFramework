@@ -20,17 +20,14 @@ public sealed class InMemoryDistributedLock : IDistributedLock
         return null;
     }
 
-    private sealed class LockHandle : IAsyncDisposable
+    private sealed class LockHandle(SemaphoreSlim semaphore) : IAsyncDisposable
     {
-        private readonly SemaphoreSlim _semaphore;
         private int _disposed;
-
-        public LockHandle(SemaphoreSlim semaphore) => _semaphore = semaphore;
 
         public ValueTask DisposeAsync()
         {
             if (Interlocked.CompareExchange(ref _disposed, 1, 0) == 0)
-                _semaphore.Release();
+                semaphore.Release();
             return default;
         }
     }
