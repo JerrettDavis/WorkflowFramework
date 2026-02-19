@@ -63,6 +63,21 @@ public sealed class DashboardApiClient(HttpClient http)
         return await resp.Content.ReadFromJsonAsync<SavedWorkflowDefinition>(ct);
     }
 
+    // Validation
+    public async Task<ValidationResultDto?> ValidateWorkflowAsync(string id, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsync($"/api/workflows/{id}/validate", null, ct);
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<ValidationResultDto>(ct);
+    }
+
+    public async Task<ValidationResultDto?> ValidateDefinitionAsync(WorkflowDefinitionDto definition, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsJsonAsync("/api/workflows/validate", definition, ct);
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<ValidationResultDto>(ct);
+    }
+
     // Steps
     public async Task<List<StepTypeInfo>> GetStepTypesAsync(CancellationToken ct = default)
         => await http.GetFromJsonAsync<List<StepTypeInfo>>("/api/steps", ct) ?? [];

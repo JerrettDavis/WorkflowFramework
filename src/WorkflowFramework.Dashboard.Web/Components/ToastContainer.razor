@@ -1,0 +1,53 @@
+@inject ToastService Toast
+@implements IDisposable
+
+<div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    @foreach (var toast in Toast.Toasts)
+    {
+        <div class="@GetToastClass(toast.Type) px-4 py-3 rounded-lg shadow-lg text-sm flex items-center gap-2 animate-slide-in">
+            <span>@GetIcon(toast.Type)</span>
+            <span class="flex-1">@toast.Message</span>
+            <button @onclick="() => Toast.Remove(toast.Id)" class="opacity-60 hover:opacity-100 text-lg leading-none">&times;</button>
+        </div>
+    }
+</div>
+
+@code {
+    private System.Threading.Timer? _timer;
+
+    protected override void OnInitialized()
+    {
+        Toast.OnChange += StateHasChanged;
+        _timer = new System.Threading.Timer(_ =>
+        {
+            var now = DateTimeOffset.UtcNow;
+            var expired = Toast.Toasts.Where(t => (now - t.CreatedAt).TotalMilliseconds > t.DurationMs).ToList();
+            foreach (var t in expired) Toast.Remove(t.Id);
+            if (expired.Count > 0) InvokeAsync(StateHasChanged);
+        }, null, 1000, 1000);
+    }
+
+    private static string GetToastClass(ToastType type) => type switch
+    {
+        ToastType.Success => "bg-green-600 text-white",
+        ToastType.Error => "bg-red-600 text-white",
+        ToastType.Warning => "bg-yellow-500 text-gray-900",
+        ToastType.Info => "bg-blue-600 text-white",
+        _ => "bg-gray-700 text-white"
+    };
+
+    private static string GetIcon(ToastType type) => type switch
+    {
+        ToastType.Success => "✅",
+        ToastType.Error => "❌",
+        ToastType.Warning => "⚠️",
+        ToastType.Info => "ℹ️",
+        _ => ""
+    };
+
+    public void Dispose()
+    {
+        Toast.OnChange -= StateHasChanged;
+        _timer?.Dispose();
+    }
+}

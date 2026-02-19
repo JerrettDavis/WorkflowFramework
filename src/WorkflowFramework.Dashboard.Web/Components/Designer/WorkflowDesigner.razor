@@ -162,11 +162,13 @@
                 _currentWorkflowId = result.Id;
                 _dirty = false;
                 _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Saved workflow: {_workflowName} (id: {result.Id})");
+                Toast.Success($"Saved '{_workflowName}'");
             }
         }
         catch (Exception ex)
         {
             _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Save failed: {ex.Message}");
+            Toast.Error($"Save failed: {ex.Message}");
         }
     }
 
@@ -236,11 +238,13 @@
             {
                 _activeRunId = run.RunId;
                 _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Run started: {run.RunId} (status: {run.Status})");
+                Toast.Info($"Run started: {run.RunId}");
             }
         }
         catch (Exception ex)
         {
             _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Run failed: {ex.Message}");
+            Toast.Error($"Run failed: {ex.Message}");
         }
     }
 
@@ -341,6 +345,7 @@
     public async ValueTask DisposeAsync()
     {
         _dotNetRef?.Dispose();
+        try { await Shortcuts.DisposeAsync(); } catch { }
         try { await JS.InvokeVoidAsync("workflowEditor.destroy"); } catch { }
     }
 }

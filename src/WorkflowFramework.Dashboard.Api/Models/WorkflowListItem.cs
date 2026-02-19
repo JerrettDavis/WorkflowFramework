@@ -8,6 +8,7 @@ public sealed class WorkflowListItem
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public List<string> Tags { get; set; } = [];
     public DateTimeOffset LastModified { get; set; }
     public int StepCount { get; set; }
 }

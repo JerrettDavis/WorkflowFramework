@@ -1,0 +1,54 @@
+@inject IJSRuntime JS
+@inject UserPreferencesService Prefs
+
+<button @onclick="CycleTheme" class="toolbar-btn" title="Toggle theme (@_currentTheme)">
+    @(_currentTheme switch
+    {
+        "dark" => "🌙",
+        "light" => "☀️",
+        _ => "🖥️"
+    })
+</button>
+
+@code {
+    private string _currentTheme = "dark";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var prefs = await Prefs.LoadAsync();
+            _currentTheme = prefs.Theme;
+            await ApplyTheme();
+            StateHasChanged();
+        }
+    }
+
+    private async Task CycleTheme()
+    {
+        _currentTheme = _currentTheme switch
+        {
+            "dark" => "light",
+            "light" => "system",
+            _ => "dark"
+        };
+        var prefs = await Prefs.LoadAsync();
+        prefs.Theme = _currentTheme;
+        await Prefs.SaveAsync(prefs);
+        await ApplyTheme();
+    }
+
+    private async Task ApplyTheme()
+    {
+        var isDark = _currentTheme switch
+        {
+            "dark" => true,
+            "light" => false,
+            _ => await JS.InvokeAsync<bool>("eval", "window.matchMedia('(prefers-color-scheme: dark)').matches")
+        };
+        await JS.InvokeVoidAsync("eval",
+            isDark
+                ? "document.documentElement.classList.add('dark'); document.documentElement.classList.remove('light');"
+                : "document.documentElement.classList.remove('dark'); document.documentElement.classList.add('light');");
+    }
+}

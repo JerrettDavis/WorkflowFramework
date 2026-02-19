@@ -8,5 +8,6 @@ namespace WorkflowFramework.Dashboard.Api.Models;
 public sealed class CreateWorkflowRequest
 {
     public string? Description { get; set; }
+    public List<string> Tags { get; set; } = [];
     public WorkflowDefinitionDto Definition { get; set; } = new();
 }
