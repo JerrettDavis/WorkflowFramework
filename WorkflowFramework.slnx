@@ -60,5 +60,6 @@
     <Project Path="samples/WorkflowFramework.Samples.DataPipeline/WorkflowFramework.Samples.DataPipeline.csproj" />
     <Project Path="samples/WorkflowFramework.Samples.WebApi/WorkflowFramework.Samples.WebApi.csproj" />
     <Project Path="samples/WorkflowFramework.Samples.TaskStream/WorkflowFramework.Samples.TaskStream.csproj" />
+    <Project Path="samples/WorkflowFramework.Samples.VoiceWorkflows/WorkflowFramework.Samples.VoiceWorkflows.csproj" />
   </Folder>
 </Solution>
