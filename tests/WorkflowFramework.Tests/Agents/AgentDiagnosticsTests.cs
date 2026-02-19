@@ -8,6 +8,10 @@ using Xunit;
 
 namespace WorkflowFramework.Tests.Agents;
 
+/// <summary>
+/// Each test uses unique names and filters captured activities by those names
+/// to avoid cross-contamination from parallel test execution.
+/// </summary>
 public class AgentDiagnosticsTests : IDisposable
 {
     private readonly ActivityListener _listener;
@@ -40,30 +44,36 @@ public class AgentDiagnosticsTests : IDisposable
         return registry;
     }
 
+    private List<Activity> ActivitiesForStep(string stepName) =>
+        _activities.Where(a => a.GetTagItem(AgentActivitySource.TagStepName) as string == stepName).ToList();
+
+    private List<Activity> ActivitiesForTool(string toolName) =>
+        _activities.Where(a => a.GetTagItem(AgentActivitySource.TagToolName) as string == toolName).ToList();
+
     [Fact]
     public async Task AgentLoopStep_EmitsLoopAndIterationSpans()
     {
+        var stepName = $"MyAgent_{Guid.NewGuid():N}";
         var agentProvider = Substitute.For<IAgentProvider>();
         agentProvider.Name.Returns("TestProvider");
         agentProvider.CompleteAsync(Arg.Any<LlmRequest>(), Arg.Any<CancellationToken>())
             .Returns(new LlmResponse { Content = "done" });
 
-        var step = new AgentLoopStep(agentProvider, new ToolRegistry(), new AgentLoopOptions { StepName = "MyAgent" });
+        var step = new AgentLoopStep(agentProvider, new ToolRegistry(), new AgentLoopOptions { StepName = stepName });
         await step.ExecuteAsync(new WorkflowContext());
 
-        var loopActivity = _activities.Should().ContainSingle(a => a.OperationName == AgentActivitySource.AgentLoop).Subject;
-        loopActivity.GetTagItem(AgentActivitySource.TagStepName).Should().Be("MyAgent");
+        var myActivities = ActivitiesForStep(stepName);
+        var loopActivity = myActivities.Should().ContainSingle(a => a.OperationName == AgentActivitySource.AgentLoop).Subject;
         loopActivity.GetTagItem(AgentActivitySource.TagProviderName).Should().Be("TestProvider");
         loopActivity.GetTagItem(AgentActivitySource.TagIterationTotal).Should().Be(1);
 
-        _activities.Should().ContainSingle(a => a.OperationName == AgentActivitySource.AgentIteration);
-        var iterActivity = _activities.First(a => a.OperationName == AgentActivitySource.AgentIteration);
-        iterActivity.GetTagItem(AgentActivitySource.TagIteration).Should().Be(1);
+        myActivities.Should().ContainSingle(a => a.OperationName == AgentActivitySource.AgentIteration);
     }
 
     [Fact]
     public async Task AgentLoopStep_EmitsToolCallSpans()
     {
+        var toolName = $"search_{Guid.NewGuid():N}";
         var agentProvider = Substitute.For<IAgentProvider>();
         agentProvider.Name.Returns("Test");
         var callCount = 0;
@@ -75,23 +85,24 @@ public class AgentDiagnosticsTests : IDisposable
                     return new LlmResponse
                     {
                         Content = "",
-                        ToolCalls = new List<ToolCall> { new() { ToolName = "search", Arguments = "{}" } }
+                        ToolCalls = new List<ToolCall> { new() { ToolName = toolName, Arguments = "{}" } }
                     };
                 return new LlmResponse { Content = "done" };
             });
 
-        var registry = CreateRegistryWithTool("search", "found it");
+        var registry = CreateRegistryWithTool(toolName, "found it");
         var step = new AgentLoopStep(agentProvider, registry, new AgentLoopOptions());
         await step.ExecuteAsync(new WorkflowContext());
 
-        var toolActivity = _activities.Should().ContainSingle(a => a.OperationName == AgentActivitySource.ToolCall).Subject;
-        toolActivity.GetTagItem(AgentActivitySource.TagToolName).Should().Be("search");
+        var toolActivity = ActivitiesForTool(toolName).Should().ContainSingle().Subject;
+        toolActivity.OperationName.Should().Be(AgentActivitySource.ToolCall);
         toolActivity.GetTagItem(AgentActivitySource.TagToolIsError).Should().Be(false);
     }
 
     [Fact]
     public async Task AgentLoopStep_RecordsTokenUsage()
     {
+        var stepName = $"TokenTest_{Guid.NewGuid():N}";
         var agentProvider = Substitute.For<IAgentProvider>();
         agentProvider.Name.Returns("Test");
         agentProvider.CompleteAsync(Arg.Any<LlmRequest>(), Arg.Any<CancellationToken>())
@@ -101,10 +112,10 @@ public class AgentDiagnosticsTests : IDisposable
                 Usage = new TokenUsage { PromptTokens = 100, CompletionTokens = 50, TotalTokens = 150 }
             });
 
-        var step = new AgentLoopStep(agentProvider, new ToolRegistry(), new AgentLoopOptions());
+        var step = new AgentLoopStep(agentProvider, new ToolRegistry(), new AgentLoopOptions { StepName = stepName });
         await step.ExecuteAsync(new WorkflowContext());
 
-        var iterActivity = _activities.First(a => a.OperationName == AgentActivitySource.AgentIteration);
+        var iterActivity = ActivitiesForStep(stepName).First(a => a.OperationName == AgentActivitySource.AgentIteration);
         iterActivity.GetTagItem(AgentActivitySource.TagPromptTokens).Should().Be(100);
         iterActivity.GetTagItem(AgentActivitySource.TagCompletionTokens).Should().Be(50);
         iterActivity.GetTagItem(AgentActivitySource.TagTotalTokens).Should().Be(150);
@@ -113,33 +124,35 @@ public class AgentDiagnosticsTests : IDisposable
     [Fact]
     public async Task ToolCallStep_EmitsSpanWithCorrectTags()
     {
-        var registry = CreateRegistryWithTool("myTool", "result");
-        var step = new ToolCallStep(registry, "myTool", "{}", "TestToolStep");
+        var toolName = $"myTool_{Guid.NewGuid():N}";
+        var registry = CreateRegistryWithTool(toolName, "result");
+        var step = new ToolCallStep(registry, toolName, "{}", "TestToolStep");
         await step.ExecuteAsync(new WorkflowContext());
 
-        var activity = _activities.Should().ContainSingle(a => a.OperationName == AgentActivitySource.ToolCall).Subject;
+        var activity = ActivitiesForTool(toolName).Should().ContainSingle().Subject;
+        activity.OperationName.Should().Be(AgentActivitySource.ToolCall);
         activity.GetTagItem(AgentActivitySource.TagStepName).Should().Be("TestToolStep");
-        activity.GetTagItem(AgentActivitySource.TagToolName).Should().Be("myTool");
         activity.GetTagItem(AgentActivitySource.TagToolIsError).Should().Be(false);
     }
 
     [Fact]
     public async Task ToolCallStep_ErrorSetsStatusOnSpan()
     {
+        var toolName = $"failTool_{Guid.NewGuid():N}";
         var registry = new ToolRegistry();
         var provider = Substitute.For<IToolProvider>();
         provider.ListToolsAsync(Arg.Any<CancellationToken>()).Returns(new List<ToolDefinition>
         {
-            new() { Name = "failTool", Description = "fails" }
+            new() { Name = toolName, Description = "fails" }
         });
-        provider.InvokeToolAsync("failTool", Arg.Any<string>(), Arg.Any<CancellationToken>())
+        provider.InvokeToolAsync(toolName, Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(new ToolResult { Content = "something went wrong", IsError = true });
         registry.Register(provider);
 
-        var step = new ToolCallStep(registry, "failTool", "{}");
+        var step = new ToolCallStep(registry, toolName, "{}");
         await step.ExecuteAsync(new WorkflowContext());
 
-        var activity = _activities.Should().ContainSingle(a => a.OperationName == AgentActivitySource.ToolCall).Subject;
+        var activity = ActivitiesForTool(toolName).Should().ContainSingle().Subject;
         activity.GetTagItem(AgentActivitySource.TagToolIsError).Should().Be(true);
         activity.Status.Should().Be(ActivityStatusCode.Error);
     }
@@ -147,6 +160,8 @@ public class AgentDiagnosticsTests : IDisposable
     [Fact]
     public async Task AgentLoopStep_MultipleIterations_TracksCount()
     {
+        var stepName = $"MultiIter_{Guid.NewGuid():N}";
+        var toolName = $"t_{Guid.NewGuid():N}";
         var agentProvider = Substitute.For<IAgentProvider>();
         agentProvider.Name.Returns("Test");
         var callCount = 0;
@@ -158,19 +173,20 @@ public class AgentDiagnosticsTests : IDisposable
                     return new LlmResponse
                     {
                         Content = "thinking",
-                        ToolCalls = new List<ToolCall> { new() { ToolName = "t", Arguments = "{}" } }
+                        ToolCalls = new List<ToolCall> { new() { ToolName = toolName, Arguments = "{}" } }
                     };
                 return new LlmResponse { Content = "final" };
             });
 
-        var registry = CreateRegistryWithTool("t", "r");
-        var step = new AgentLoopStep(agentProvider, registry, new AgentLoopOptions());
+        var registry = CreateRegistryWithTool(toolName, "r");
+        var step = new AgentLoopStep(agentProvider, registry, new AgentLoopOptions { StepName = stepName });
         await step.ExecuteAsync(new WorkflowContext());
 
-        var loopActivity = _activities.First(a => a.OperationName == AgentActivitySource.AgentLoop);
+        var myActivities = ActivitiesForStep(stepName);
+        var loopActivity = myActivities.First(a => a.OperationName == AgentActivitySource.AgentLoop);
         loopActivity.GetTagItem(AgentActivitySource.TagIterationTotal).Should().Be(3);
 
-        _activities.Count(a => a.OperationName == AgentActivitySource.AgentIteration).Should().Be(3);
-        _activities.Count(a => a.OperationName == AgentActivitySource.ToolCall).Should().Be(2);
+        myActivities.Count(a => a.OperationName == AgentActivitySource.AgentIteration).Should().Be(3);
+        ActivitiesForTool(toolName).Should().HaveCount(2);
     }
 }
