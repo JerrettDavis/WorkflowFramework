@@ -1,0 +1,75 @@
+@page "/workflows/runs/{RunId}"
+@using WorkflowFramework.Extensions.Diagnostics.ExecutionHistory
+@using WorkflowFramework.Dashboard.Services
+@inject WorkflowDashboardService DashboardService
+
+<h1 style="font-size:1.5rem;font-weight:bold;margin-bottom:1rem;">Run Detail</h1>
+
+@if (_run is null)
+{
+    <p style="color:#dc2626;">Run not found.</p>
+}
+else
+{
+    <div style="margin-bottom:1rem;padding:1rem;background:#f9fafb;border:1px solid #e5e7eb;border-radius:0.5rem;">
+        <p><strong>Run ID:</strong> @_run.RunId</p>
+        <p><strong>Workflow:</strong> @_run.WorkflowName</p>
+        <p><strong>Status:</strong> <span style="@StatusStyle(_run.Status)">@_run.Status</span></p>
+        <p><strong>Started:</strong> @_run.StartedAt.ToString("G")</p>
+        <p><strong>Completed:</strong> @(_run.CompletedAt?.ToString("G") ?? "—")</p>
+        <p><strong>Duration:</strong> @(_run.Duration?.ToString(@"hh\:mm\:ss\.fff") ?? "—")</p>
+        @if (_run.Error is not null)
+        {
+            <p style="color:#dc2626;"><strong>Error:</strong> @_run.Error</p>
+        }
+    </div>
+
+    <h2 style="font-size:1.25rem;font-weight:600;margin-bottom:0.5rem;">Steps (@_run.StepResults.Count)</h2>
+
+    @if (_run.StepResults.Count == 0)
+    {
+        <p style="color:#6b7280;">No step records.</p>
+    }
+    else
+    {
+        <div style="position:relative;padding-left:2rem;">
+            @foreach (var step in _run.StepResults)
+            {
+                <div style="margin-bottom:1rem;padding:0.75rem;border:1px solid #e5e7eb;border-radius:0.5rem;background:white;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <strong>@step.StepName</strong>
+                        <span style="@StatusStyle(step.Status)">@step.Status</span>
+                    </div>
+                    <div style="font-size:0.875rem;color:#6b7280;margin-top:0.25rem;">
+                        @step.StartedAt.ToString("T")
+                        → @(step.CompletedAt?.ToString("T") ?? "…")
+                        (@(step.Duration?.ToString(@"ss\.fff") ?? "—")s)
+                    </div>
+                    @if (step.Error is not null)
+                    {
+                        <p style="color:#dc2626;font-size:0.875rem;margin-top:0.25rem;">@step.Error</p>
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public string RunId { get; set; } = string.Empty;
+
+    private WorkflowRunRecord? _run;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _run = await DashboardService.GetRunAsync(RunId);
+    }
+
+    private static string StatusStyle(WorkflowStatus status) => status switch
+    {
+        WorkflowStatus.Completed => "color:#16a34a;font-weight:600;",
+        WorkflowStatus.Faulted => "color:#dc2626;font-weight:600;",
+        WorkflowStatus.Running => "color:#2563eb;font-weight:600;",
+        _ => "color:#6b7280;"
+    };
+}

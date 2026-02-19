@@ -1,0 +1,56 @@
+@page "/workflows/{Name}"
+@using WorkflowFramework.Dashboard.Services
+@inject WorkflowDashboardService DashboardService
+
+<h1 style="font-size:1.5rem;font-weight:bold;margin-bottom:1rem;">Workflow: @Name</h1>
+
+@if (_detail is null)
+{
+    <p style="color:#dc2626;">Workflow not found.</p>
+}
+else
+{
+    <div style="margin-bottom:1rem;">
+        <button @onclick="TriggerRun" disabled="@_running"
+                style="padding:0.5rem 1rem;background:#2563eb;color:white;border:none;border-radius:0.25rem;cursor:pointer;">
+            @(_running ? "Running..." : "Trigger Run")
+        </button>
+        @if (_runResult is not null)
+        {
+            <span style="margin-left:1rem;@(_runResult.IsSuccess ? "color:#16a34a;" : "color:#dc2626;")">
+                @_runResult.Status
+            </span>
+        }
+    </div>
+
+    <h2 style="font-size:1.25rem;font-weight:600;margin-bottom:0.5rem;">Steps (@_detail.Steps.Count)</h2>
+    <ol style="list-style:decimal inside;padding:0;">
+        @foreach (var step in _detail.Steps)
+        {
+            <li style="padding:0.25rem 0;">@step</li>
+        }
+    </ol>
+}
+
+@code {
+    [Parameter] public string Name { get; set; } = string.Empty;
+
+    private WorkflowDetail? _detail;
+    private WorkflowResult? _runResult;
+    private bool _running;
+
+    protected override void OnInitialized()
+    {
+        try { _detail = DashboardService.GetWorkflowDetail(Name); }
+        catch (KeyNotFoundException) { _detail = null; }
+    }
+
+    private async Task TriggerRun()
+    {
+        _running = true;
+        _runResult = null;
+        try { _runResult = await DashboardService.TriggerRunAsync(Name); }
+        catch (KeyNotFoundException) { }
+        finally { _running = false; }
+    }
+}

@@ -1,0 +1,69 @@
+@page "/workflows/runs"
+@using WorkflowFramework.Extensions.Diagnostics.ExecutionHistory
+@using WorkflowFramework.Dashboard.Services
+@inject WorkflowDashboardService DashboardService
+
+<h1 style="font-size:1.5rem;font-weight:bold;margin-bottom:1rem;">Run History</h1>
+
+@if (_runs is null)
+{
+    <p>Loading...</p>
+}
+else if (_runs.Count == 0)
+{
+    <p style="color:#6b7280;">No runs recorded.</p>
+}
+else
+{
+    <table style="width:100%;border-collapse:collapse;">
+        <thead>
+            <tr style="border-bottom:2px solid #e5e7eb;text-align:left;">
+                <th style="padding:0.5rem;">Run ID</th>
+                <th style="padding:0.5rem;">Workflow</th>
+                <th style="padding:0.5rem;">Status</th>
+                <th style="padding:0.5rem;">Started</th>
+                <th style="padding:0.5rem;">Duration</th>
+                <th style="padding:0.5rem;">Error</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var run in _runs)
+            {
+                <tr style="border-bottom:1px solid #e5e7eb;">
+                    <td style="padding:0.5rem;">
+                        <a href="/workflows/runs/@Uri.EscapeDataString(run.RunId)" style="color:#2563eb;text-decoration:underline;">
+                            @Truncate(run.RunId, 12)
+                        </a>
+                    </td>
+                    <td style="padding:0.5rem;">@run.WorkflowName</td>
+                    <td style="padding:0.5rem;">
+                        <span style="@StatusStyle(run.Status)">@run.Status</span>
+                    </td>
+                    <td style="padding:0.5rem;">@run.StartedAt.ToString("g")</td>
+                    <td style="padding:0.5rem;">@(run.Duration?.ToString(@"hh\:mm\:ss\.fff") ?? "—")</td>
+                    <td style="padding:0.5rem;color:#dc2626;">@(run.Error ?? "")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<WorkflowRunRecord>? _runs;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _runs = await DashboardService.GetRunsAsync(maxResults: 100);
+    }
+
+    private static string StatusStyle(WorkflowStatus status) => status switch
+    {
+        WorkflowStatus.Completed => "color:#16a34a;font-weight:600;",
+        WorkflowStatus.Faulted => "color:#dc2626;font-weight:600;",
+        WorkflowStatus.Running => "color:#2563eb;font-weight:600;",
+        _ => "color:#6b7280;"
+    };
+
+    private static string Truncate(string s, int max) =>
+        s.Length <= max ? s : s[..max] + "…";
+}

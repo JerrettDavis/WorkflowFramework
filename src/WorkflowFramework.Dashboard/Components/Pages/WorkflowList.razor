@@ -1,0 +1,59 @@
+@page "/workflows"
+@using WorkflowFramework.Dashboard.Services
+@inject WorkflowDashboardService DashboardService
+
+<h1 style="font-size:1.5rem;font-weight:bold;margin-bottom:1rem;">Workflows</h1>
+
+@if (_workflows is null)
+{
+    <p>Loading...</p>
+}
+else if (_workflows.Count == 0)
+{
+    <p style="color:#6b7280;">No workflows registered.</p>
+}
+else
+{
+    <table style="width:100%;border-collapse:collapse;">
+        <thead>
+            <tr style="border-bottom:2px solid #e5e7eb;text-align:left;">
+                <th style="padding:0.5rem;">Name</th>
+                <th style="padding:0.5rem;">Steps</th>
+                <th style="padding:0.5rem;">Last Run</th>
+                <th style="padding:0.5rem;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var wf in _workflows)
+            {
+                <tr style="border-bottom:1px solid #e5e7eb;">
+                    <td style="padding:0.5rem;">
+                        <a href="/workflows/@Uri.EscapeDataString(wf.Name)" style="color:#2563eb;text-decoration:underline;">@wf.Name</a>
+                    </td>
+                    <td style="padding:0.5rem;">@wf.StepCount</td>
+                    <td style="padding:0.5rem;">@(wf.LastRunAt?.ToString("g") ?? "—")</td>
+                    <td style="padding:0.5rem;">
+                        <span style="@StatusStyle(wf.LastRunStatus)">@(wf.LastRunStatus?.ToString() ?? "—")</span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IReadOnlyList<WorkflowSummary>? _workflows;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _workflows = await DashboardService.GetWorkflowsAsync();
+    }
+
+    private static string StatusStyle(WorkflowStatus? status) => status switch
+    {
+        WorkflowStatus.Completed => "color:#16a34a;font-weight:600;",
+        WorkflowStatus.Faulted => "color:#dc2626;font-weight:600;",
+        WorkflowStatus.Running => "color:#2563eb;font-weight:600;",
+        _ => "color:#6b7280;"
+    };
+}

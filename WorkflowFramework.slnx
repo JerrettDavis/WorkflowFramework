@@ -49,6 +49,7 @@
     <Project Path="src/WorkflowFramework.Extensions.Persistence.SqlServer/WorkflowFramework.Extensions.Persistence.SqlServer.csproj" />
     <Project Path="src/WorkflowFramework.Serialization/WorkflowFramework.Serialization.csproj" />
     <Project Path="src/WorkflowFramework.Cli/WorkflowFramework.Cli.csproj" />
+    <Project Path="src/WorkflowFramework.Dashboard/WorkflowFramework.Dashboard.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />
@@ -57,6 +58,7 @@
     <Project Path="tests/WorkflowFramework.Tests.E2E/WorkflowFramework.Tests.E2E.csproj" />
     <Project Path="tests/WorkflowFramework.Tests.Samples/WorkflowFramework.Tests.Samples.csproj" />
     <Project Path="tests/WorkflowFramework.Cli.Tests/WorkflowFramework.Cli.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Dashboard.Tests/WorkflowFramework.Dashboard.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/WorkflowFramework.Benchmarks/WorkflowFramework.Benchmarks.csproj" />

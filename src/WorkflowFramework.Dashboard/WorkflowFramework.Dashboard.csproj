@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Dashboard</RootNamespace>
+    <Description>Blazor Server dashboard for viewing, running, and monitoring WorkflowFramework workflows.</Description>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Diagnostics\WorkflowFramework.Extensions.Diagnostics.csproj" />
+  </ItemGroup>
+</Project>
