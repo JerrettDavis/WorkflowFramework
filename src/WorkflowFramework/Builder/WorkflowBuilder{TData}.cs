@@ -18,14 +18,20 @@ public sealed class WorkflowBuilder<TData> : IWorkflowBuilder<TData> where TData
     /// <inheritdoc />
     public IWorkflowBuilder<TData> Step<TStep>() where TStep : IStep<TData>, new()
     {
-        _steps.Add(new TypedStepAdapter<TData>(new TStep()));
+        var step = new TStep();
+        _steps.Add(step is ICompensatingStep<TData> comp
+            ? new TypedCompensatingStepAdapter<TData>(comp)
+            : new TypedStepAdapter<TData>(step));
         return this;
     }
 
     /// <inheritdoc />
     public IWorkflowBuilder<TData> Step(IStep<TData> step)
     {
-        _steps.Add(new TypedStepAdapter<TData>(step ?? throw new ArgumentNullException(nameof(step))));
+        if (step == null) throw new ArgumentNullException(nameof(step));
+        _steps.Add(step is ICompensatingStep<TData> comp
+            ? new TypedCompensatingStepAdapter<TData>(comp)
+            : new TypedStepAdapter<TData>(step));
         return this;
     }
 

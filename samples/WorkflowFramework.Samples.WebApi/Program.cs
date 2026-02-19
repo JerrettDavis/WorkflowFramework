@@ -25,7 +25,7 @@ app.MapHealthChecks("/health");
 
 app.MapPost("/workflows/{name}/run", async (string name, IWorkflowRunner runner) =>
 {
-    var result = await runner.RunAsync(name, new WorkflowContext());
+    var result = await runner.RunAsync(name, (IWorkflowContext)new WorkflowContext());
     result.Context.Properties.TryGetValue("message", out var message);
     return Results.Ok(new { result.Status, Message = message });
 });
