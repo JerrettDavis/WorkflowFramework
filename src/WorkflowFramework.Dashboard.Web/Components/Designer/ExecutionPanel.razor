@@ -1,7 +1,15 @@
+@inject DashboardApiClient Api
+
 <div class="border-t border-gray-700 bg-gray-850">
     <button @onclick="OnToggle"
             class="w-full flex items-center justify-between px-4 py-1.5 bg-gray-800 hover:bg-gray-750 text-xs text-gray-400">
-        <span>Output</span>
+        <span>
+            Output
+            @if (ActiveRunId is not null)
+            {
+                <span class="ml-2 text-yellow-400">● @_runStatus</span>
+            }
+        </span>
         <span>@(IsVisible ? "▼" : "▲")</span>
     </button>
     @if (IsVisible)
@@ -26,4 +34,52 @@
     [Parameter] public bool IsVisible { get; set; }
     [Parameter] public EventCallback OnToggle { get; set; }
     [Parameter] public List<string> LogEntries { get; set; } = [];
+    [Parameter] public string? ActiveRunId { get; set; }
+    [Parameter] public EventCallback<string> OnRunStatusChanged { get; set; }
+
+    private string _runStatus = "";
+    private CancellationTokenSource? _pollCts;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ActiveRunId is not null && _pollCts is null)
+        {
+            _pollCts = new CancellationTokenSource();
+            _ = PollRunStatus(ActiveRunId, _pollCts.Token);
+        }
+        else if (ActiveRunId is null && _pollCts is not null)
+        {
+            _pollCts.Cancel();
+            _pollCts.Dispose();
+            _pollCts = null;
+        }
+    }
+
+    private async Task PollRunStatus(string runId, CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(1000, ct);
+                var run = await Api.GetRunAsync(runId, ct);
+                if (run is null) break;
+
+                _runStatus = run.Status;
+                await OnRunStatusChanged.InvokeAsync(run.Status);
+                await InvokeAsync(StateHasChanged);
+
+                if (run.Status is "Completed" or "Failed" or "Cancelled")
+                    break;
+            }
+        }
+        catch (OperationCanceledException) { }
+        catch { /* polling failed, stop silently */ }
+    }
+
+    public void Dispose()
+    {
+        _pollCts?.Cancel();
+        _pollCts?.Dispose();
+    }
 }

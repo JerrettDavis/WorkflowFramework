@@ -11,7 +11,9 @@
     <div class="w-px h-6 bg-gray-600 mx-1"></div>
 
     <button @onclick="OnNew" class="toolbar-btn" title="New">📄 New</button>
+    <button @onclick="OnOpen" class="toolbar-btn" title="Open">📂 Open</button>
     <button @onclick="OnSave" class="toolbar-btn" title="Save">💾 Save</button>
+    <button @onclick="OnTemplates" class="toolbar-btn" title="New from Template">📋 Templates</button>
 
     <div class="w-px h-6 bg-gray-600 mx-1"></div>
 
@@ -19,8 +21,13 @@
 
     <div class="w-px h-6 bg-gray-600 mx-1"></div>
 
-    <button @onclick="OnFitView" class="toolbar-btn" title="Fit View">⊞ Fit</button>
-    <button @onclick="OnExport" class="toolbar-btn" title="Export JSON">📋 Export</button>
+    <button @onclick="OnFitView" class="toolbar-btn" title="Fit View">🔍 Fit</button>
+    <button @onclick="OnExportJson" class="toolbar-btn" title="Export JSON">📤 JSON</button>
+    <button @onclick="OnExportYaml" class="toolbar-btn" title="Export YAML">📤 YAML</button>
+    <label class="toolbar-btn cursor-pointer" title="Import">
+        📥 Import
+        <InputFile OnChange="OnImportFile" style="display:none" accept=".json,.yaml,.yml" />
+    </label>
 
     <div class="flex-1"></div>
     <span class="text-gray-500 text-xs">WorkflowFramework Designer</span>
@@ -31,8 +38,12 @@
     [Parameter] public EventCallback<string> OnWorkflowNameChanged { get; set; }
     [Parameter] public bool IsDirty { get; set; }
     [Parameter] public EventCallback OnNew { get; set; }
+    [Parameter] public EventCallback OnOpen { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnRun { get; set; }
-    [Parameter] public EventCallback OnExport { get; set; }
+    [Parameter] public EventCallback OnExportJson { get; set; }
+    [Parameter] public EventCallback OnExportYaml { get; set; }
+    [Parameter] public EventCallback<InputFileChangeEventArgs> OnImportFile { get; set; }
     [Parameter] public EventCallback OnFitView { get; set; }
+    [Parameter] public EventCallback OnTemplates { get; set; }
 }

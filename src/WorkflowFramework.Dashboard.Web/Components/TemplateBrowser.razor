@@ -1,0 +1,157 @@
+@inject DashboardApiClient Api
+
+@if (IsVisible)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-[900px] max-h-[80vh] flex flex-col border border-gray-600">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-gray-700">
+                <h2 class="text-lg font-semibold text-white">New from Template</h2>
+                <button @onclick="Close" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+
+            @if (_loading)
+            {
+                <div class="flex-1 flex items-center justify-center py-16">
+                    <span class="text-gray-400 animate-pulse">Loading templates...</span>
+                </div>
+            }
+            else
+            {
+                <div class="flex gap-2 px-5 py-3 border-b border-gray-700 overflow-x-auto">
+                    <button @onclick='() => _selectedCategory = null'
+                            class="@CategoryBtnClass(null)">All</button>
+                    @foreach (var cat in _categories)
+                    {
+                        <button @onclick='() => _selectedCategory = cat'
+                                class="@CategoryBtnClass(cat)">@cat</button>
+                    }
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-5">
+                    @if (_selectedTemplate is not null)
+                    {
+                        <div class="space-y-4">
+                            <button @onclick="() => _selectedTemplate = null" class="text-blue-400 text-sm hover:underline">&larr; Back to templates</button>
+                            <h3 class="text-xl font-bold text-white">@_selectedTemplate.Name</h3>
+                            <p class="text-gray-400">@_selectedTemplate.Description</p>
+                            <div class="flex gap-2 items-center">
+                                <span class="@DifficultyBadge(_selectedTemplate.Difficulty)">@_selectedTemplate.Difficulty</span>
+                                <span class="text-gray-500 text-xs">@_selectedTemplate.StepCount steps</span>
+                                <span class="text-gray-600 text-xs bg-gray-700 px-2 py-0.5 rounded">@_selectedTemplate.Category</span>
+                            </div>
+                            @if (_selectedTemplate.Tags.Count > 0)
+                            {
+                                <div class="flex gap-1 flex-wrap">
+                                    @foreach (var tag in _selectedTemplate.Tags)
+                                    {
+                                        <span class="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">@tag</span>
+                                    }
+                                </div>
+                            }
+                            <button @onclick="UseSelectedTemplate"
+                                    disabled="@_using"
+                                    class="mt-4 bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded font-semibold disabled:opacity-50">
+                                @(_using ? "Creating..." : "Use This Template")
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        var filtered = _selectedCategory is null ? _templates : _templates.Where(t => t.Category == _selectedCategory);
+                        <div class="grid grid-cols-3 gap-4">
+                            @foreach (var t in filtered)
+                            {
+                                <div @onclick="() => SelectTemplate(t)"
+                                     class="bg-gray-750 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors">
+                                    <h4 class="text-white font-semibold text-sm mb-1">@t.Name</h4>
+                                    <p class="text-gray-400 text-xs mb-2 line-clamp-2">@t.Description</p>
+                                    <div class="flex items-center gap-2">
+                                        <span class="@DifficultyBadge(t.Difficulty) text-[10px]">@t.Difficulty</span>
+                                        <span class="text-gray-500 text-[10px]">@t.StepCount steps</span>
+                                        <span class="text-gray-600 text-[10px] bg-gray-700 px-1.5 py-0.5 rounded">@t.Category</span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_error is not null)
+            {
+                <div class="px-5 py-2 bg-red-900/50 text-red-300 text-sm border-t border-red-800">@_error</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<SavedWorkflowDefinition> OnTemplateUsed { get; set; }
+
+    private bool _loading;
+    private bool _using;
+    private string? _error;
+    private string? _selectedCategory;
+    private List<string> _categories = [];
+    private List<WorkflowTemplateSummary> _templates = [];
+    private WorkflowTemplateSummary? _selectedTemplate;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible && _templates.Count == 0)
+            await LoadTemplates();
+    }
+
+    private async Task LoadTemplates()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var catsTask = Api.GetTemplateCategoriesAsync();
+            var templatesTask = Api.GetTemplatesAsync();
+            _categories = await catsTask;
+            _templates = await templatesTask;
+        }
+        catch (Exception ex) { _error = $"Failed to load templates: {ex.Message}"; }
+        finally { _loading = false; }
+    }
+
+    private void SelectTemplate(WorkflowTemplateSummary t) => _selectedTemplate = t;
+
+    private async Task UseSelectedTemplate()
+    {
+        if (_selectedTemplate is null) return;
+        _using = true;
+        _error = null;
+        try
+        {
+            var result = await Api.UseTemplateAsync(_selectedTemplate.Id);
+            if (result is not null) await OnTemplateUsed.InvokeAsync(result);
+            await Close();
+        }
+        catch (Exception ex) { _error = $"Failed to use template: {ex.Message}"; }
+        finally { _using = false; }
+    }
+
+    private async Task Close()
+    {
+        _selectedTemplate = null;
+        await OnClose.InvokeAsync();
+    }
+
+    private string CategoryBtnClass(string? cat) =>
+        (cat == _selectedCategory)
+            ? "px-3 py-1 rounded text-sm font-medium bg-blue-600 text-white"
+            : "px-3 py-1 rounded text-sm font-medium bg-gray-700 text-gray-300 hover:bg-gray-600";
+
+    private static string DifficultyBadge(TemplateDifficulty d) => d switch
+    {
+        TemplateDifficulty.Beginner => "text-xs px-2 py-0.5 rounded bg-green-900/50 text-green-300",
+        TemplateDifficulty.Intermediate => "text-xs px-2 py-0.5 rounded bg-yellow-900/50 text-yellow-300",
+        TemplateDifficulty.Advanced => "text-xs px-2 py-0.5 rounded bg-red-900/50 text-red-300",
+        _ => "text-xs px-2 py-0.5 rounded bg-gray-700 text-gray-300"
+    };
+}

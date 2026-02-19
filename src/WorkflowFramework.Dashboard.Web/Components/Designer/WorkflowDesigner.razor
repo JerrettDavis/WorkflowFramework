@@ -1,4 +1,5 @@
 @inject IJSRuntime JS
+@inject DashboardApiClient Api
 @implements IAsyncDisposable
 
 <div class="flex flex-col h-full">
@@ -6,37 +7,54 @@
                      OnWorkflowNameChanged="name => { _workflowName = name; _dirty = true; }"
                      IsDirty="_dirty"
                      OnNew="HandleNew"
+                     OnOpen="() => _showOpenDialog = true"
                      OnSave="HandleSave"
                      OnRun="HandleRun"
-                     OnExport="HandleExport"
-                     OnFitView="HandleFitView" />
+                     OnExportJson="HandleExportJson"
+                     OnExportYaml="HandleExportYaml"
+                     OnImportFile="HandleImport"
+                     OnFitView="HandleFitView"
+                     OnTemplates="() => _showTemplateBrowser = true" />
 
     <div class="flex flex-1 overflow-hidden">
-        <StepPalette Steps="StepCatalog.GetAll()" />
+        <StepPalette />
 
         <div class="flex-1 relative" id="workflow-canvas"></div>
 
         <PropertiesPanel SelectedNodeId="@_selectedNodeId"
                          SelectedNodeType="@_selectedNodeType"
-                         Steps="StepCatalog.GetAll()"
                          NodeConfig="_selectedNodeConfig"
                          OnConfigChanged="HandleConfigChanged" />
     </div>
 
     <ExecutionPanel IsVisible="_showExecutionPanel"
                     OnToggle="() => _showExecutionPanel = !_showExecutionPanel"
-                    LogEntries="_logEntries" />
+                    LogEntries="_logEntries"
+                    ActiveRunId="@_activeRunId"
+                    OnRunStatusChanged="HandleRunStatusChanged" />
 </div>
+
+<TemplateBrowser IsVisible="_showTemplateBrowser"
+                 OnClose="() => _showTemplateBrowser = false"
+                 OnTemplateUsed="HandleTemplateUsed" />
+
+<WorkflowListDialog IsVisible="_showOpenDialog"
+                    OnClose="() => _showOpenDialog = false"
+                    OnWorkflowSelected="HandleWorkflowOpened" />
 
 @code {
     private DotNetObjectReference<WorkflowDesigner>? _dotNetRef;
     private string _workflowName = "Untitled Workflow";
+    private string? _currentWorkflowId;
     private bool _dirty;
     private string? _selectedNodeId;
     private string? _selectedNodeType;
     private Dictionary<string, object?> _selectedNodeConfig = new();
     private bool _showExecutionPanel;
     private List<string> _logEntries = [];
+    private bool _showTemplateBrowser;
+    private bool _showOpenDialog;
+    private string? _activeRunId;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -83,31 +101,111 @@
     private async Task HandleNew()
     {
         _workflowName = "Untitled Workflow";
+        _currentWorkflowId = null;
         _dirty = false;
         _selectedNodeId = null;
         _selectedNodeType = null;
+        _activeRunId = null;
         await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", Array.Empty<object>(), Array.Empty<object>());
     }
 
     private async Task HandleSave()
     {
-        var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
-        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Saved workflow: {_workflowName}");
-        _dirty = false;
+        try
+        {
+            var definition = await JS.InvokeAsync<System.Text.Json.JsonElement>("workflowEditor.getWorkflowDefinition");
+            var request = new CreateWorkflowRequest
+            {
+                Description = null,
+                Definition = new WorkflowDefinitionDto { Name = _workflowName }
+            };
+
+            SavedWorkflowDefinition? result;
+            if (_currentWorkflowId is not null)
+                result = await Api.UpdateWorkflowAsync(_currentWorkflowId, request);
+            else
+                result = await Api.SaveWorkflowAsync(request);
+
+            if (result is not null)
+            {
+                _currentWorkflowId = result.Id;
+                _dirty = false;
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Saved workflow: {_workflowName} (id: {result.Id})");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Save failed: {ex.Message}");
+        }
     }
 
     private async Task HandleRun()
     {
         _showExecutionPanel = true;
-        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Running workflow: {_workflowName}...");
-        var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
-        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Workflow execution started (mock)");
+
+        if (_currentWorkflowId is null)
+        {
+            // Auto-save first
+            await HandleSave();
+            if (_currentWorkflowId is null)
+            {
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Cannot run: workflow not saved");
+                return;
+            }
+        }
+
+        try
+        {
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Running workflow: {_workflowName}...");
+            var run = await Api.RunWorkflowAsync(_currentWorkflowId);
+            if (run is not null)
+            {
+                _activeRunId = run.RunId;
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Run started: {run.RunId} (status: {run.Status})");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Run failed: {ex.Message}");
+        }
     }
 
-    private async Task HandleExport()
+    private async Task HandleExportJson()
     {
         var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
-        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Exported workflow definition");
+        var json = System.Text.Json.JsonSerializer.Serialize(definition, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
+        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] JSON copied to clipboard");
+    }
+
+    private async Task HandleExportYaml()
+    {
+        var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
+        var json = System.Text.Json.JsonSerializer.Serialize(definition);
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
+        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Exported (JSON format - YAML requires server-side serializer)");
+    }
+
+    private async Task HandleImport(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var stream = e.File.OpenReadStream(maxAllowedSize: 1024 * 1024);
+            using var reader = new StreamReader(stream);
+            var content = await reader.ReadToEndAsync();
+            var parsed = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(content);
+
+            if (parsed.TryGetProperty("nodes", out var nodes) && parsed.TryGetProperty("edges", out var edges))
+            {
+                await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", nodes, edges);
+                _dirty = true;
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Imported workflow from {e.File.Name}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Import failed: {ex.Message}");
+        }
     }
 
     private async Task HandleFitView()
@@ -123,6 +221,38 @@
         {
             await JS.InvokeVoidAsync("workflowEditor.updateNode", _selectedNodeId, config);
         }
+    }
+
+    private async Task HandleTemplateUsed(SavedWorkflowDefinition saved)
+    {
+        _currentWorkflowId = saved.Id;
+        _workflowName = saved.Definition.Name;
+        _dirty = false;
+        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Loaded template as workflow: {_workflowName}");
+        // Load the workflow definition into canvas - template creates a new workflow
+        // For now just reset canvas; the nodes from template would need to be mapped to canvas format
+        await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", Array.Empty<object>(), Array.Empty<object>());
+    }
+
+    private async Task HandleWorkflowOpened(SavedWorkflowDefinition saved)
+    {
+        _currentWorkflowId = saved.Id;
+        _workflowName = saved.Definition.Name;
+        _dirty = false;
+        _selectedNodeId = null;
+        _selectedNodeType = null;
+        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Opened workflow: {_workflowName}");
+        await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", Array.Empty<object>(), Array.Empty<object>());
+    }
+
+    private void HandleRunStatusChanged(string status)
+    {
+        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Run status: {status}");
+        if (status is "Completed" or "Failed" or "Cancelled")
+        {
+            _activeRunId = null;
+        }
+        StateHasChanged();
     }
 
     public async ValueTask DisposeAsync()

@@ -1,18 +1,26 @@
+@inject DashboardApiClient Api
+
 <div class="w-72 bg-gray-800 border-l border-gray-700 overflow-y-auto flex-shrink-0">
     @if (SelectedNodeId is null)
     {
         <div class="p-4 text-gray-500 text-sm text-center mt-8">
-            <p class="text-2xl mb-2">👈</p>
+            <p class="text-2xl mb-2">🔧</p>
             <p>Select a step on the canvas to edit its properties</p>
         </div>
     }
     else
     {
-        var stepDef = Steps.FirstOrDefault(s => s.Type == SelectedNodeType);
+        var stepDef = _localSteps.FirstOrDefault(s => s.Type == SelectedNodeType);
         <div class="p-3 border-b border-gray-700">
             <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Properties</h2>
             <p class="text-xs text-gray-500 mt-1">@(stepDef?.Icon) @(stepDef?.Name ?? SelectedNodeType)</p>
         </div>
+
+        @if (_loadingSchema)
+        {
+            <div class="p-3 text-gray-500 text-xs animate-pulse">Loading schema...</div>
+        }
+
         <div class="p-3 space-y-3">
             <div>
                 <label class="block text-xs text-gray-400 mb-1">Step Name</label>
@@ -20,7 +28,22 @@
                        @oninput='e => UpdateConfig("label", e.Value)'
                        class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
-            @if (stepDef is not null)
+
+            @* Render schema fields from API if available *@
+            @if (_schemaFields.Count > 0)
+            {
+                @foreach (var field in _schemaFields)
+                {
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">@field.Label</label>
+                        <input type="text"
+                               value="@(NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? string.Empty)"
+                               @oninput='e => UpdateConfig(field.Name, e.Value)'
+                               class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    </div>
+                }
+            }
+            else if (stepDef is not null)
             {
                 @foreach (var prop in stepDef.Properties)
                 {
@@ -64,9 +87,61 @@
 @code {
     [Parameter] public string? SelectedNodeId { get; set; }
     [Parameter] public string? SelectedNodeType { get; set; }
-    [Parameter] public List<StepDefinition> Steps { get; set; } = [];
     [Parameter] public Dictionary<string, object?> NodeConfig { get; set; } = new();
     [Parameter] public EventCallback<Dictionary<string, object?>> OnConfigChanged { get; set; }
+
+    private List<StepDefinition> _localSteps = StepCatalog.GetAll();
+    private bool _loadingSchema;
+    private List<SchemaField> _schemaFields = [];
+    private string? _lastLoadedType;
+
+    private sealed class SchemaField
+    {
+        public string Name { get; set; } = "";
+        public string Label { get; set; } = "";
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SelectedNodeType is not null && SelectedNodeType != _lastLoadedType)
+        {
+            _lastLoadedType = SelectedNodeType;
+            await LoadSchema(SelectedNodeType);
+        }
+        else if (SelectedNodeType is null)
+        {
+            _lastLoadedType = null;
+            _schemaFields = [];
+        }
+    }
+
+    private async Task LoadSchema(string type)
+    {
+        _loadingSchema = true;
+        _schemaFields = [];
+        try
+        {
+            var info = await Api.GetStepTypeAsync(type);
+            if (info?.ConfigSchema is not null)
+            {
+                // Parse JSON schema properties into simple fields
+                var schema = info.ConfigSchema.Value;
+                if (schema.TryGetProperty("properties", out var props))
+                {
+                    foreach (var prop in props.EnumerateObject())
+                    {
+                        _schemaFields.Add(new SchemaField
+                        {
+                            Name = prop.Name,
+                            Label = prop.Name[..1].ToUpper() + prop.Name[1..]
+                        });
+                    }
+                }
+            }
+        }
+        catch { /* fall back to local step definitions */ }
+        finally { _loadingSchema = false; }
+    }
 
     private async Task UpdateConfig(string key, object? value)
     {

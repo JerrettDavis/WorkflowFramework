@@ -1,9 +1,14 @@
+using WorkflowFramework.Dashboard.Web.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddHttpClient<DashboardApiClient>(client =>
+    client.BaseAddress = new Uri("https+http://dashboard-api"));
 
 var app = builder.Build();
 

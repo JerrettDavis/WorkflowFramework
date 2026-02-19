@@ -1,3 +1,5 @@
+@inject DashboardApiClient Api
+
 <div class="w-56 bg-gray-800 border-r border-gray-700 overflow-y-auto flex-shrink-0">
     <div class="p-3 border-b border-gray-700">
         <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Steps</h2>
@@ -5,37 +7,88 @@
                @oninput="e => _filter = e.Value?.ToString() ?? string.Empty"
                class="mt-2 w-full bg-gray-700 text-gray-200 text-xs px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
     </div>
-    @foreach (var group in FilteredSteps.GroupBy(s => s.Category))
+
+    @if (_loading)
     {
-        <div class="px-3 py-2">
-            <h3 class="text-xs font-semibold uppercase tracking-wider mb-1" style="color: @(StepCatalog.CategoryColors.GetValueOrDefault(group.Key, "#888"))">
-                @group.Key
-            </h3>
-            @foreach (var step in group)
-            {
-                <div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-grab hover:bg-gray-700 text-sm"
-                     draggable="true"
-                     data-step-type="@step.Type"
-                     data-step-name="@step.Name"
-                     data-step-icon="@step.Icon"
-                     data-step-category="@step.Category"
-                     data-step-color="@step.Color"
-                     ondragstart="workflowEditor.handlePaletteDragStart(event, '@step.Type', '@step.Name', '@step.Icon', '@step.Category', '@step.Color')">
-                    <span>@step.Icon</span>
-                    <span class="text-gray-200">@step.Name</span>
-                </div>
-            }
-        </div>
+        <div class="p-3 text-gray-500 text-xs animate-pulse">Loading steps...</div>
+    }
+    else
+    {
+        @foreach (var group in FilteredSteps.GroupBy(s => s.Category))
+        {
+            <div class="px-3 py-2">
+                <h3 class="text-xs font-semibold uppercase tracking-wider mb-1" style="color: @(StepCatalog.CategoryColors.GetValueOrDefault(group.Key, "#888"))">
+                    @group.Key
+                </h3>
+                @foreach (var step in group)
+                {
+                    <div class="flex items-center gap-2 px-2 py-1.5 rounded cursor-grab hover:bg-gray-700 text-sm"
+                         draggable="true"
+                         data-step-type="@step.Type"
+                         data-step-name="@step.Name"
+                         data-step-icon="@step.Icon"
+                         data-step-category="@step.Category"
+                         data-step-color="@step.Color"
+                         ondragstart="workflowEditor.handlePaletteDragStart(event, '@step.Type', '@step.Name', '@step.Icon', '@step.Category', '@step.Color')">
+                        <span>@step.Icon</span>
+                        <span class="text-gray-200">@step.Name</span>
+                    </div>
+                }
+            </div>
+        }
     }
 </div>
 
 @code {
-    [Parameter] public List<StepDefinition> Steps { get; set; } = [];
     private string _filter = "";
+    private bool _loading = true;
+    private List<StepDefinition> _steps = [];
 
     private IEnumerable<StepDefinition> FilteredSteps =>
         string.IsNullOrWhiteSpace(_filter)
-            ? Steps
-            : Steps.Where(s => s.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)
+            ? _steps
+            : _steps.Where(s => s.Name.Contains(_filter, StringComparison.OrdinalIgnoreCase)
                              || s.Category.Contains(_filter, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var apiSteps = await Api.GetStepTypesAsync();
+            if (apiSteps.Count > 0)
+            {
+                _steps = apiSteps.Select(s => new StepDefinition
+                {
+                    Type = s.Type,
+                    Name = s.Name,
+                    Category = s.Category,
+                    Icon = CategoryIcon(s.Category),
+                    Color = StepCatalog.CategoryColors.GetValueOrDefault(s.Category, "#888"),
+                    Properties = []
+                }).ToList();
+            }
+            else
+            {
+                _steps = StepCatalog.GetAll();
+            }
+        }
+        catch
+        {
+            // Fallback to hardcoded catalog if API unavailable
+            _steps = StepCatalog.GetAll();
+        }
+        _loading = false;
+    }
+
+    private static string CategoryIcon(string category) => category switch
+    {
+        "Core" => "⚙",
+        "Integration" => "🔗",
+        "AI/Agents" => "🤖",
+        "Data" => "📊",
+        "HTTP" => "🌐",
+        "Events" => "⚡",
+        "Human Tasks" => "👤",
+        _ => "📦"
+    };
 }

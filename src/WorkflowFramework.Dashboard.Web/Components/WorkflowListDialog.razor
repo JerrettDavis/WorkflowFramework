@@ -1,0 +1,131 @@
+@inject DashboardApiClient Api
+
+@if (IsVisible)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-[600px] max-h-[70vh] flex flex-col border border-gray-600">
+            <div class="flex items-center justify-between px-5 py-3 border-b border-gray-700">
+                <h2 class="text-lg font-semibold text-white">Open Workflow</h2>
+                <button @onclick="Close" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+
+            <div class="px-5 py-3 border-b border-gray-700">
+                <input type="text" placeholder="Search workflows..."
+                       @oninput="e => _search = e.Value?.ToString() ?? string.Empty"
+                       class="w-full bg-gray-700 text-gray-200 text-sm px-3 py-2 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            </div>
+
+            @if (_loading)
+            {
+                <div class="flex-1 flex items-center justify-center py-12">
+                    <span class="text-gray-400 animate-pulse">Loading...</span>
+                </div>
+            }
+            else
+            {
+                <div class="flex-1 overflow-y-auto">
+                    @foreach (var wf in Filtered)
+                    {
+                        <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-750 border-b border-gray-700/50 cursor-pointer"
+                             @onclick="() => Select(wf)">
+                            <div>
+                                <div class="text-white text-sm font-medium">@wf.Name</div>
+                                <div class="text-gray-500 text-xs">
+                                    @wf.StepCount steps &middot; @wf.LastModified.LocalDateTime.ToString("g")
+                                    @if (!string.IsNullOrEmpty(wf.Description))
+                                    { <span>&middot; @wf.Description</span> }
+                                </div>
+                            </div>
+                            <button @onclick:stopPropagation @onclick="() => ConfirmDelete(wf)"
+                                    class="text-red-400 hover:text-red-300 text-xs px-2 py-1 rounded hover:bg-red-900/30">
+                                Delete
+                            </button>
+                        </div>
+                    }
+                    @if (!Filtered.Any())
+                    {
+                        <div class="text-gray-500 text-sm text-center py-8">No workflows found.</div>
+                    }
+                </div>
+            }
+
+            @if (_confirmDeleteId is not null)
+            {
+                <div class="px-5 py-3 bg-red-900/30 border-t border-red-800 flex items-center justify-between">
+                    <span class="text-red-300 text-sm">Delete this workflow?</span>
+                    <div class="flex gap-2">
+                        <button @onclick="() => _confirmDeleteId = null" class="text-gray-400 text-sm px-3 py-1">Cancel</button>
+                        <button @onclick="ExecuteDelete" class="bg-red-600 text-white text-sm px-3 py-1 rounded">Delete</button>
+                    </div>
+                </div>
+            }
+
+            @if (_error is not null)
+            {
+                <div class="px-5 py-2 bg-red-900/50 text-red-300 text-sm border-t border-red-800">@_error</div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<SavedWorkflowDefinition> OnWorkflowSelected { get; set; }
+
+    private bool _loading;
+    private string? _error;
+    private string _search = "";
+    private string? _confirmDeleteId;
+    private List<WorkflowListItem> _workflows = [];
+
+    private IEnumerable<WorkflowListItem> Filtered =>
+        string.IsNullOrWhiteSpace(_search)
+            ? _workflows
+            : _workflows.Where(w => w.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible) await LoadWorkflows();
+    }
+
+    private async Task LoadWorkflows()
+    {
+        _loading = true; _error = null;
+        try { _workflows = await Api.GetWorkflowsAsync(); }
+        catch (Exception ex) { _error = $"Failed to load: {ex.Message}"; }
+        finally { _loading = false; }
+    }
+
+    private async Task Select(WorkflowListItem item)
+    {
+        _error = null;
+        try
+        {
+            var wf = await Api.GetWorkflowAsync(item.Id);
+            if (wf is not null) await OnWorkflowSelected.InvokeAsync(wf);
+            await Close();
+        }
+        catch (Exception ex) { _error = $"Failed to open: {ex.Message}"; }
+    }
+
+    private void ConfirmDelete(WorkflowListItem item) => _confirmDeleteId = item.Id;
+
+    private async Task ExecuteDelete()
+    {
+        if (_confirmDeleteId is null) return;
+        try
+        {
+            await Api.DeleteWorkflowAsync(_confirmDeleteId);
+            _workflows.RemoveAll(w => w.Id == _confirmDeleteId);
+            _confirmDeleteId = null;
+        }
+        catch (Exception ex) { _error = $"Failed to delete: {ex.Message}"; }
+    }
+
+    private async Task Close()
+    {
+        _confirmDeleteId = null;
+        await OnClose.InvokeAsync();
+    }
+}
