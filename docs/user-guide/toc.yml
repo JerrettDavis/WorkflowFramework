@@ -85,5 +85,9 @@
     - name: Testing
       href: testing.md
 
+- name: Dashboard
+  href: dashboard/
+  topicHref: dashboard/index.md
+
 - name: Samples
   href: samples.md

@@ -1,0 +1,26 @@
+- name: Overview
+  href: index.md
+- name: Getting Started
+  href: getting-started.md
+- name: Workflow Designer
+  href: designer.md
+- name: Step Types
+  href: step-types.md
+- name: Workflow Management
+  href: management.md
+- name: Templates
+  href: templates.md
+- name: Execution & Monitoring
+  href: execution.md
+- name: Validation
+  href: validation.md
+- name: Versioning
+  href: versioning.md
+- name: Audit Trail
+  href: audit.md
+- name: Keyboard Shortcuts
+  href: shortcuts.md
+- name: Theme & Preferences
+  href: preferences.md
+- name: API Reference
+  href: api-reference.md
