@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <RootNamespace>WorkflowFramework.Cli</RootNamespace>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>wf</ToolCommandName>
+    <PackageOutputPath>./nupkg</PackageOutputPath>
+    <Description>CLI tool for scaffolding, running, listing, and validating WorkflowFramework workflows.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Serialization\WorkflowFramework.Serialization.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+  </ItemGroup>
+</Project>
