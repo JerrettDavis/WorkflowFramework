@@ -1,0 +1,387 @@
+Summary
+  Generated on: 2/19/2026 - 7:10:18 AM
+  Parser: MultiReport (2x OpenCover)
+  Assemblies: 35
+  Classes: 298
+  Files: 200
+  Line coverage: 91.2%
+  Covered lines: 5681
+  Uncovered lines: 543
+  Coverable lines: 6224
+  Total lines: 14274
+  Branch coverage: 82.8% (1787 of 2157)
+  Covered branches: 1787
+  Total branches: 2157
+  Method coverage: 95.7% (1251 of 1306)
+  Full method coverage: 91.8% (1200 of 1306)
+  Covered methods: 1251
+  Fully covered methods: 1200
+  Total methods: 1306
+
+WorkflowFramework                                                                                  99.2%
+  WorkflowFramework.Attributes.StepDescriptionAttribute                                             100%
+  WorkflowFramework.Attributes.StepNameAttribute                                                    100%
+  WorkflowFramework.Attributes.StepOrderAttribute                                                   100%
+  WorkflowFramework.Attributes.StepRetryAttribute                                                   100%
+  WorkflowFramework.Attributes.StepTimeoutAttribute                                                 100%
+  WorkflowFramework.Attributes.WorkflowAttribute                                                    100%
+  WorkflowFramework.Builder.TimeoutMiddleware                                                       100%
+  WorkflowFramework.Builder.TryCatchBuilderImpl                                                     100%
+  WorkflowFramework.Builder.WorkflowBuilder                                                        97.2%
+  WorkflowFramework.Builder.WorkflowBuilder<T>                                                     95.2%
+  WorkflowFramework.Builder.WorkflowBuilderExtensions                                               100%
+  WorkflowFramework.Internal.ConditionalStep                                                        100%
+  WorkflowFramework.Internal.ConditionalStep<T>                                                     100%
+  WorkflowFramework.Internal.DelayStep                                                              100%
+  WorkflowFramework.Internal.DelegateStep                                                           100%
+  WorkflowFramework.Internal.DelegateStep<T>                                                        100%
+  WorkflowFramework.Internal.DoWhileStep                                                            100%
+  WorkflowFramework.Internal.ForEachStep<T>                                                         100%
+  WorkflowFramework.Internal.ParallelStep                                                           100%
+  WorkflowFramework.Internal.RetryGroupStep                                                         100%
+  WorkflowFramework.Internal.SubWorkflowStep                                                        100%
+  WorkflowFramework.Internal.TimeoutStep                                                            100%
+  WorkflowFramework.Internal.TryCatchStep                                                           100%
+  WorkflowFramework.Internal.TypedCompensatingStepAdapter<T>                                        100%
+  WorkflowFramework.Internal.TypedStepAdapter<T>                                                    100%
+  WorkflowFramework.Internal.TypedWorkflowAdapter<T>                                                100%
+  WorkflowFramework.Internal.WhileStep                                                              100%
+  WorkflowFramework.Persistence.WorkflowState                                                       100%
+  WorkflowFramework.Pipeline.Pipeline                                                               100%
+  WorkflowFramework.Pipeline.PipelineBuilder<T1, T2>                                                100%
+  WorkflowFramework.Registry.WorkflowRegistry                                                       100%
+  WorkflowFramework.Registry.WorkflowRunner                                                         100%
+  WorkflowFramework.StepBase                                                                        100%
+  WorkflowFramework.StepBase<T>                                                                     100%
+  WorkflowFramework.StepExecutionException                                                          100%
+  WorkflowFramework.Validation.DefaultWorkflowValidator                                             100%
+  WorkflowFramework.Validation.ValidationError                                                      100%
+  WorkflowFramework.Validation.ValidationResult                                                     100%
+  WorkflowFramework.Versioning.VersionedWorkflowRegistry                                            100%
+  WorkflowFramework.Workflow                                                                        100%
+  WorkflowFramework.WorkflowAbortedException                                                        100%
+  WorkflowFramework.WorkflowContext                                                                 100%
+  WorkflowFramework.WorkflowContext<T>                                                              100%
+  WorkflowFramework.WorkflowEngine                                                                  100%
+  WorkflowFramework.WorkflowError                                                                   100%
+  WorkflowFramework.WorkflowEventsBase                                                              100%
+  WorkflowFramework.WorkflowException                                                               100%
+  WorkflowFramework.WorkflowOptions                                                                 100%
+  WorkflowFramework.WorkflowResult                                                                  100%
+  WorkflowFramework.WorkflowResult<T>                                                               100%
+
+WorkflowFramework.Extensions.Agents                                                                84.4%
+  WorkflowFramework.Extensions.Agents.AgentBuilderExtensions                                          0%
+  WorkflowFramework.Extensions.Agents.AgentLoopOptions                                             83.3%
+  WorkflowFramework.Extensions.Agents.AgentLoopStep                                                  77%
+  WorkflowFramework.Extensions.Agents.AgentToolingOptions                                             0%
+  WorkflowFramework.Extensions.Agents.CheckpointInfo                                                100%
+  WorkflowFramework.Extensions.Agents.CodeHook                                                      100%
+  WorkflowFramework.Extensions.Agents.CommandHook                                                  18.3%
+  WorkflowFramework.Extensions.Agents.CompactionOptions                                             100%
+  WorkflowFramework.Extensions.Agents.CompactionResult                                              100%
+  WorkflowFramework.Extensions.Agents.ContextAggregator                                             100%
+  WorkflowFramework.Extensions.Agents.ContextDocument                                               100%
+  WorkflowFramework.Extensions.Agents.ContextSnapshot                                               100%
+  WorkflowFramework.Extensions.Agents.ConversationMessage                                           100%
+  WorkflowFramework.Extensions.Agents.DefaultContextManager                                         100%
+  WorkflowFramework.Extensions.Agents.DefaultTokenEstimator                                         100%
+  WorkflowFramework.Extensions.Agents.HookContext                                                   100%
+  WorkflowFramework.Extensions.Agents.HookPipeline                                                 97.2%
+  WorkflowFramework.Extensions.Agents.HookResult                                                    100%
+  WorkflowFramework.Extensions.Agents.InMemoryCheckpointStore                                       100%
+  WorkflowFramework.Extensions.Agents.LlmCompactionStrategy                                         100%
+  WorkflowFramework.Extensions.Agents.PromptHook                                                    100%
+  WorkflowFramework.Extensions.Agents.ServiceCollectionExtensions                                     0%
+  WorkflowFramework.Extensions.Agents.SlidingWindowCompactionStrategy                               100%
+  WorkflowFramework.Extensions.Agents.ToolCallStep                                                  100%
+  WorkflowFramework.Extensions.Agents.ToolDefinition                                                100%
+  WorkflowFramework.Extensions.Agents.ToolRegistry                                                 97.9%
+  WorkflowFramework.Extensions.Agents.ToolResult                                                    100%
+
+WorkflowFramework.Extensions.Agents.Mcp                                                            65.2%
+  WorkflowFramework.Extensions.Agents.Mcp.HttpMcpTransport                                            0%
+  WorkflowFramework.Extensions.Agents.Mcp.McpBuilderExtensions                                        0%
+  WorkflowFramework.Extensions.Agents.Mcp.McpClient                                                 100%
+  WorkflowFramework.Extensions.Agents.Mcp.McpJsonRpcError                                          66.6%
+  WorkflowFramework.Extensions.Agents.Mcp.McpJsonRpcMessage                                         100%
+  WorkflowFramework.Extensions.Agents.Mcp.McpResourceContent                                        100%
+  WorkflowFramework.Extensions.Agents.Mcp.McpResourceInfo                                           100%
+  WorkflowFramework.Extensions.Agents.Mcp.McpResourceProvider                                       100%
+  WorkflowFramework.Extensions.Agents.Mcp.McpServerConfig                                             0%
+  WorkflowFramework.Extensions.Agents.Mcp.McpServiceCollectionExtensions                              0%
+  WorkflowFramework.Extensions.Agents.Mcp.McpToolCallResult                                         100%
+  WorkflowFramework.Extensions.Agents.Mcp.McpToolInfo                                               100%
+  WorkflowFramework.Extensions.Agents.Mcp.McpToolProvider                                           100%
+  WorkflowFramework.Extensions.Agents.Mcp.StdioMcpTransport                                          50%
+
+WorkflowFramework.Extensions.Agents.Skills                                                         85.3%
+  WorkflowFramework.Extensions.Agents.Skills.SkillContextSource                                     100%
+  WorkflowFramework.Extensions.Agents.Skills.SkillDefinition                                        100%
+  WorkflowFramework.Extensions.Agents.Skills.SkillDiscovery                                        83.6%
+  WorkflowFramework.Extensions.Agents.Skills.SkillFrontmatter                                       100%
+  WorkflowFramework.Extensions.Agents.Skills.SkillLoader                                            100%
+  WorkflowFramework.Extensions.Agents.Skills.SkillOptions                                             0%
+  WorkflowFramework.Extensions.Agents.Skills.SkillServiceCollectionExtensions                         0%
+  WorkflowFramework.Extensions.Agents.Skills.SkillToolProvider                                      100%
+
+WorkflowFramework.Extensions.AI                                                                    92.1%
+  WorkflowFramework.Extensions.AI.AgentDecisionOptions                                              100%
+  WorkflowFramework.Extensions.AI.AgentDecisionRequest                                              100%
+  WorkflowFramework.Extensions.AI.AgentDecisionStep                                                 100%
+  WorkflowFramework.Extensions.AI.AgentPlanStep                                                     100%
+  WorkflowFramework.Extensions.AI.AgentTool                                                         100%
+  WorkflowFramework.Extensions.AI.AnthropicAgentProvider                                            100%
+  WorkflowFramework.Extensions.AI.AnthropicOptions                                                  100%
+  WorkflowFramework.Extensions.AI.EchoAgentProvider                                                 100%
+  WorkflowFramework.Extensions.AI.HuggingFaceAgentProvider                                         82.3%
+  WorkflowFramework.Extensions.AI.HuggingFaceOptions                                                100%
+  WorkflowFramework.Extensions.AI.LlmCallOptions                                                    100%
+  WorkflowFramework.Extensions.AI.LlmCallStep                                                       100%
+  WorkflowFramework.Extensions.AI.LlmRequest                                                        100%
+  WorkflowFramework.Extensions.AI.LlmResponse                                                       100%
+  WorkflowFramework.Extensions.AI.OllamaAgentProvider                                               100%
+  WorkflowFramework.Extensions.AI.OllamaOptions                                                     100%
+  WorkflowFramework.Extensions.AI.OpenAiAgentProvider                                               100%
+  WorkflowFramework.Extensions.AI.OpenAiOptions                                                     100%
+  WorkflowFramework.Extensions.AI.SemanticKernelAgentProvider                                        62%
+  WorkflowFramework.Extensions.AI.SemanticKernelOptions                                             100%
+  WorkflowFramework.Extensions.AI.TokenUsage                                                        100%
+  WorkflowFramework.Extensions.AI.ToolCall                                                          100%
+
+WorkflowFramework.Extensions.Configuration                                                          100%
+  WorkflowFramework.Extensions.Configuration.JsonWorkflowDefinitionLoader                           100%
+  WorkflowFramework.Extensions.Configuration.LoopDefinition                                         100%
+  WorkflowFramework.Extensions.Configuration.RetryDefinition                                        100%
+  WorkflowFramework.Extensions.Configuration.StepDefinition                                         100%
+  WorkflowFramework.Extensions.Configuration.StepRegistry                                           100%
+  WorkflowFramework.Extensions.Configuration.WorkflowDefinition                                     100%
+  WorkflowFramework.Extensions.Configuration.WorkflowDefinitionBuilder                              100%
+  WorkflowFramework.Extensions.Configuration.YamlWorkflowDefinitionLoader                           100%
+
+WorkflowFramework.Extensions.Connectors.Abstractions                                                100%
+  WorkflowFramework.Extensions.Connectors.Abstractions.AuthenticationConfig                         100%
+  WorkflowFramework.Extensions.Connectors.Abstractions.BuiltIn.FileConnectorConfig                  100%
+  WorkflowFramework.Extensions.Connectors.Abstractions.BuiltIn.FtpConnectorConfig                   100%
+  WorkflowFramework.Extensions.Connectors.Abstractions.BuiltIn.HttpConnectorConfig                  100%
+  WorkflowFramework.Extensions.Connectors.Abstractions.BuiltIn.SqlConnectorConfig                   100%
+  WorkflowFramework.Extensions.Connectors.Abstractions.ConnectorConfiguration                       100%
+  WorkflowFramework.Extensions.Connectors.Abstractions.ConnectorMessage                             100%
+  WorkflowFramework.Extensions.Connectors.Abstractions.ConnectorRegistry                            100%
+  WorkflowFramework.Extensions.Connectors.Abstractions.RetryConfig                                  100%
+
+WorkflowFramework.Extensions.Connectors.Grpc                                                        100%
+  WorkflowFramework.Extensions.Connectors.Grpc.GrpcConnectorConfig                                  100%
+
+WorkflowFramework.Extensions.Connectors.Messaging                                                    86%
+  WorkflowFramework.Extensions.Connectors.Messaging.Abstractions.BrokerMessage                      100%
+  WorkflowFramework.Extensions.Connectors.Messaging.Configuration.AzureServiceBusConnectorConfig    100%
+  WorkflowFramework.Extensions.Connectors.Messaging.Configuration.KafkaConnectorConfig              100%
+  WorkflowFramework.Extensions.Connectors.Messaging.Configuration.RabbitMqConnectorConfig           100%
+  WorkflowFramework.Extensions.Connectors.Messaging.InMemoryMessageConnector                       96.8%
+  WorkflowFramework.Extensions.Connectors.Messaging.ServiceCollectionExtensions                       0%
+
+WorkflowFramework.Extensions.DataMapping                                                           86.1%
+  WorkflowFramework.Extensions.DataMapping.Abstractions.DataMappingProfile                          100%
+  WorkflowFramework.Extensions.DataMapping.Abstractions.DataMappingResult                           100%
+  WorkflowFramework.Extensions.DataMapping.Abstractions.FieldMapping                                100%
+  WorkflowFramework.Extensions.DataMapping.Abstractions.TransformerRef                              100%
+  WorkflowFramework.Extensions.DataMapping.Batch.BatchOptions                                       100%
+  WorkflowFramework.Extensions.DataMapping.Batch.BatchProcessStep                                   100%
+  WorkflowFramework.Extensions.DataMapping.Batch.DataBatcher                                        100%
+  WorkflowFramework.Extensions.DataMapping.Builder.DataMappingBuilderExtensions                     100%
+  WorkflowFramework.Extensions.DataMapping.Builder.DataMappingProfileBuilder                        100%
+  WorkflowFramework.Extensions.DataMapping.Engine.DataMapper                                         89%
+  WorkflowFramework.Extensions.DataMapping.Engine.FieldTransformerRegistry                           97%
+  WorkflowFramework.Extensions.DataMapping.Internal.DictHelper                                      100%
+  WorkflowFramework.Extensions.DataMapping.Readers.DictionarySourceReader                          73.6%
+  WorkflowFramework.Extensions.DataMapping.Readers.JsonSourceReader                                81.8%
+  WorkflowFramework.Extensions.DataMapping.Readers.ObjectSourceReader                              69.5%
+  WorkflowFramework.Extensions.DataMapping.Readers.XmlSourceReader                                   59%
+  WorkflowFramework.Extensions.DataMapping.ServiceCollectionExtensions                              100%
+  WorkflowFramework.Extensions.DataMapping.Steps.DataMapStep                                       96.4%
+  WorkflowFramework.Extensions.DataMapping.Steps.FormatConvertStep                                  100%
+  WorkflowFramework.Extensions.DataMapping.Steps.SchemaValidateStep                                 100%
+  WorkflowFramework.Extensions.DataMapping.Steps.SchemaValidationResult                             100%
+  WorkflowFramework.Extensions.DataMapping.Transformers.BooleanTransformer                          100%
+  WorkflowFramework.Extensions.DataMapping.Transformers.CompositeTransformer                       91.6%
+  WorkflowFramework.Extensions.DataMapping.Transformers.ConditionalTransformer                     90.9%
+  WorkflowFramework.Extensions.DataMapping.Transformers.DateFormatTransformer                      82.3%
+  WorkflowFramework.Extensions.DataMapping.Transformers.DefaultValueTransformer                     100%
+  WorkflowFramework.Extensions.DataMapping.Transformers.NumberFormatTransformer                    84.6%
+  WorkflowFramework.Extensions.DataMapping.Transformers.RegexReplaceTransformer                      80%
+  WorkflowFramework.Extensions.DataMapping.Transformers.ToLowerTransformer                          100%
+  WorkflowFramework.Extensions.DataMapping.Transformers.ToUpperTransformer                          100%
+  WorkflowFramework.Extensions.DataMapping.Transformers.TrimTransformer                             100%
+  WorkflowFramework.Extensions.DataMapping.Writers.DictionaryDestinationWriter                     78.2%
+  WorkflowFramework.Extensions.DataMapping.Writers.JsonDestinationWriter                           78.2%
+  WorkflowFramework.Extensions.DataMapping.Writers.ObjectDestinationWriter                           54%
+  WorkflowFramework.Extensions.DataMapping.Writers.XmlDestinationWriter                            72.5%
+
+WorkflowFramework.Extensions.DataMapping.Formats                                                    100%
+  WorkflowFramework.Extensions.DataMapping.Formats.Converters.FormatConverter                       100%
+
+WorkflowFramework.Extensions.DataMapping.Schema                                                    98.8%
+  WorkflowFramework.Extensions.DataMapping.Schema.Abstractions.SchemaRegistry                       100%
+  WorkflowFramework.Extensions.DataMapping.Schema.Validators.JsonSchemaValidator                   98.2%
+  WorkflowFramework.Extensions.DataMapping.Schema.Validators.XmlSchemaValidator                     100%
+
+WorkflowFramework.Extensions.DependencyInjection                                                   86.2%
+  WorkflowFramework.Extensions.DependencyInjection.ServiceCollectionExtensions                     80.9%
+  WorkflowFramework.Extensions.DependencyInjection.WorkflowBuilderExtensions                        100%
+
+WorkflowFramework.Extensions.Diagnostics                                                            100%
+  WorkflowFramework.Extensions.Diagnostics.AuditEntry                                               100%
+  WorkflowFramework.Extensions.Diagnostics.AuditMiddleware                                          100%
+  WorkflowFramework.Extensions.Diagnostics.CachingMiddleware                                        100%
+  WorkflowFramework.Extensions.Diagnostics.DashboardSummary                                         100%
+  WorkflowFramework.Extensions.Diagnostics.IdempotencyMiddleware                                    100%
+  WorkflowFramework.Extensions.Diagnostics.InMemoryAuditStore                                       100%
+  WorkflowFramework.Extensions.Diagnostics.LoggingMiddleware                                        100%
+  WorkflowFramework.Extensions.Diagnostics.MetricsDashboardDataProvider                             100%
+  WorkflowFramework.Extensions.Diagnostics.MetricsMiddleware                                        100%
+  WorkflowFramework.Extensions.Diagnostics.OpenTelemetryMiddleware                                  100%
+  WorkflowFramework.Extensions.Diagnostics.StructuredLoggingMiddleware                              100%
+  WorkflowFramework.Extensions.Diagnostics.TimingMiddleware                                         100%
+  WorkflowFramework.Extensions.Diagnostics.TracingMiddleware                                        100%
+  WorkflowFramework.Extensions.Diagnostics.ValidationMiddleware                                     100%
+  WorkflowFramework.Extensions.Diagnostics.WorkflowActivitySource                                   100%
+
+WorkflowFramework.Extensions.Distributed                                                            100%
+  WorkflowFramework.Extensions.Distributed.InMemoryDistributedLock                                  100%
+  WorkflowFramework.Extensions.Distributed.InMemoryWorkflowQueue                                    100%
+  WorkflowFramework.Extensions.Distributed.WorkerHealthStatus                                       100%
+  WorkflowFramework.Extensions.Distributed.WorkflowQueueItem                                        100%
+  WorkflowFramework.Extensions.Distributed.WorkflowWorker                                           100%
+  WorkflowFramework.Extensions.Distributed.WorkflowWorkerOptions                                    100%
+
+WorkflowFramework.Extensions.Events                                                                 100%
+  WorkflowFramework.Extensions.Events.EventBuilderExtensions                                        100%
+  WorkflowFramework.Extensions.Events.InMemoryEventBus                                              100%
+  WorkflowFramework.Extensions.Events.PublishEventStep                                              100%
+  WorkflowFramework.Extensions.Events.WaitForEventStep                                              100%
+  WorkflowFramework.Extensions.Events.WorkflowEvent                                                 100%
+
+WorkflowFramework.Extensions.Expressions                                                           97.9%
+  WorkflowFramework.Extensions.Expressions.ExpressionBuilderExtensions                              100%
+  WorkflowFramework.Extensions.Expressions.SimpleExpressionEvaluator                               97.3%
+  WorkflowFramework.Extensions.Expressions.TemplateEngine                                           100%
+
+WorkflowFramework.Extensions.Hosting                                                               96.4%
+  WorkflowFramework.Extensions.Hosting.HostingServiceCollectionExtensions                          95.2%
+  WorkflowFramework.Extensions.Hosting.WorkflowHealthCheck                                          100%
+  WorkflowFramework.Extensions.Hosting.WorkflowHostingOptions                                       100%
+  WorkflowFramework.Extensions.Hosting.WorkflowSchedulerHostedService                              95.6%
+
+WorkflowFramework.Extensions.Http                                                                   100%
+  WorkflowFramework.Extensions.Http.ApiKeyAuthProvider                                              100%
+  WorkflowFramework.Extensions.Http.BearerTokenAuthProvider                                         100%
+  WorkflowFramework.Extensions.Http.HttpBuilderExtensions                                           100%
+  WorkflowFramework.Extensions.Http.HttpStep                                                        100%
+  WorkflowFramework.Extensions.Http.HttpStepOptions                                                 100%
+  WorkflowFramework.Extensions.Http.WebhookPayload                                                  100%
+  WorkflowFramework.Extensions.Http.WebhookTriggerOptions                                           100%
+  WorkflowFramework.Extensions.Http.WebhookTriggerStep                                              100%
+
+WorkflowFramework.Extensions.HumanTasks                                                             100%
+  WorkflowFramework.Extensions.HumanTasks.ApprovalOptions                                           100%
+  WorkflowFramework.Extensions.HumanTasks.ApprovalStep                                              100%
+  WorkflowFramework.Extensions.HumanTasks.EscalationRule                                            100%
+  WorkflowFramework.Extensions.HumanTasks.HumanTask                                                 100%
+  WorkflowFramework.Extensions.HumanTasks.HumanTaskOptions                                          100%
+  WorkflowFramework.Extensions.HumanTasks.HumanTaskStep                                             100%
+  WorkflowFramework.Extensions.HumanTasks.InMemoryTaskInbox                                         100%
+
+WorkflowFramework.Extensions.Integration                                                           97.3%
+  WorkflowFramework.Extensions.Integration.Builder.IntegrationBuilderExtensions                     100%
+  WorkflowFramework.Extensions.Integration.Channel.ChannelAdapterStep                               100%
+  WorkflowFramework.Extensions.Integration.Channel.DeadLetterStep                                   100%
+  WorkflowFramework.Extensions.Integration.Channel.MessageBridgeStep                                100%
+  WorkflowFramework.Extensions.Integration.Channel.WireTapStep                                       95%
+  WorkflowFramework.Extensions.Integration.Composition.AggregatorOptions                            100%
+  WorkflowFramework.Extensions.Integration.Composition.AggregatorStep                               100%
+  WorkflowFramework.Extensions.Integration.Composition.ComposedMessageProcessorStep                 100%
+  WorkflowFramework.Extensions.Integration.Composition.ProcessManagerStep                           100%
+  WorkflowFramework.Extensions.Integration.Composition.ResequencerStep                              100%
+  WorkflowFramework.Extensions.Integration.Composition.ScatterGatherStep                           73.3%
+  WorkflowFramework.Extensions.Integration.Composition.SplitterStep                                 100%
+  WorkflowFramework.Extensions.Integration.Endpoint.IdempotentReceiverStep                          100%
+  WorkflowFramework.Extensions.Integration.Endpoint.PollingConsumerStep<T>                          100%
+  WorkflowFramework.Extensions.Integration.Endpoint.TransactionalOutboxStep                         100%
+  WorkflowFramework.Extensions.Integration.Routing.ContentBasedRouterStep                           100%
+  WorkflowFramework.Extensions.Integration.Routing.DynamicRouterStep                                100%
+  WorkflowFramework.Extensions.Integration.Routing.MessageFilterStep                                100%
+  WorkflowFramework.Extensions.Integration.Routing.RecipientListStep                                100%
+  WorkflowFramework.Extensions.Integration.Routing.RoutingSlip                                      100%
+  WorkflowFramework.Extensions.Integration.Routing.RoutingSlipStep                                  100%
+  WorkflowFramework.Extensions.Integration.Transformation.ClaimCheckStep                            100%
+  WorkflowFramework.Extensions.Integration.Transformation.ClaimRetrieveStep                         100%
+  WorkflowFramework.Extensions.Integration.Transformation.ContentEnricherStep                       100%
+  WorkflowFramework.Extensions.Integration.Transformation.ContentFilterStep                         100%
+  WorkflowFramework.Extensions.Integration.Transformation.MessageTranslatorStep<T1, T2>             100%
+  WorkflowFramework.Extensions.Integration.Transformation.NormalizerStep                            100%
+
+WorkflowFramework.Extensions.Integration.Abstractions                                               100%
+  WorkflowFramework.Extensions.Integration.Abstractions.OutboxMessage                               100%
+
+WorkflowFramework.Extensions.Persistence                                                            100%
+  WorkflowFramework.Extensions.Persistence.CheckpointMiddleware                                     100%
+
+WorkflowFramework.Extensions.Persistence.EntityFramework                                            100%
+  WorkflowFramework.Extensions.Persistence.EntityFramework.EfCoreWorkflowStateStore                 100%
+  WorkflowFramework.Extensions.Persistence.EntityFramework.WorkflowDbContext                        100%
+  WorkflowFramework.Extensions.Persistence.EntityFramework.WorkflowStateEntity                      100%
+
+WorkflowFramework.Extensions.Persistence.InMemory                                                   100%
+  WorkflowFramework.Extensions.Persistence.InMemory.InMemoryWorkflowStateStore                      100%
+
+WorkflowFramework.Extensions.Persistence.PostgreSQL                                                  40%
+  WorkflowFramework.Extensions.Persistence.PostgreSQL.PostgreSqlWorkflowDbContext                     0%
+  WorkflowFramework.Extensions.Persistence.PostgreSQL.ServiceCollectionExtensions                   100%
+
+WorkflowFramework.Extensions.Persistence.Sqlite                                                     100%
+  WorkflowFramework.Extensions.Persistence.Sqlite.SqliteWorkflowStateStore                          100%
+
+WorkflowFramework.Extensions.Persistence.SqlServer                                                   40%
+  WorkflowFramework.Extensions.Persistence.SqlServer.ServiceCollectionExtensions                    100%
+  WorkflowFramework.Extensions.Persistence.SqlServer.SqlServerWorkflowDbContext                       0%
+
+WorkflowFramework.Extensions.Plugins                                                                 90%
+  WorkflowFramework.Extensions.Plugins.PluginManager                                               95.4%
+  WorkflowFramework.Extensions.Plugins.PluginManifest                                               100%
+  WorkflowFramework.Extensions.Plugins.WorkflowPluginBase                                           100%
+  WorkflowFramework.Extensions.Plugins.WorkflowPluginContext                                         70%
+
+WorkflowFramework.Extensions.Polly                                                                  100%
+  WorkflowFramework.Extensions.Polly.ResilienceMiddleware                                           100%
+  WorkflowFramework.Extensions.Polly.WorkflowBuilderPollyExtensions                                 100%
+
+WorkflowFramework.Extensions.Reactive                                                               100%
+  WorkflowFramework.Extensions.Reactive.AsyncStepAdapter<T>                                         100%
+  WorkflowFramework.Extensions.Reactive.ReactiveExtensions                                          100%
+
+WorkflowFramework.Extensions.Scheduling                                                            90.5%
+  WorkflowFramework.Extensions.Scheduling.ApprovalConfig                                            100%
+  WorkflowFramework.Extensions.Scheduling.CronParser                                               98.1%
+  WorkflowFramework.Extensions.Scheduling.InMemoryApprovalService                                  84.6%
+  WorkflowFramework.Extensions.Scheduling.InMemoryWorkflowScheduler                                87.9%
+  WorkflowFramework.Extensions.Scheduling.ScheduledWorkflow                                         100%
+
+WorkflowFramework.Extensions.Visualization                                                          100%
+  WorkflowFramework.Extensions.Visualization.WorkflowVisualizationExtensions                        100%
+
+WorkflowFramework.Testing                                                                          93.1%
+  WorkflowFramework.Testing.FakeStep                                                                100%
+  WorkflowFramework.Testing.FakeStep<T>                                                            91.6%
+  WorkflowFramework.Testing.InMemoryWorkflowEvents                                                  100%
+  WorkflowFramework.Testing.MockStep                                                                100%
+  WorkflowFramework.Testing.StepTestBuilder                                                         100%
+  WorkflowFramework.Testing.WorkflowAssertions                                                      100%
+  WorkflowFramework.Testing.WorkflowTestBuilder                                                     100%
+  WorkflowFramework.Testing.WorkflowTestHarness                                                    73.8%
+
+WorkflowFramework.Tests.Common                                                                     81.2%
+  WorkflowFramework.Tests.Common.CompensatingTrackingStep                                           100%
+  WorkflowFramework.Tests.Common.FailingStep                                                        100%
+  WorkflowFramework.Tests.Common.TrackingStep                                                       100%
+  WorkflowFramework.Tests.Common.TypedTrackingStep<T>                                                 0%

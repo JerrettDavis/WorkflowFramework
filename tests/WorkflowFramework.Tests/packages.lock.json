@@ -640,6 +640,7 @@
       "workflowframework.extensions.connectors.messaging": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
           "WorkflowFramework.Extensions.Connectors.Abstractions": "[1.0.0, )"
         }
       },
@@ -1629,6 +1630,7 @@
       "workflowframework.extensions.connectors.messaging": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
           "WorkflowFramework.Extensions.Connectors.Abstractions": "[1.0.0, )"
         }
       },
@@ -2639,6 +2641,7 @@
       "workflowframework.extensions.connectors.messaging": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
           "WorkflowFramework.Extensions.Connectors.Abstractions": "[1.0.0, )"
         }
       },

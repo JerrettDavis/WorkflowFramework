@@ -20,40 +20,51 @@ public class OpenTelemetryMiddlewareTests
     [Fact]
     public async Task InvokeAsync_WithListener_CreatesSpan()
     {
+        // Use a unique step name to avoid capturing activities from parallel tests
+        var stepName = $"CreatesSpan_{Guid.NewGuid():N}";
         Activity? captured = null;
         using var listener = new ActivityListener
         {
             ShouldListenTo = s => s.Name == WorkflowActivitySource.Name,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStarted = a => captured = a
+            ActivityStopped = a =>
+            {
+                if (a.OperationName == $"Step:{stepName}")
+                    captured = a;
+            }
         };
         ActivitySource.AddActivityListener(listener);
 
         var ctx = CreateCtx();
-        await _middleware.InvokeAsync(ctx, new TestStep("MyStep"), _ => Task.CompletedTask);
+        await _middleware.InvokeAsync(ctx, new TestStep(stepName), _ => Task.CompletedTask);
 
         captured.Should().NotBeNull();
-        captured!.GetTagItem("workflow.step.name").Should().Be("MyStep");
+        captured!.GetTagItem("workflow.step.name").Should().Be(stepName);
         captured.GetTagItem("workflow.step.status").Should().Be("completed");
     }
 
     [Fact]
     public async Task InvokeAsync_OnError_SetsErrorStatus()
     {
+        // Use a unique step name to avoid capturing activities from parallel tests
+        var stepName = $"FailError_{Guid.NewGuid():N}";
         var activities = new List<Activity>();
         using var listener = new ActivityListener
         {
             ShouldListenTo = s => s.Name == WorkflowActivitySource.Name,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = a => activities.Add(a)
+            ActivityStopped = a =>
+            {
+                if (a.OperationName == $"Step:{stepName}")
+                    activities.Add(a);
+            }
         };
         ActivitySource.AddActivityListener(listener);
 
         var ctx = CreateCtx();
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            _middleware.InvokeAsync(ctx, new TestStep("Fail"), _ => throw new InvalidOperationException("boom")));
+            _middleware.InvokeAsync(ctx, new TestStep(stepName), _ => throw new InvalidOperationException("boom")));
 
-        // Activity is stopped synchronously via Dispose in the middleware, so it should be captured
         activities.Should().ContainSingle();
         var captured = activities[0];
         captured.Status.Should().Be(ActivityStatusCode.Error);

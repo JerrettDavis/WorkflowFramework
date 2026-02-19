@@ -316,6 +316,14 @@
       "workflowframework": {
         "type": "Project"
       },
+      "workflowframework.extensions.agents": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework": "[1.0.0, )",
+          "WorkflowFramework.Extensions.AI": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.ai": {
         "type": "Project",
         "dependencies": {
@@ -337,6 +345,18 @@
           "WorkflowFramework": "[1.0.0, )"
         }
       },
+      "workflowframework.extensions.events": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.humantasks": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.samples.taskstream": {
         "type": "Project",
         "dependencies": {
@@ -348,6 +368,21 @@
           "WorkflowFramework.Extensions.AI": "[1.0.0, )",
           "WorkflowFramework.Extensions.DependencyInjection": "[1.0.0, )",
           "WorkflowFramework.Extensions.Diagnostics": "[1.0.0, )"
+        }
+      },
+      "workflowframework.samples.voiceworkflows": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection": "[10.0.3, )",
+          "Microsoft.Extensions.Logging.Abstractions": "[10.0.3, )",
+          "Microsoft.Extensions.Options": "[10.0.3, )",
+          "Microsoft.SemanticKernel.Connectors.Ollama": "[1.71.0-alpha, )",
+          "WorkflowFramework": "[1.0.0, )",
+          "WorkflowFramework.Extensions.AI": "[1.0.0, )",
+          "WorkflowFramework.Extensions.Agents": "[1.0.0, )",
+          "WorkflowFramework.Extensions.DependencyInjection": "[1.0.0, )",
+          "WorkflowFramework.Extensions.Events": "[1.0.0, )",
+          "WorkflowFramework.Extensions.HumanTasks": "[1.0.0, )"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {

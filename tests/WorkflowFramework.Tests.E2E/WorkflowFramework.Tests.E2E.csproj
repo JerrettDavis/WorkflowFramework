@@ -7,8 +7,11 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\WorkflowFramework\WorkflowFramework.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.AI\WorkflowFramework.Extensions.AI.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Agents\WorkflowFramework.Extensions.Agents.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.HumanTasks\WorkflowFramework.Extensions.HumanTasks.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.DependencyInjection\WorkflowFramework.Extensions.DependencyInjection.csproj" />
     <ProjectReference Include="..\..\samples\WorkflowFramework.Samples.TaskStream\WorkflowFramework.Samples.TaskStream.csproj" />
+    <ProjectReference Include="..\..\samples\WorkflowFramework.Samples.VoiceWorkflows\WorkflowFramework.Samples.VoiceWorkflows.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
