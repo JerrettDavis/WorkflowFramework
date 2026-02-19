@@ -41,6 +41,9 @@
     <Project Path="src/WorkflowFramework.Extensions.Connectors.Abstractions/WorkflowFramework.Extensions.Connectors.Abstractions.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Connectors.Messaging/WorkflowFramework.Extensions.Connectors.Messaging.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Connectors.Grpc/WorkflowFramework.Extensions.Connectors.Grpc.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Agents/WorkflowFramework.Extensions.Agents.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Agents.Mcp/WorkflowFramework.Extensions.Agents.Mcp.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Agents.Skills/WorkflowFramework.Extensions.Agents.Skills.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />

@@ -34,6 +34,9 @@
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Connectors.Abstractions\WorkflowFramework.Extensions.Connectors.Abstractions.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Connectors.Messaging\WorkflowFramework.Extensions.Connectors.Messaging.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Connectors.Grpc\WorkflowFramework.Extensions.Connectors.Grpc.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Agents\WorkflowFramework.Extensions.Agents.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Agents.Mcp\WorkflowFramework.Extensions.Agents.Mcp.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Agents.Skills\WorkflowFramework.Extensions.Agents.Skills.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

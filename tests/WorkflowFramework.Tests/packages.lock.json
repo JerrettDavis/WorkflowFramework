@@ -421,6 +421,28 @@
       "workflowframework": {
         "type": "Project"
       },
+      "workflowframework.extensions.agents": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework": "[1.0.0, )",
+          "WorkflowFramework.Extensions.AI": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.agents.mcp": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework.Extensions.Agents": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.agents.skills": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework.Extensions.Agents": "[1.0.0, )"
+        }
+      },
       "workflowframework.extensions.ai": {
         "type": "Project",
         "dependencies": {
@@ -1167,6 +1189,28 @@
       },
       "workflowframework": {
         "type": "Project"
+      },
+      "workflowframework.extensions.agents": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework": "[1.0.0, )",
+          "WorkflowFramework.Extensions.AI": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.agents.mcp": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework.Extensions.Agents": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.agents.skills": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework.Extensions.Agents": "[1.0.0, )"
+        }
       },
       "workflowframework.extensions.ai": {
         "type": "Project",
@@ -1939,6 +1983,28 @@
       },
       "workflowframework": {
         "type": "Project"
+      },
+      "workflowframework.extensions.agents": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework": "[1.0.0, )",
+          "WorkflowFramework.Extensions.AI": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.agents.mcp": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework.Extensions.Agents": "[1.0.0, )"
+        }
+      },
+      "workflowframework.extensions.agents.skills": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "WorkflowFramework.Extensions.Agents": "[1.0.0, )"
+        }
       },
       "workflowframework.extensions.ai": {
         "type": "Project",
