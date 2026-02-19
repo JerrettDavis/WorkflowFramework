@@ -40,12 +40,12 @@ public class OpenTelemetryMiddlewareTests
     [Fact]
     public async Task InvokeAsync_OnError_SetsErrorStatus()
     {
-        Activity? captured = null;
+        var activities = new List<Activity>();
         using var listener = new ActivityListener
         {
             ShouldListenTo = s => s.Name == WorkflowActivitySource.Name,
             Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStopped = a => captured = a
+            ActivityStopped = a => activities.Add(a)
         };
         ActivitySource.AddActivityListener(listener);
 
@@ -53,8 +53,10 @@ public class OpenTelemetryMiddlewareTests
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _middleware.InvokeAsync(ctx, new TestStep("Fail"), _ => throw new InvalidOperationException("boom")));
 
-        captured.Should().NotBeNull();
-        captured!.Status.Should().Be(ActivityStatusCode.Error);
+        // Activity is stopped synchronously via Dispose in the middleware, so it should be captured
+        activities.Should().ContainSingle();
+        var captured = activities[0];
+        captured.Status.Should().Be(ActivityStatusCode.Error);
         captured.GetTagItem("workflow.step.status").Should().Be("failed");
     }
 
