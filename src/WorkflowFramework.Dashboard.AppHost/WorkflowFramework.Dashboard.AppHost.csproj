@@ -8,9 +8,7 @@
     <TargetFrameworks>net10.0</TargetFrameworks>
     <IsAspireHost>true</IsAspireHost>
     <IsPackable>false</IsPackable>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
-    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>    <GenerateDocumentationFile>false</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

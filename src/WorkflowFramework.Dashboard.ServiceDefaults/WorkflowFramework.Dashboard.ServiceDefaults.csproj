@@ -3,9 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <TargetFrameworks>net10.0</TargetFrameworks>
-    <IsAspireSharedProject>true</IsAspireSharedProject>
-    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
-  </PropertyGroup>
+    <IsAspireSharedProject>true</IsAspireSharedProject>  </PropertyGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
