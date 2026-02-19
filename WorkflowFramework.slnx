@@ -50,6 +50,7 @@
     <Project Path="tests/WorkflowFramework.Tests.Integration/WorkflowFramework.Tests.Integration.csproj" />
     <Project Path="tests/WorkflowFramework.Tests.Common/WorkflowFramework.Tests.Common.csproj" />
     <Project Path="tests/WorkflowFramework.Tests.E2E/WorkflowFramework.Tests.E2E.csproj" />
+    <Project Path="tests/WorkflowFramework.Tests.Samples/WorkflowFramework.Tests.Samples.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/WorkflowFramework.Benchmarks/WorkflowFramework.Benchmarks.csproj" />

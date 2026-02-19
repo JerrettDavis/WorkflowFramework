@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net10.0</TargetFrameworks>
+    <!-- Override Directory.Build.props default which matches *.Samples -->
+    <RootNamespace>WorkflowFramework.Tests.Samples</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkflowFramework\WorkflowFramework.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Agents\WorkflowFramework.Extensions.Agents.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.AI\WorkflowFramework.Extensions.AI.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.HumanTasks\WorkflowFramework.Extensions.HumanTasks.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Events\WorkflowFramework.Extensions.Events.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.DependencyInjection\WorkflowFramework.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Diagnostics\WorkflowFramework.Extensions.Diagnostics.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Visualization\WorkflowFramework.Extensions.Visualization.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Hosting\WorkflowFramework.Extensions.Hosting.csproj" />
+    <ProjectReference Include="..\..\samples\WorkflowFramework.Samples.VoiceWorkflows\WorkflowFramework.Samples.VoiceWorkflows.csproj" />
+    <ProjectReference Include="..\..\samples\WorkflowFramework.Samples.TaskStream\WorkflowFramework.Samples.TaskStream.csproj" />
+    <ProjectReference Include="..\..\samples\WorkflowFramework.Samples.WebApi\WorkflowFramework.Samples.WebApi.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+</Project>

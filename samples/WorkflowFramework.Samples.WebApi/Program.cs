@@ -31,3 +31,8 @@ app.MapPost("/workflows/{name}/run", async (string name, IWorkflowRunner runner)
 });
 
 app.Run();
+
+/// <summary>
+/// Entry point class exposed for integration testing.
+/// </summary>
+public partial class Program { }
