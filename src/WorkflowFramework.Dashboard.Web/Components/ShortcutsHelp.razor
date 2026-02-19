@@ -1,0 +1,29 @@
+@using WorkflowFramework.Dashboard.Web.Services
+
+@if (IsVisible)
+{
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center" @onclick="Close">
+        <div class="bg-gray-800 rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-gray-700" @onclick:stopPropagation>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-white">⌨️ Keyboard Shortcuts</h2>
+                <button @onclick="Close" class="text-gray-400 hover:text-white text-xl">&times;</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                @foreach (var (shortcut, description) in KeyboardShortcutService.AllShortcuts)
+                {
+                    <div class="text-gray-400">@description</div>
+                    <div class="text-right">
+                        <kbd class="bg-gray-700 text-gray-200 px-2 py-0.5 rounded text-xs font-mono">@shortcut</kbd>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task Close() => await OnClose.InvokeAsync();
+}

@@ -1,4 +1,6 @@
+@using WorkflowFramework.Dashboard.Web.Services
 @inject DashboardApiClient Api
+@implements IAsyncDisposable
 
 <div class="border-t border-gray-700 bg-gray-850">
     <button @onclick="OnToggle"
@@ -8,6 +10,10 @@
             @if (ActiveRunId is not null)
             {
                 <span class="ml-2 text-yellow-400">● @_runStatus</span>
+            }
+            @if (_hubClient?.State == Microsoft.AspNetCore.SignalR.Client.HubConnectionState.Connected)
+            {
+                <span class="ml-2 text-green-500" title="SignalR connected">⚡</span>
             }
         </span>
         <span>@(IsVisible ? "▼" : "▲")</span>
@@ -23,7 +29,7 @@
             {
                 @foreach (var entry in LogEntries)
                 {
-                    <div class="py-0.5">@entry</div>
+                    <div class="py-0.5 @GetLogClass(entry)">@entry</div>
                 }
             }
         </div>
@@ -36,50 +42,139 @@
     [Parameter] public List<string> LogEntries { get; set; } = [];
     [Parameter] public string? ActiveRunId { get; set; }
     [Parameter] public EventCallback<string> OnRunStatusChanged { get; set; }
+    [Parameter] public EventCallback<(string StepName, string Status)> OnStepStatusChanged { get; set; }
+    [Parameter] public string? SignalRHubUrl { get; set; }
 
     private string _runStatus = "";
-    private CancellationTokenSource? _pollCts;
+    private ExecutionHubClient? _hubClient;
+    private string? _subscribedRunId;
 
     protected override async Task OnParametersSetAsync()
     {
-        if (ActiveRunId is not null && _pollCts is null)
+        if (ActiveRunId is not null && _subscribedRunId != ActiveRunId)
         {
-            _pollCts = new CancellationTokenSource();
-            _ = PollRunStatus(ActiveRunId, _pollCts.Token);
+            await SubscribeToRun(ActiveRunId);
         }
-        else if (ActiveRunId is null && _pollCts is not null)
+        else if (ActiveRunId is null && _subscribedRunId is not null)
         {
-            _pollCts.Cancel();
-            _pollCts.Dispose();
-            _pollCts = null;
+            await UnsubscribeFromRun();
         }
     }
 
-    private async Task PollRunStatus(string runId, CancellationToken ct)
+    private async Task SubscribeToRun(string runId)
+    {
+        await UnsubscribeFromRun();
+
+        var hubUrl = SignalRHubUrl ?? "https+http://dashboard-api/hubs/execution";
+        _hubClient = new ExecutionHubClient(hubUrl);
+
+        _hubClient.RunStarted += (rid, name) => InvokeAsync(() =>
+        {
+            _runStatus = "Running";
+            LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] ▶ Run started: {name}");
+            OnRunStatusChanged.InvokeAsync("Running");
+            StateHasChanged();
+        });
+
+        _hubClient.StepStarted += (rid, step, idx) => InvokeAsync(() =>
+        {
+            LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] ⏳ Step '{step}' started (#{idx})");
+            OnStepStatusChanged.InvokeAsync((step, "Running"));
+            StateHasChanged();
+        });
+
+        _hubClient.StepCompleted += (rid, step, status, ms, output) => InvokeAsync(() =>
+        {
+            LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] ✅ Step '{step}' {status} ({ms}ms)");
+            if (output is not null) LogEntries.Add($"    → {output}");
+            OnStepStatusChanged.InvokeAsync((step, status));
+            StateHasChanged();
+        });
+
+        _hubClient.StepFailed += (rid, step, err) => InvokeAsync(() =>
+        {
+            LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] ❌ Step '{step}' failed: {err}");
+            OnStepStatusChanged.InvokeAsync((step, "Failed"));
+            StateHasChanged();
+        });
+
+        _hubClient.RunCompleted += (rid, status, ms) => InvokeAsync(() =>
+        {
+            _runStatus = status;
+            LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] 🏁 Run {status} ({ms}ms)");
+            OnRunStatusChanged.InvokeAsync(status);
+            StateHasChanged();
+        });
+
+        _hubClient.RunFailed += (rid, err) => InvokeAsync(() =>
+        {
+            _runStatus = "Failed";
+            LogEntries.Add($"[{DateTime.Now:HH:mm:ss}] 💥 Run failed: {err}");
+            OnRunStatusChanged.InvokeAsync("Failed");
+            StateHasChanged();
+        });
+
+        _hubClient.LogMessage += (rid, level, msg, ts) => InvokeAsync(() =>
+        {
+            LogEntries.Add($"[{ts:HH:mm:ss}] [{level}] {msg}");
+            StateHasChanged();
+        });
+
+        try
+        {
+            await _hubClient.SubscribeToRunAsync(runId);
+            _subscribedRunId = runId;
+        }
+        catch
+        {
+            // Fall back to polling if SignalR fails
+            _ = PollRunStatusFallback(runId);
+        }
+    }
+
+    private async Task UnsubscribeFromRun()
+    {
+        if (_hubClient is not null && _subscribedRunId is not null)
+        {
+            try { await _hubClient.UnsubscribeFromRunAsync(_subscribedRunId); } catch { }
+            await _hubClient.DisposeAsync();
+            _hubClient = null;
+        }
+        _subscribedRunId = null;
+    }
+
+    private async Task PollRunStatusFallback(string runId)
     {
         try
         {
-            while (!ct.IsCancellationRequested)
+            using var cts = new CancellationTokenSource();
+            while (!cts.Token.IsCancellationRequested)
             {
-                await Task.Delay(1000, ct);
-                var run = await Api.GetRunAsync(runId, ct);
+                await Task.Delay(1000, cts.Token);
+                var run = await Api.GetRunAsync(runId, cts.Token);
                 if (run is null) break;
 
                 _runStatus = run.Status;
                 await OnRunStatusChanged.InvokeAsync(run.Status);
                 await InvokeAsync(StateHasChanged);
 
-                if (run.Status is "Completed" or "Failed" or "Cancelled")
-                    break;
+                if (run.Status is "Completed" or "Failed" or "Cancelled") break;
             }
         }
         catch (OperationCanceledException) { }
-        catch { /* polling failed, stop silently */ }
+        catch { }
     }
 
-    public void Dispose()
+    private static string GetLogClass(string entry) => entry switch
     {
-        _pollCts?.Cancel();
-        _pollCts?.Dispose();
+        _ when entry.Contains("❌") || entry.Contains("💥") => "text-red-400",
+        _ when entry.Contains("✅") || entry.Contains("🏁") => "text-green-400",
+        _ when entry.Contains("⏳") => "text-yellow-400",
+        _ => ""
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        await UnsubscribeFromRun();
     }
 }

@@ -1,3 +1,50 @@
+/* Theme CSS custom properties */
+:root {
+    --bg-primary: #111827;
+    --bg-secondary: #1f2937;
+    --bg-tertiary: #374151;
+    --text-primary: #f3f4f6;
+    --text-secondary: #d1d5db;
+    --text-muted: #6b7280;
+    --border-color: #4b5563;
+    --accent: #3b82f6;
+}
+
+html.light {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #e5e7eb;
+    --text-primary: #111827;
+    --text-secondary: #374151;
+    --text-muted: #6b7280;
+    --border-color: #d1d5db;
+    --accent: #2563eb;
+}
+
+html.light body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+html.light .bg-gray-800 { background: var(--bg-secondary) !important; }
+html.light .bg-gray-900 { background: var(--bg-primary) !important; }
+html.light .bg-gray-700 { background: var(--bg-tertiary) !important; }
+html.light .text-gray-100 { color: var(--text-primary) !important; }
+html.light .text-gray-400 { color: var(--text-muted) !important; }
+html.light .text-gray-500 { color: var(--text-muted) !important; }
+html.light .text-white { color: var(--text-primary) !important; }
+html.light .border-gray-700 { border-color: var(--border-color) !important; }
+html.light .border-gray-600 { border-color: var(--border-color) !important; }
+
+/* Toast animations */
+@keyframes slide-in {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+.animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+}
+
 .toolbar-btn {
     padding: 4px 8px;
     font-size: 12px;

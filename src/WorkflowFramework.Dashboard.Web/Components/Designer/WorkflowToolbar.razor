@@ -17,6 +17,13 @@
 
     <div class="w-px h-6 bg-gray-600 mx-1"></div>
 
+    <button @onclick="OnValidate" class="toolbar-btn text-blue-400 relative" title="Validate">
+        🔍 Validate
+        @if (ValidationErrorCount > 0)
+        {
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center">@ValidationErrorCount</span>
+        }
+    </button>
     <button @onclick="OnRun" class="toolbar-btn text-green-400" title="Run">▶ Run</button>
 
     <div class="w-px h-6 bg-gray-600 mx-1"></div>
@@ -30,6 +37,11 @@
     </label>
 
     <div class="flex-1"></div>
+
+    <ThemeToggle />
+    <button @onclick="OnSettings" class="toolbar-btn" title="Settings">⚙️</button>
+    <button @onclick="OnShortcutsHelp" class="toolbar-btn" title="Keyboard Shortcuts (?)">⌨️</button>
+
     <span class="text-gray-500 text-xs">WorkflowFramework Designer</span>
 </div>
 
@@ -46,4 +58,8 @@
     [Parameter] public EventCallback<InputFileChangeEventArgs> OnImportFile { get; set; }
     [Parameter] public EventCallback OnFitView { get; set; }
     [Parameter] public EventCallback OnTemplates { get; set; }
+    [Parameter] public EventCallback OnValidate { get; set; }
+    [Parameter] public int ValidationErrorCount { get; set; }
+    [Parameter] public EventCallback OnSettings { get; set; }
+    [Parameter] public EventCallback OnShortcutsHelp { get; set; }
 }

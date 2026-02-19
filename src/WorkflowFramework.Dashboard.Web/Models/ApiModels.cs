@@ -91,6 +91,21 @@ public sealed class WorkflowTemplateSummary
     public string? PreviewImageUrl { get; set; }
 }
 
+public sealed class ValidationErrorDto
+{
+    public string Severity { get; set; } = "Error";
+    public string? StepName { get; set; }
+    public string Message { get; set; } = "";
+}
+
+public sealed class ValidationResultDto
+{
+    public List<ValidationErrorDto> Errors { get; set; } = new();
+    public bool IsValid { get; set; }
+    public int ErrorCount { get; set; }
+    public int WarningCount { get; set; }
+}
+
 public sealed class WorkflowTemplate
 {
     public string Id { get; set; } = "";

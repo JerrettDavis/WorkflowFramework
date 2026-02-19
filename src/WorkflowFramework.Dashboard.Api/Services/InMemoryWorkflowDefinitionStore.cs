@@ -30,6 +30,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
         {
             Id = Guid.NewGuid().ToString("N"),
             Description = request.Description,
+            Tags = request.Tags,
             LastModified = DateTimeOffset.UtcNow,
             Definition = request.Definition
         };
@@ -46,6 +47,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
         {
             Id = id,
             Description = request.Description,
+            Tags = request.Tags,
             LastModified = DateTimeOffset.UtcNow,
             Definition = request.Definition
         };
@@ -72,6 +74,7 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
         {
             Id = Guid.NewGuid().ToString("N"),
             Description = existing.Description,
+            Tags = new List<string>(existing.Tags),
             LastModified = DateTimeOffset.UtcNow,
             Definition = clonedDef
         };
