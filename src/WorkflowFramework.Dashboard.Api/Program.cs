@@ -1,3 +1,4 @@
+using WorkflowFramework.Dashboard.Api;
 using WorkflowFramework.Dashboard.Api.Hubs;
 using WorkflowFramework.Dashboard.Api.Services;
 
@@ -7,12 +8,14 @@ builder.AddServiceDefaults();
 builder.Services.AddSignalR();
 builder.Services.AddSingleton<WorkflowExecutionNotifier>();
 builder.Services.AddSingleton<WorkflowValidator>();
+builder.Services.AddWorkflowDashboardApi();
 
 var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
 app.MapHub<WorkflowExecutionHub>("/hubs/execution");
+app.MapWorkflowDashboardApi();
 
 app.MapGet("/health", () => "ok");
 
