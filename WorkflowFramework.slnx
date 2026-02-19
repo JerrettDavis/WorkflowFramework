@@ -35,6 +35,12 @@
     <Project Path="src/WorkflowFramework.Extensions.AI/WorkflowFramework.Extensions.AI.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Integration.Abstractions/WorkflowFramework.Extensions.Integration.Abstractions.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Integration/WorkflowFramework.Extensions.Integration.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.DataMapping/WorkflowFramework.Extensions.DataMapping.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.DataMapping.Formats/WorkflowFramework.Extensions.DataMapping.Formats.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.DataMapping.Schema/WorkflowFramework.Extensions.DataMapping.Schema.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Connectors.Abstractions/WorkflowFramework.Extensions.Connectors.Abstractions.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Connectors.Messaging/WorkflowFramework.Extensions.Connectors.Messaging.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Connectors.Grpc/WorkflowFramework.Extensions.Connectors.Grpc.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />
