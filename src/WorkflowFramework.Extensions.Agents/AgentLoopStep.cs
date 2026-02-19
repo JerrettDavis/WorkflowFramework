@@ -1,4 +1,6 @@
-﻿using System.Text;
+using System.Diagnostics;
+using System.Text;
+using WorkflowFramework.Extensions.Agents.Diagnostics;
 using WorkflowFramework.Extensions.AI;
 
 namespace WorkflowFramework.Extensions.Agents;
@@ -24,6 +26,14 @@ public sealed class AgentLoopStep : IStep
     /// <inheritdoc />
     public async Task ExecuteAsync(IWorkflowContext context)
     {
+        using var loopActivity = AgentActivitySource.Instance.StartActivity(
+            AgentActivitySource.AgentLoop,
+            ActivityKind.Internal);
+
+        loopActivity?.SetTag(AgentActivitySource.TagStepName, Name);
+        loopActivity?.SetTag(AgentActivitySource.TagProviderType, _provider.GetType().Name);
+        loopActivity?.SetTag(AgentActivitySource.TagProviderName, _provider.Name);
+
         var hookPipeline = _options.Hooks ?? new HookPipeline();
         var contextManager = _options.ContextManager ?? new DefaultContextManager();
         var toolResults = new List<ToolResult>();
@@ -69,9 +79,23 @@ public sealed class AgentLoopStep : IStep
         {
             iteration++;
 
+            using var iterationActivity = AgentActivitySource.Instance.StartActivity(
+                AgentActivitySource.AgentIteration,
+                ActivityKind.Internal);
+
+            iterationActivity?.SetTag(AgentActivitySource.TagStepName, Name);
+            iterationActivity?.SetTag(AgentActivitySource.TagIteration, iteration);
+
             // Auto-compaction
             if (_options.AutoCompact && contextManager.EstimateTokenCount() > _options.MaxContextTokens)
             {
+                using var compactActivity = AgentActivitySource.Instance.StartActivity(
+                    AgentActivitySource.ContextCompaction,
+                    ActivityKind.Internal);
+
+                compactActivity?.SetTag(AgentActivitySource.TagStepName, Name);
+                compactActivity?.SetTag(AgentActivitySource.TagCompactionOriginalTokens, contextManager.EstimateTokenCount());
+
                 var preCtx = new HookContext { Event = AgentHookEvent.PreCompact, StepName = Name, WorkflowContext = context };
                 await hookPipeline.FireAsync(AgentHookEvent.PreCompact, preCtx, context.CancellationToken).ConfigureAwait(false);
 
@@ -82,6 +106,8 @@ public sealed class AgentLoopStep : IStep
                     FocusInstructions = _options.CompactionFocusInstructions
                 };
                 await contextManager.CompactAsync(compactionOpts, context.CancellationToken).ConfigureAwait(false);
+
+                compactActivity?.SetTag(AgentActivitySource.TagCompactionCompactedTokens, contextManager.EstimateTokenCount());
 
                 var postCtx = new HookContext { Event = AgentHookEvent.PostCompact, StepName = Name, WorkflowContext = context };
                 await hookPipeline.FireAsync(AgentHookEvent.PostCompact, postCtx, context.CancellationToken).ConfigureAwait(false);
@@ -103,6 +129,14 @@ public sealed class AgentLoopStep : IStep
             var response = await _provider.CompleteAsync(request, context.CancellationToken).ConfigureAwait(false);
             lastResponse = response.Content;
 
+            // Record token usage if available
+            if (response.Usage != null)
+            {
+                iterationActivity?.SetTag(AgentActivitySource.TagPromptTokens, response.Usage.PromptTokens);
+                iterationActivity?.SetTag(AgentActivitySource.TagCompletionTokens, response.Usage.CompletionTokens);
+                iterationActivity?.SetTag(AgentActivitySource.TagTotalTokens, response.Usage.TotalTokens);
+            }
+
             contextManager.AddMessage(new ConversationMessage
             {
                 Role = ConversationRole.Assistant,
@@ -111,8 +145,17 @@ public sealed class AgentLoopStep : IStep
 
             if (response.ToolCalls.Count == 0) break;
 
+            iterationActivity?.SetTag(AgentActivitySource.TagToolCallCount, response.ToolCalls.Count);
+
             foreach (var toolCall in response.ToolCalls)
             {
+                using var toolActivity = AgentActivitySource.Instance.StartActivity(
+                    AgentActivitySource.ToolCall,
+                    ActivityKind.Internal);
+
+                toolActivity?.SetTag(AgentActivitySource.TagStepName, Name);
+                toolActivity?.SetTag(AgentActivitySource.TagToolName, toolCall.ToolName);
+
                 var preHookCtx = new HookContext
                 {
                     Event = AgentHookEvent.PreToolCall,
@@ -125,6 +168,8 @@ public sealed class AgentLoopStep : IStep
 
                 if (hookResult.Decision == HookDecision.Deny)
                 {
+                    toolActivity?.SetTag(AgentActivitySource.TagToolIsError, true);
+                    toolActivity?.SetStatus(ActivityStatusCode.Error, "Denied by hook");
                     contextManager.AddToolCall(toolCall.ToolName, toolCall.Arguments,
                         "Tool call denied: " + (hookResult.Reason ?? "denied by hook"));
                     continue;
@@ -141,6 +186,7 @@ public sealed class AgentLoopStep : IStep
                 catch (Exception ex)
                 {
                     result = new ToolResult { Content = ex.Message, IsError = true };
+                    toolActivity?.SetStatus(ActivityStatusCode.Error, ex.Message);
                     var failCtx = new HookContext
                     {
                         Event = AgentHookEvent.PostToolCallFailure, StepName = Name,
@@ -149,6 +195,7 @@ public sealed class AgentLoopStep : IStep
                     await hookPipeline.FireAsync(AgentHookEvent.PostToolCallFailure, failCtx, context.CancellationToken).ConfigureAwait(false);
                 }
 
+                toolActivity?.SetTag(AgentActivitySource.TagToolIsError, result.IsError);
                 toolResults.Add(result);
                 contextManager.AddToolCall(toolCall.ToolName, args, result.Content);
 
@@ -170,10 +217,10 @@ public sealed class AgentLoopStep : IStep
             }
         }
 
+        loopActivity?.SetTag(AgentActivitySource.TagIterationTotal, iteration);
+
         context.Properties[Name + ".Response"] = lastResponse;
         context.Properties[Name + ".Iterations"] = iteration;
         context.Properties[Name + ".ToolResults"] = toolResults;
     }
 }
-
-

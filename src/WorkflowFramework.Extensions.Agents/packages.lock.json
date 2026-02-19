@@ -37,6 +37,16 @@
         "resolved": "1.15.0",
         "contentHash": "FbU0El+EEjdpuIX4iDbeS7ki1uzpJPx8vbqOzEtqnl1GZeAGJfq+jCbxeJL2y0EPnUNk8dRnnqR2xnYXg9Tf+g=="
       },
+      "System.Diagnostics.DiagnosticSource": {
+        "type": "Direct",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A==",
+        "dependencies": {
+          "System.Memory": "4.6.3",
+          "System.Runtime.CompilerServices.Unsafe": "6.1.2"
+        }
+      },
       "System.Text.Json": {
         "type": "Direct",
         "requested": "[10.0.1, )",
@@ -162,6 +172,15 @@
         "resolved": "1.15.0",
         "contentHash": "FbU0El+EEjdpuIX4iDbeS7ki1uzpJPx8vbqOzEtqnl1GZeAGJfq+jCbxeJL2y0EPnUNk8dRnnqR2xnYXg9Tf+g=="
       },
+      "System.Diagnostics.DiagnosticSource": {
+        "type": "Direct",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A==",
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "6.1.2"
+        }
+      },
       "System.Text.Json": {
         "type": "Direct",
         "requested": "[10.0.1, )",
@@ -234,6 +253,12 @@
           "Microsoft.Build.Tasks.Git": "8.0.0",
           "Microsoft.SourceLink.Common": "8.0.0"
         }
+      },
+      "System.Diagnostics.DiagnosticSource": {
+        "type": "Direct",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A=="
       },
       "Azure.AI.OpenAI": {
         "type": "Transitive",
@@ -445,6 +470,12 @@
           "Microsoft.SourceLink.Common": "8.0.0"
         }
       },
+      "System.Diagnostics.DiagnosticSource": {
+        "type": "Direct",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A=="
+      },
       "Azure.AI.OpenAI": {
         "type": "Transitive",
         "resolved": "2.7.0-beta.2",
@@ -675,12 +706,6 @@
           "Microsoft.SemanticKernel.Connectors.AzureOpenAI": "1.71.0",
           "Microsoft.SemanticKernel.Core": "1.71.0"
         }
-      },
-      "System.Diagnostics.DiagnosticSource": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.3, )",
-        "resolved": "10.0.2",
-        "contentHash": "lYWBy8fKkJHaRcOuw30d67PrtVjR5754sz5Wl76s8P+vJ9FSThh9b7LIcTSODx1LY7NB3Srvg+JMnzd67qNZOw=="
       },
       "System.Text.Json": {
         "type": "CentralTransitive",
@@ -710,6 +735,12 @@
           "Microsoft.SourceLink.Common": "8.0.0"
         }
       },
+      "System.Diagnostics.DiagnosticSource": {
+        "type": "Direct",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A=="
+      },
       "Azure.AI.OpenAI": {
         "type": "Transitive",
         "resolved": "2.7.0-beta.2",
@@ -940,12 +971,6 @@
           "Microsoft.SemanticKernel.Connectors.AzureOpenAI": "1.71.0",
           "Microsoft.SemanticKernel.Core": "1.71.0"
         }
-      },
-      "System.Diagnostics.DiagnosticSource": {
-        "type": "CentralTransitive",
-        "requested": "[10.0.3, )",
-        "resolved": "10.0.2",
-        "contentHash": "lYWBy8fKkJHaRcOuw30d67PrtVjR5754sz5Wl76s8P+vJ9FSThh9b7LIcTSODx1LY7NB3Srvg+JMnzd67qNZOw=="
       },
       "System.Text.Json": {
         "type": "CentralTransitive",

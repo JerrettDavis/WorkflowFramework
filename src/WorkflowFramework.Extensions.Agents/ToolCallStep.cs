@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
+using WorkflowFramework.Extensions.Agents.Diagnostics;
 
 namespace WorkflowFramework.Extensions.Agents;
 
@@ -30,10 +32,30 @@ public sealed class ToolCallStep : IStep
     /// <inheritdoc />
     public async Task ExecuteAsync(IWorkflowContext context)
     {
+        using var activity = AgentActivitySource.Instance.StartActivity(
+            AgentActivitySource.ToolCall,
+            ActivityKind.Internal);
+
+        activity?.SetTag(AgentActivitySource.TagStepName, Name);
+        activity?.SetTag(AgentActivitySource.TagToolName, _toolName);
+
         var arguments = SubstituteProperties(_argumentsTemplate, context.Properties);
-        var result = await _registry.InvokeAsync(_toolName, arguments, context.CancellationToken).ConfigureAwait(false);
-        context.Properties[$"{Name}.Result"] = result.Content;
-        context.Properties[$"{Name}.IsError"] = result.IsError;
+        try
+        {
+            var result = await _registry.InvokeAsync(_toolName, arguments, context.CancellationToken).ConfigureAwait(false);
+            activity?.SetTag(AgentActivitySource.TagToolIsError, result.IsError);
+            if (result.IsError)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error, result.Content);
+            }
+            context.Properties[$"{Name}.Result"] = result.Content;
+            context.Properties[$"{Name}.IsError"] = result.IsError;
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            throw;
+        }
     }
 
     /// <summary>Substitutes {PropertyName} placeholders from context properties.</summary>

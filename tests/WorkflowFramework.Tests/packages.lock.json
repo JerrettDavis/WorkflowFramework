@@ -1582,6 +1582,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "System.Diagnostics.DiagnosticSource": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )",
           "WorkflowFramework.Extensions.AI": "[1.0.0, )"
         }
@@ -2593,6 +2594,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "System.Diagnostics.DiagnosticSource": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )",
           "WorkflowFramework.Extensions.AI": "[1.0.0, )"
         }

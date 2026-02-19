@@ -135,6 +135,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[8.0.2, )",
+          "System.Diagnostics.DiagnosticSource": "[10.0.3, )",
           "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )",
           "WorkflowFramework.Extensions.AI": "[1.0.0, )"
@@ -145,6 +146,16 @@
         "dependencies": {
           "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "System.Diagnostics.DiagnosticSource": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A==",
+        "dependencies": {
+          "System.Memory": "4.6.3",
+          "System.Runtime.CompilerServices.Unsafe": "6.1.2"
         }
       }
     },
@@ -223,6 +234,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[8.0.2, )",
+          "System.Diagnostics.DiagnosticSource": "[10.0.3, )",
           "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )",
           "WorkflowFramework.Extensions.AI": "[1.0.0, )"
@@ -233,6 +245,15 @@
         "dependencies": {
           "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "System.Diagnostics.DiagnosticSource": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.3, )",
+        "resolved": "10.0.3",
+        "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A==",
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "6.1.2"
         }
       }
     },
@@ -670,6 +691,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "System.Diagnostics.DiagnosticSource": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )",
           "WorkflowFramework.Extensions.AI": "[1.0.0, )"
         }
@@ -713,8 +735,8 @@
       "System.Diagnostics.DiagnosticSource": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
-        "resolved": "10.0.2",
-        "contentHash": "lYWBy8fKkJHaRcOuw30d67PrtVjR5754sz5Wl76s8P+vJ9FSThh9b7LIcTSODx1LY7NB3Srvg+JMnzd67qNZOw=="
+        "resolved": "10.0.3",
+        "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A=="
       },
       "System.Text.Json": {
         "type": "CentralTransitive",
@@ -943,6 +965,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "System.Diagnostics.DiagnosticSource": "[10.0.3, )",
           "WorkflowFramework": "[1.0.0, )",
           "WorkflowFramework.Extensions.AI": "[1.0.0, )"
         }
@@ -986,8 +1009,8 @@
       "System.Diagnostics.DiagnosticSource": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
-        "resolved": "10.0.2",
-        "contentHash": "lYWBy8fKkJHaRcOuw30d67PrtVjR5754sz5Wl76s8P+vJ9FSThh9b7LIcTSODx1LY7NB3Srvg+JMnzd67qNZOw=="
+        "resolved": "10.0.3",
+        "contentHash": "IuZXyF3K5X+mCsBKIQ87Cn/V4Nyb39vyCbzfH/AkoneSWNV/ExGQ/I0m4CEaVAeFh9fW6kp2NVObkmevd1Ys7A=="
       },
       "System.Text.Json": {
         "type": "CentralTransitive",

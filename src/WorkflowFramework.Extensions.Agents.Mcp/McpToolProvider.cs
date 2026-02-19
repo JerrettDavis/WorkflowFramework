@@ -1,3 +1,6 @@
+using System.Diagnostics;
+using WorkflowFramework.Extensions.Agents.Diagnostics;
+
 namespace WorkflowFramework.Extensions.Agents.Mcp;
 
 /// <summary>
@@ -36,11 +39,31 @@ public sealed class McpToolProvider : IToolProvider
     /// <inheritdoc />
     public async Task<ToolResult> InvokeToolAsync(string toolName, string argumentsJson, CancellationToken ct = default)
     {
-        var result = await _client.CallToolAsync(toolName, argumentsJson, ct).ConfigureAwait(false);
-        return new ToolResult
+        using var activity = AgentActivitySource.Instance.StartActivity(
+            AgentActivitySource.McpInvoke,
+            ActivityKind.Client);
+
+        activity?.SetTag(AgentActivitySource.TagToolName, toolName);
+        activity?.SetTag(AgentActivitySource.TagMcpServerName, _client.ServerName);
+
+        try
         {
-            Content = result.Content,
-            IsError = result.IsError
-        };
+            var result = await _client.CallToolAsync(toolName, argumentsJson, ct).ConfigureAwait(false);
+            activity?.SetTag(AgentActivitySource.TagToolIsError, result.IsError);
+            if (result.IsError)
+            {
+                activity?.SetStatus(ActivityStatusCode.Error, result.Content);
+            }
+            return new ToolResult
+            {
+                Content = result.Content,
+                IsError = result.IsError
+            };
+        }
+        catch (Exception ex)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+            throw;
+        }
     }
 }
