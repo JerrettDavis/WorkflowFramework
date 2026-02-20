@@ -1,6 +1,6 @@
 @inject DashboardApiClient Api
 
-<div class="w-72 bg-gray-800 border-l border-gray-700 overflow-y-auto flex-shrink-0" data-testid="properties-panel">
+<div class="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto flex-shrink-0" data-testid="properties-panel">
     @if (SelectedNodeId is null)
     {
         <div class="p-4 text-gray-500 text-sm text-center mt-8">
@@ -11,10 +11,27 @@
     else
     {
         var stepDef = _localSteps.FirstOrDefault(s => s.Type == SelectedNodeType);
-        <div class="p-3 border-b border-gray-700">
-            <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Properties</h2>
-            <p class="text-xs text-gray-500 mt-1">@(stepDef?.Icon) @(stepDef?.Name ?? SelectedNodeType)</p>
+        var categoryColor = stepDef?.Color ?? StepCatalog.CategoryColors.GetValueOrDefault(stepDef?.Category ?? "", "#6b7280");
+
+        @* Header with icon, name, type badge, category *@
+        <div class="p-3 border-b border-gray-700" data-testid="properties-header">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-lg">@(stepDef?.Icon ?? "⬡")</span>
+                <span class="text-sm font-semibold text-gray-100 flex-1 truncate">@(NodeConfig.GetValueOrDefault("label")?.ToString() ?? stepDef?.Name ?? SelectedNodeType)</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-1">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-medium" style="background: @(categoryColor)22; color: @categoryColor">@(stepDef?.Category ?? "Unknown")</span>
+                <span class="px-1.5 py-0.5 rounded bg-gray-700 text-gray-400 text-[10px] font-mono">@SelectedNodeType</span>
+            </div>
         </div>
+
+        @* Step type description *@
+        @if (_stepTypeDescription is not null)
+        {
+            <div class="px-3 py-2 border-b border-gray-700 text-xs text-gray-400 italic" data-testid="properties-description">
+                @_stepTypeDescription
+            </div>
+        }
 
         @if (_loadingSchema)
         {
@@ -22,63 +39,138 @@
         }
 
         <div class="p-3 space-y-3">
+            @* Step Name *@
             <div>
                 <label class="block text-xs text-gray-400 mb-1">Step Name</label>
                 <input type="text" value="@(NodeConfig.GetValueOrDefault("label")?.ToString() ?? string.Empty)"
                        @oninput='e => UpdateConfig("label", e.Value)'
+                       data-testid="properties-step-name"
                        class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
             </div>
 
-            @* Render schema fields from API if available *@
+            @* Notes/Description *@
+            <div>
+                <label class="block text-xs text-gray-400 mb-1">Notes</label>
+                <textarea rows="2"
+                          @oninput='e => UpdateConfig("_notes", e.Value)'
+                          data-testid="properties-notes"
+                          class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y">@(NodeConfig.GetValueOrDefault("_notes")?.ToString() ?? string.Empty)</textarea>
+            </div>
+
+            @* Connections *@
+            @if (Connections is not null && (Connections.Inputs.Count > 0 || Connections.Outputs.Count > 0))
+            {
+                <div class="border-t border-gray-700 pt-2" data-testid="properties-connections">
+                    <label class="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider font-semibold">Connections</label>
+                    @if (Connections.Inputs.Count > 0)
+                    {
+                        <div class="mb-1.5">
+                            <span class="text-[10px] text-gray-500 uppercase">Inputs from:</span>
+                            <div class="flex flex-wrap gap-1 mt-0.5">
+                                @foreach (var input in Connections.Inputs)
+                                {
+                                    <button @onclick="() => OnConnectionClicked.InvokeAsync(input.Id)"
+                                            class="px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 text-[10px] hover:bg-gray-600 cursor-pointer">
+                                        @if (input.EdgeLabel is not null) { <span class="text-gray-500 mr-0.5">@input.EdgeLabel:</span> }
+                                        @input.Label
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                    @if (Connections.Outputs.Count > 0)
+                    {
+                        <div>
+                            <span class="text-[10px] text-gray-500 uppercase">Outputs to:</span>
+                            <div class="flex flex-wrap gap-1 mt-0.5">
+                                @foreach (var output in Connections.Outputs)
+                                {
+                                    <button @onclick="() => OnConnectionClicked.InvokeAsync(output.Id)"
+                                            class="px-1.5 py-0.5 rounded bg-gray-700 text-gray-300 text-[10px] hover:bg-gray-600 cursor-pointer">
+                                        @if (output.EdgeLabel is not null) { <span class="text-gray-500 mr-0.5">@output.EdgeLabel:</span> }
+                                        @output.Label
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            @* Children for container steps *@
+            @if (Connections is not null && IsContainerType(SelectedNodeType) && Connections.Outputs.Count > 0)
+            {
+                <div class="border-t border-gray-700 pt-2" data-testid="properties-children">
+                    <label class="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider font-semibold">Child Steps</label>
+                    <div class="space-y-0.5">
+                        @foreach (var child in Connections.Outputs)
+                        {
+                            <button @onclick="() => OnConnectionClicked.InvokeAsync(child.Id)"
+                                    class="w-full flex items-center gap-1.5 px-2 py-1 rounded text-left hover:bg-gray-700 text-xs">
+                                @if (child.EdgeLabel is not null) { <span class="text-gray-500 font-mono text-[10px]">@child.EdgeLabel</span> }
+                                <span class="text-gray-200">@child.Label</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* Schema fields from API *@
             @if (_schemaFields.Count > 0)
             {
-                @foreach (var field in _schemaFields)
-                {
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">@field.Label</label>
-                        <input type="text"
-                               value="@(NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? string.Empty)"
-                               @oninput='e => UpdateConfig(field.Name, e.Value)'
-                               class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                    </div>
-                }
-            }
-            else if (stepDef is not null)
-            {
-                @foreach (var prop in stepDef.Properties)
-                {
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">
-                            @prop.Label
-                            @if (prop.Required) { <span class="text-red-400">*</span> }
-                        </label>
-                        @if (prop.Type == "select" && prop.Options is not null)
-                        {
-                            <select value="@(NodeConfig.GetValueOrDefault(prop.Name)?.ToString() ?? prop.DefaultValue ?? string.Empty)"
-                                    @onchange='e => UpdateConfig(prop.Name, e.Value)'
-                                    class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                @foreach (var opt in prop.Options)
-                                {
-                                    <option value="@opt">@opt</option>
-                                }
-                            </select>
-                        }
-                        else if (prop.Type == "bool")
-                        {
-                            <input type="checkbox"
-                                   checked="@(NodeConfig.GetValueOrDefault(prop.Name)?.ToString() == "true")"
-                                   @onchange='e => UpdateConfig(prop.Name, e.Value)'
-                                   class="rounded bg-gray-700" />
-                        }
-                        else
-                        {
-                            <input type="@(prop.Type == "number" ? "number" : "text")"
-                                   value="@(NodeConfig.GetValueOrDefault(prop.Name)?.ToString() ?? prop.DefaultValue ?? string.Empty)"
-                                   @oninput='e => UpdateConfig(prop.Name, e.Value)'
+                <div class="border-t border-gray-700 pt-2">
+                    <label class="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider font-semibold">Configuration</label>
+                    @foreach (var field in _schemaFields)
+                    {
+                        <div class="mb-2">
+                            <label class="block text-xs text-gray-400 mb-1">@field.Label</label>
+                            <input type="text"
+                                   value="@(NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? string.Empty)"
+                                   @oninput='e => UpdateConfig(field.Name, e.Value)'
                                    class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
-                        }
-                    </div>
-                }
+                        </div>
+                    }
+                </div>
+            }
+            else if (stepDef is not null && stepDef.Properties.Count > 0)
+            {
+                <div class="border-t border-gray-700 pt-2">
+                    <label class="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider font-semibold">Configuration</label>
+                    @foreach (var prop in stepDef.Properties)
+                    {
+                        <div class="mb-2">
+                            <label class="block text-xs text-gray-400 mb-1">
+                                @prop.Label
+                                @if (prop.Required) { <span class="text-red-400">*</span> }
+                            </label>
+                            @if (prop.Type == "select" && prop.Options is not null)
+                            {
+                                <select value="@(NodeConfig.GetValueOrDefault(prop.Name)?.ToString() ?? prop.DefaultValue ?? string.Empty)"
+                                        @onchange='e => UpdateConfig(prop.Name, e.Value)'
+                                        class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                    @foreach (var opt in prop.Options)
+                                    {
+                                        <option value="@opt">@opt</option>
+                                    }
+                                </select>
+                            }
+                            else if (prop.Type == "bool")
+                            {
+                                <input type="checkbox"
+                                       checked="@(NodeConfig.GetValueOrDefault(prop.Name)?.ToString() == "true")"
+                                       @onchange='e => UpdateConfig(prop.Name, e.Value)'
+                                       class="rounded bg-gray-700" />
+                            }
+                            else
+                            {
+                                <input type="@(prop.Type == "number" ? "number" : "text")"
+                                       value="@(NodeConfig.GetValueOrDefault(prop.Name)?.ToString() ?? prop.DefaultValue ?? string.Empty)"
+                                       @oninput='e => UpdateConfig(prop.Name, e.Value)'
+                                       class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                            }
+                        </div>
+                    }
+                </div>
             }
         </div>
     }
@@ -89,17 +181,36 @@
     [Parameter] public string? SelectedNodeType { get; set; }
     [Parameter] public Dictionary<string, object?> NodeConfig { get; set; } = new();
     [Parameter] public EventCallback<Dictionary<string, object?>> OnConfigChanged { get; set; }
+    [Parameter] public NodeConnections? Connections { get; set; }
+    [Parameter] public EventCallback<string> OnConnectionClicked { get; set; }
 
     private List<StepDefinition> _localSteps = StepCatalog.GetAll();
     private bool _loadingSchema;
     private List<SchemaField> _schemaFields = [];
     private string? _lastLoadedType;
+    private string? _stepTypeDescription;
+
+    public sealed class NodeConnections
+    {
+        public List<ConnectionInfo> Inputs { get; set; } = [];
+        public List<ConnectionInfo> Outputs { get; set; } = [];
+    }
+
+    public sealed class ConnectionInfo
+    {
+        public string Id { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string? EdgeLabel { get; set; }
+    }
 
     private sealed class SchemaField
     {
         public string Name { get; set; } = "";
         public string Label { get; set; } = "";
     }
+
+    private static bool IsContainerType(string? type) => type?.ToLowerInvariant() is
+        "parallel" or "conditional" or "trycatch" or "saga" or "foreach" or "while" or "dowhile" or "retry";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -112,6 +223,7 @@
         {
             _lastLoadedType = null;
             _schemaFields = [];
+            _stepTypeDescription = null;
         }
     }
 
@@ -119,22 +231,26 @@
     {
         _loadingSchema = true;
         _schemaFields = [];
+        _stepTypeDescription = null;
         try
         {
             var info = await Api.GetStepTypeAsync(type);
-            if (info?.ConfigSchema is not null)
+            if (info is not null)
             {
-                // Parse JSON schema properties into simple fields
-                var schema = info.ConfigSchema.Value;
-                if (schema.TryGetProperty("properties", out var props))
+                _stepTypeDescription = info.Description;
+                if (info.ConfigSchema is not null)
                 {
-                    foreach (var prop in props.EnumerateObject())
+                    var schema = info.ConfigSchema.Value;
+                    if (schema.TryGetProperty("properties", out var props))
                     {
-                        _schemaFields.Add(new SchemaField
+                        foreach (var prop in props.EnumerateObject())
                         {
-                            Name = prop.Name,
-                            Label = prop.Name[..1].ToUpper() + prop.Name[1..]
-                        });
+                            _schemaFields.Add(new SchemaField
+                            {
+                                Name = prop.Name,
+                                Label = prop.Name[..1].ToUpper() + prop.Name[1..]
+                            });
+                        }
                     }
                 }
             }

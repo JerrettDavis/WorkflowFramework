@@ -30,18 +30,97 @@
         <PropertiesPanel SelectedNodeId="@_selectedNodeId"
                          SelectedNodeType="@_selectedNodeType"
                          NodeConfig="_selectedNodeConfig"
-                         OnConfigChanged="HandleConfigChanged" />
+                         OnConfigChanged="HandleConfigChanged"
+                         Connections="_selectedNodeConnections"
+                         OnConnectionClicked="HandleFocusNode" />
     </div>
 
-    <ValidationPanel ValidationErrors="_validationErrors"
-                     OnErrorClicked="HandleValidationErrorClicked" />
+    @* Tabbed bottom panels *@
+    <div class="border-t border-gray-700 bg-gray-800" data-testid="bottom-tabs">
+        <div class="flex items-center border-b border-gray-700">
+            <button @onclick='() => _activeBottomTab = "output"'
+                    class="px-4 py-1.5 text-xs @(_activeBottomTab == "output" ? "text-blue-400 border-b-2 border-blue-400 bg-gray-850" : "text-gray-400 hover:text-gray-200")"
+                    data-testid="tab-output">
+                Output
+                @if (_activeRunId is not null)
+                {
+                    <span class="ml-1 text-yellow-400">●</span>
+                }
+            </button>
+            <button @onclick='() => { _activeBottomTab = "steps"; RefreshStepList(); }'
+                    class="px-4 py-1.5 text-xs @(_activeBottomTab == "steps" ? "text-blue-400 border-b-2 border-blue-400 bg-gray-850" : "text-gray-400 hover:text-gray-200")"
+                    data-testid="tab-steps">
+                Steps
+            </button>
+            <button @onclick='() => _activeBottomTab = "validation"'
+                    class="px-4 py-1.5 text-xs @(_activeBottomTab == "validation" ? "text-blue-400 border-b-2 border-blue-400 bg-gray-850" : "text-gray-400 hover:text-gray-200")"
+                    data-testid="tab-validation">
+                Validation
+                @if (_validationErrors.Count > 0)
+                {
+                    <span class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-red-500/20 text-red-400">@ValidationErrorCount</span>
+                }
+            </button>
+            <div class="flex-1"></div>
+            <button @onclick="() => _bottomPanelCollapsed = !_bottomPanelCollapsed"
+                    class="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300"
+                    data-testid="toggle-bottom-panel">
+                @(_bottomPanelCollapsed ? "▲" : "▼")
+            </button>
+        </div>
 
-    <ExecutionPanel IsVisible="_showExecutionPanel"
-                    OnToggle="() => _showExecutionPanel = !_showExecutionPanel"
-                    LogEntries="_logEntries"
-                    ActiveRunId="@_activeRunId"
-                    OnRunStatusChanged="HandleRunStatusChanged"
-                    OnStepStatusChanged="HandleStepStatusChanged" />
+        @if (!_bottomPanelCollapsed)
+        {
+            <div class="h-40">
+                @if (_activeBottomTab == "output")
+                {
+                    <div class="h-full overflow-y-auto p-3 bg-gray-900 font-mono text-xs text-gray-300" data-testid="output-content">
+                        @if (_logEntries.Count == 0)
+                        {
+                            <p class="text-gray-600">No output yet. Run a workflow to see results.</p>
+                        }
+                        else
+                        {
+                            @foreach (var entry in _logEntries)
+                            {
+                                <div class="py-0.5 @GetLogClass(entry)">@entry</div>
+                            }
+                        }
+                    </div>
+                }
+                else if (_activeBottomTab == "steps")
+                {
+                    <StepListPanel @ref="_stepListPanel"
+                                   SelectedNodeId="@_selectedNodeId"
+                                   OnNodeClicked="HandleFocusNode" />
+                }
+                else if (_activeBottomTab == "validation")
+                {
+                    <div class="h-full overflow-y-auto bg-gray-900" data-testid="validation-content">
+                        @if (_validationErrors.Count == 0)
+                        {
+                            <div class="p-3 text-gray-600 text-xs">No validation errors. Click Validate to check.</div>
+                        }
+                        else
+                        {
+                            @foreach (var error in _validationErrors)
+                            {
+                                <button @onclick="() => HandleValidationErrorClicked(error.StepName)"
+                                        class="w-full flex items-center gap-2 px-3 py-1 text-xs hover:bg-gray-700 text-left">
+                                    <span class="@GetSeverityClass(error.Severity)">@GetSeverityIcon(error.Severity)</span>
+                                    @if (error.StepName is not null)
+                                    {
+                                        <span class="text-blue-400 font-mono">@error.StepName</span>
+                                    }
+                                    <span class="text-gray-300">@error.Message</span>
+                                </button>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
 </div>
 
 <TemplateBrowser IsVisible="_showTemplateBrowser"
@@ -67,12 +146,15 @@
     private string? _selectedNodeId;
     private string? _selectedNodeType;
     private Dictionary<string, object?> _selectedNodeConfig = new();
-    private bool _showExecutionPanel;
-    private List<string> _logEntries = [];
+    private PropertiesPanel.NodeConnections? _selectedNodeConnections;
     private bool _showTemplateBrowser;
     private bool _showOpenDialog;
     private string? _activeRunId;
     private List<ValidationErrorDto> _validationErrors = [];
+    private List<string> _logEntries = [];
+    private string _activeBottomTab = "output";
+    private bool _bottomPanelCollapsed;
+    private StepListPanel? _stepListPanel;
 
     private int ValidationErrorCount => _validationErrors.Count(e => e.Severity == "Error");
 
@@ -83,7 +165,6 @@
             _dotNetRef = DotNetObjectReference.Create(this);
             await JS.InvokeVoidAsync("workflowEditor.initialize", "workflow-canvas", _dotNetRef, Array.Empty<object>(), Array.Empty<object>());
 
-            // Initialize keyboard shortcuts
             Shortcuts.Register("Ctrl+S", HandleSave);
             Shortcuts.Register("Ctrl+N", HandleNew);
             Shortcuts.Register("Ctrl+O", () => { _showOpenDialog = true; StateHasChanged(); return Task.CompletedTask; });
@@ -97,11 +178,50 @@
     }
 
     [JSInvokable]
-    public void OnNodeSelected(string? nodeId, string? nodeType, Dictionary<string, object?>? config)
+    public async void OnNodeSelected(string? nodeId, string? nodeType, Dictionary<string, object?>? config)
     {
         _selectedNodeId = nodeId;
         _selectedNodeType = nodeType;
         _selectedNodeConfig = config ?? new();
+
+        if (nodeId is not null)
+        {
+            try
+            {
+                var connData = await JS.InvokeAsync<System.Text.Json.JsonElement>("workflowEditor.getNodeConnections", nodeId);
+                _selectedNodeConnections = new PropertiesPanel.NodeConnections();
+                if (connData.TryGetProperty("inputs", out var inputs))
+                {
+                    foreach (var item in inputs.EnumerateArray())
+                    {
+                        _selectedNodeConnections.Inputs.Add(new PropertiesPanel.ConnectionInfo
+                        {
+                            Id = item.GetProperty("id").GetString() ?? "",
+                            Label = item.GetProperty("label").GetString() ?? "",
+                            EdgeLabel = item.TryGetProperty("edgeLabel", out var el) && el.ValueKind != System.Text.Json.JsonValueKind.Null ? el.GetString() : null
+                        });
+                    }
+                }
+                if (connData.TryGetProperty("outputs", out var outputs))
+                {
+                    foreach (var item in outputs.EnumerateArray())
+                    {
+                        _selectedNodeConnections.Outputs.Add(new PropertiesPanel.ConnectionInfo
+                        {
+                            Id = item.GetProperty("id").GetString() ?? "",
+                            Label = item.GetProperty("label").GetString() ?? "",
+                            EdgeLabel = item.TryGetProperty("edgeLabel", out var el) && el.ValueKind != System.Text.Json.JsonValueKind.Null ? el.GetString() : null
+                        });
+                    }
+                }
+            }
+            catch { _selectedNodeConnections = null; }
+        }
+        else
+        {
+            _selectedNodeConnections = null;
+        }
+
         StateHasChanged();
     }
 
@@ -115,7 +235,7 @@
     [JSInvokable]
     public void OnNodeRemoved(string nodeId)
     {
-        if (_selectedNodeId == nodeId) { _selectedNodeId = null; _selectedNodeType = null; }
+        if (_selectedNodeId == nodeId) { _selectedNodeId = null; _selectedNodeType = null; _selectedNodeConnections = null; }
         _dirty = true;
         StateHasChanged();
     }
@@ -129,6 +249,20 @@
     [JSInvokable]
     public void OnCanvasChanged() { _dirty = true; StateHasChanged(); }
 
+    private async Task HandleFocusNode(string nodeId)
+    {
+        await JS.InvokeVoidAsync("workflowEditor.focusNode", nodeId);
+    }
+
+    private async void RefreshStepList()
+    {
+        if (_stepListPanel is not null)
+        {
+            await Task.Yield(); // let render complete
+            await _stepListPanel.RefreshAsync();
+        }
+    }
+
     private async Task HandleNew()
     {
         _workflowName = "Untitled Workflow";
@@ -136,6 +270,7 @@
         _dirty = false;
         _selectedNodeId = null;
         _selectedNodeType = null;
+        _selectedNodeConnections = null;
         _activeRunId = null;
         await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", Array.Empty<object>(), Array.Empty<object>());
     }
@@ -209,9 +344,9 @@
 
     private async Task HandleRun()
     {
-        _showExecutionPanel = true;
+        _activeBottomTab = "output";
+        _bottomPanelCollapsed = false;
 
-        // Validate before running
         await HandleValidate();
         if (_validationErrors.Any(e => e.Severity == "Error"))
         {
@@ -221,7 +356,6 @@
 
         if (_currentWorkflowId is null)
         {
-            // Auto-save first
             await HandleSave();
             if (_currentWorkflowId is null)
             {
@@ -317,13 +451,11 @@
         _dirty = false;
         _selectedNodeId = null;
         _selectedNodeType = null;
+        _selectedNodeConnections = null;
         _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Opened workflow: {_workflowName}");
         await LoadDefinitionIntoCanvas(saved.Definition);
     }
 
-    /// <summary>
-    /// Converts a WorkflowDefinitionDto into canvas nodes + edges and loads them into React Flow.
-    /// </summary>
     private async Task LoadDefinitionIntoCanvas(WorkflowDefinitionDto definition)
     {
         var nodes = new List<object>();
@@ -332,7 +464,6 @@
         
         string NextId() => $"node_{++nodeCounter}";
 
-        // Step type → category/color/icon mapping
         static (string category, string color, string icon) GetStepVisuals(string type) => type.ToLowerInvariant() switch
         {
             "action" => ("Core", "#3b82f6", "⬡"),
@@ -363,13 +494,11 @@
             edges.Add(new { id = $"edge_{++edgeCounter}", source, target, label });
         }
 
-        // Recursively flatten steps into positioned nodes, returning the IDs of entry and exit nodes
         (string entryId, string exitId) LayoutStep(StepDefinitionApiDto step, double x, double y)
         {
             var (cat, color, icon) = GetStepVisuals(step.Type);
             var nodeId = NextId();
 
-            // For container types, create the main node then layout children
             if (step.Type.Equals("Conditional", StringComparison.OrdinalIgnoreCase))
             {
                 nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = new Dictionary<string, object?>() });
@@ -385,7 +514,6 @@
                 {
                     var (elseEntry, elseExit) = LayoutStep(step.Else, x + 200, y + 60);
                     AddEdge(nodeId, elseEntry, "else");
-                    // Merge node
                     var mergeId = NextId();
                     nodes.Add(new { id = mergeId, type = "action", label = "↪ Merge", icon = "↪", category = "Core", color = "#6b7280", x = x + 400, y, config = new Dictionary<string, object?>() });
                     AddEdge(lastId, mergeId);
@@ -461,12 +589,10 @@
                 return (nodeId, lastTry);
             }
 
-            // Simple leaf node
             nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = new Dictionary<string, object?>() });
             return (nodeId, nodeId);
         }
 
-        // Layout top-level steps sequentially
         double currentX = 0;
         string? previousExit = null;
 
@@ -476,7 +602,6 @@
             if (previousExit is not null) AddEdge(previousExit, entryId);
             previousExit = exitId;
             
-            // Advance X based on how many nodes were added at this level
             currentX += step.Steps?.Count > 0 || step.Then is not null || step.TryBody?.Count > 0 
                 ? 600 
                 : 200;
@@ -492,7 +617,7 @@
         {
             await JS.InvokeVoidAsync("workflowEditor.updateNodeStatus", stepStatus.StepName, stepStatus.Status);
         }
-        catch { /* JS interop may fail if canvas not ready */ }
+        catch { }
     }
 
     private void HandleRunStatusChanged(string status)
@@ -504,6 +629,30 @@
         }
         StateHasChanged();
     }
+
+    private static string GetLogClass(string entry) => entry switch
+    {
+        _ when entry.Contains("❌") || entry.Contains("💥") => "text-red-400",
+        _ when entry.Contains("✅") || entry.Contains("🏁") => "text-green-400",
+        _ when entry.Contains("⏳") => "text-yellow-400",
+        _ => ""
+    };
+
+    private static string GetSeverityIcon(string severity) => severity switch
+    {
+        "Error" => "🔴",
+        "Warning" => "🟡",
+        "Info" => "🔵",
+        _ => "⚪"
+    };
+
+    private static string GetSeverityClass(string severity) => severity switch
+    {
+        "Error" => "text-red-400",
+        "Warning" => "text-yellow-400",
+        "Info" => "text-blue-400",
+        _ => "text-gray-400"
+    };
 
     public async ValueTask DisposeAsync()
     {

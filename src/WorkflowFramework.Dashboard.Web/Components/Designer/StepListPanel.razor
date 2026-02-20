@@ -1,0 +1,110 @@
+@inject IJSRuntime JS
+
+<div class="h-full overflow-y-auto bg-gray-900 text-xs" data-testid="step-list-panel">
+    @if (_flatNodes.Count == 0)
+    {
+        <div class="p-4 text-gray-500 text-center">
+            <p>No steps in workflow yet.</p>
+            <p class="mt-1">Drag steps from the palette to get started.</p>
+        </div>
+    }
+    else
+    {
+        <div class="p-2 space-y-0.5">
+            @foreach (var item in _flatNodes)
+            {
+                var isSelected = item.Node.Id == SelectedNodeId;
+                <button @onclick="() => OnNodeClicked.InvokeAsync(item.Node.Id)"
+                        class="w-full flex items-center gap-1.5 px-2 py-1 rounded text-left hover:bg-gray-700 @(isSelected ? "bg-gray-700 ring-1 ring-blue-500" : "")"
+                        style="padding-left: @(item.Depth * 16 + 8)px"
+                        data-testid="step-list-item">
+                    @if (item.BranchLabel is not null)
+                    {
+                        <span class="text-gray-500 text-[10px] font-mono mr-0.5">@item.BranchLabel →</span>
+                    }
+                    <span>@item.Node.Icon</span>
+                    <span class="text-gray-200 truncate flex-1">@item.Node.Label</span>
+                    <span class="px-1 py-0.5 rounded text-[9px] font-medium" style="background: @(item.Node.Color)22; color: @item.Node.Color">@item.Node.Type</span>
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? SelectedNodeId { get; set; }
+    [Parameter] public EventCallback<string> OnNodeClicked { get; set; }
+
+    private List<FlatItem> _flatNodes = [];
+
+    private sealed class CanvasNode
+    {
+        public string Id { get; set; } = "";
+        public string Type { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string Icon { get; set; } = "⬡";
+        public string Category { get; set; } = "";
+        public string Color { get; set; } = "#4b5563";
+    }
+
+    private sealed class CanvasEdge
+    {
+        public string Id { get; set; } = "";
+        public string Source { get; set; } = "";
+        public string Target { get; set; } = "";
+        public string? Label { get; set; }
+    }
+
+    private sealed class FlatItem
+    {
+        public CanvasNode Node { get; set; } = null!;
+        public int Depth { get; set; }
+        public string? BranchLabel { get; set; }
+    }
+
+    public async Task RefreshAsync()
+    {
+        try
+        {
+            var nodes = await JS.InvokeAsync<List<CanvasNode>>("workflowEditor.getAllNodes");
+            var edges = await JS.InvokeAsync<List<CanvasEdge>>("workflowEditor.getAllEdges");
+            BuildFlatList(nodes, edges);
+            StateHasChanged();
+        }
+        catch { }
+    }
+
+    private void BuildFlatList(List<CanvasNode> nodes, List<CanvasEdge> edges)
+    {
+        _flatNodes = [];
+        var nodeMap = nodes.ToDictionary(n => n.Id);
+        var hasIncoming = new HashSet<string>(edges.Select(e => e.Target));
+        var childrenMap = edges.GroupBy(e => e.Source).ToDictionary(g => g.Key, g => g.ToList());
+
+        var roots = nodes.Where(n => !hasIncoming.Contains(n.Id)).ToList();
+        if (roots.Count == 0 && nodes.Count > 0) roots = [nodes[0]];
+
+        var visited = new HashSet<string>();
+        foreach (var root in roots)
+        {
+            Flatten(root, 0, null, childrenMap, nodeMap, visited);
+        }
+    }
+
+    private void Flatten(CanvasNode node, int depth, string? branchLabel, Dictionary<string, List<CanvasEdge>> childrenMap, Dictionary<string, CanvasNode> nodeMap, HashSet<string> visited)
+    {
+        if (!visited.Add(node.Id)) return;
+        _flatNodes.Add(new FlatItem { Node = node, Depth = depth, BranchLabel = branchLabel });
+
+        if (childrenMap.TryGetValue(node.Id, out var outEdges))
+        {
+            foreach (var edge in outEdges)
+            {
+                if (nodeMap.TryGetValue(edge.Target, out var child) && !visited.Contains(child.Id))
+                {
+                    Flatten(child, depth + 1, edge.Label, childrenMap, nodeMap, visited);
+                }
+            }
+        }
+    }
+}

@@ -489,6 +489,61 @@
             }
         },
 
+        getNodeConnections(nodeId) {
+            const inputs = edges.filter(e => e.target === nodeId).map(e => {
+                const src = nodes.find(n => n.id === e.source);
+                return { id: e.source, label: src ? (src.config?.label || src.label || e.source) : e.source, edgeLabel: e.label || null };
+            });
+            const outputs = edges.filter(e => e.source === nodeId).map(e => {
+                const tgt = nodes.find(n => n.id === e.target);
+                return { id: e.target, label: tgt ? (tgt.config?.label || tgt.label || e.target) : e.target, edgeLabel: e.label || null };
+            });
+            return { inputs, outputs };
+        },
+
+        focusNode(nodeId) {
+            const node = nodes.find(n => n.id === nodeId);
+            if (!node) return;
+            const padding = 200;
+            viewBox = { x: node.x - padding, y: node.y - padding, w: padding * 2 + 140, h: padding * 2 + 50 };
+            updateViewBox();
+            selectNode(nodeId);
+        },
+
+        selectNodeByName(name) {
+            const node = nodes.find(n => (n.config?.label || n.label) === name);
+            if (node) {
+                this.focusNode(node.id);
+            }
+        },
+
+        getAllNodes() {
+            return nodes.map(n => ({ id: n.id, type: n.type, label: n.config?.label || n.label || '', icon: n.icon || '⬡', category: n.category || '', color: n.color || '#4b5563' }));
+        },
+
+        getAllEdges() {
+            return edges.map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label || null }));
+        },
+
+        updateNodeStatus(stepName, status) {
+            const node = nodes.find(n => (n.config?.label || n.label) === stepName);
+            if (node) {
+                node.runStatus = status === 'Running' ? 'running' : status === 'Completed' ? 'success' : status === 'Failed' ? 'error' : null;
+                render();
+            }
+        },
+
+        deleteSelected() {
+            if (selectedNodeId) {
+                const nodeId = selectedNodeId;
+                nodes = nodes.filter(n => n.id !== nodeId);
+                edges = edges.filter(e => e.source !== nodeId && e.target !== nodeId);
+                selectNode(null);
+                render();
+                if (dotNetRef) dotNetRef.invokeMethodAsync('OnNodeRemoved', nodeId);
+            }
+        },
+
         destroy() {
             if (container) container.innerHTML = '';
             nodes = [];
