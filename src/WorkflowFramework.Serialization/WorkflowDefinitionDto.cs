@@ -82,4 +82,9 @@ public sealed class StepDefinitionDto
     [JsonPropertyName("subWorkflowName")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? SubWorkflowName { get; set; }
+
+    /// <summary>Step-specific configuration (e.g., url, model, prompt, expression).</summary>
+    [JsonPropertyName("config")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Config { get; set; }
 }

@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
@@ -24,6 +25,8 @@ public static class DashboardApiExtensions
         services.AddSingleton<IWorkflowTemplateLibrary, InMemoryWorkflowTemplateLibrary>();
         services.AddSingleton<WorkflowVersioningService>();
         services.AddSingleton<AuditTrailService>();
+        services.AddSingleton<DashboardSettingsService>();
+        services.AddHttpClient("OllamaClient");
         return services;
     }
 
@@ -32,6 +35,10 @@ public static class DashboardApiExtensions
     /// </summary>
     public static IEndpointRouteBuilder MapWorkflowDashboardApi(this IEndpointRouteBuilder endpoints)
     {
+        // Seed sample workflows on first call
+        var store = endpoints.ServiceProvider.GetRequiredService<IWorkflowDefinitionStore>();
+        SampleWorkflowSeeder.SeedAsync(store).GetAwaiter().GetResult();
+
         MapWorkflowEndpoints(endpoints);
         MapStepEndpoints(endpoints);
         MapRunEndpoints(endpoints);
@@ -41,6 +48,7 @@ public static class DashboardApiExtensions
         MapAuditEndpoints(endpoints);
         MapTagEndpoints(endpoints);
         MapValidationEndpoints(endpoints);
+        MapSettingsEndpoints(endpoints);
         return endpoints;
     }
 
@@ -333,5 +341,80 @@ public static class DashboardApiExtensions
             var result = validator.Validate(definition);
             return Results.Ok(result);
         }).WithTags("Validation").WithName("ValidateWorkflowDefinition");
+    }
+
+    private static void MapSettingsEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        var group = endpoints.MapGroup("/api/settings").WithTags("Settings");
+
+        group.MapGet("/", (DashboardSettingsService svc) => Results.Ok(svc.Get()))
+            .WithName("GetSettings");
+
+        group.MapPut("/", (DashboardSettings settings, DashboardSettingsService svc) =>
+        {
+            svc.Update(settings);
+            return Results.Ok(svc.Get());
+        }).WithName("UpdateSettings");
+
+        group.MapPost("/test-ollama", async (DashboardSettingsService svc, IHttpClientFactory factory) =>
+        {
+            var settings = svc.Get();
+            try
+            {
+                var client = factory.CreateClient("OllamaClient");
+                client.Timeout = TimeSpan.FromSeconds(5);
+                var resp = await client.GetAsync($"{settings.OllamaUrl.TrimEnd('/')}/api/tags");
+                return resp.IsSuccessStatusCode
+                    ? Results.Ok(new { success = true, message = "Connected to Ollama" })
+                    : Results.Ok(new { success = false, message = $"Ollama returned {resp.StatusCode}" });
+            }
+            catch (Exception ex)
+            {
+                return Results.Ok(new { success = false, message = ex.Message });
+            }
+        }).WithName("TestOllamaConnection");
+
+        endpoints.MapGet("/api/providers/{provider}/models", async (string provider, DashboardSettingsService svc, IHttpClientFactory factory) =>
+        {
+            var settings = svc.Get();
+            switch (provider.ToLowerInvariant())
+            {
+                case "ollama":
+                    try
+                    {
+                        var client = factory.CreateClient("OllamaClient");
+                        client.Timeout = TimeSpan.FromSeconds(10);
+                        var resp = await client.GetAsync($"{settings.OllamaUrl.TrimEnd('/')}/api/tags");
+                        if (resp.IsSuccessStatusCode)
+                        {
+                            var json = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+                            var models = new List<string>();
+                            if (json.TryGetProperty("models", out var arr))
+                            {
+                                foreach (var m in arr.EnumerateArray())
+                                {
+                                    if (m.TryGetProperty("name", out var n))
+                                        models.Add(n.GetString() ?? "");
+                                }
+                            }
+                            return Results.Ok(models);
+                        }
+                    }
+                    catch { }
+                    return Results.Ok(Array.Empty<string>());
+
+                case "openai":
+                    return Results.Ok(new[] { "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo", "o1-preview", "o1-mini" });
+
+                case "anthropic":
+                    return Results.Ok(new[] { "claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-3-5-haiku-20241022", "claude-3-opus-20240229" });
+
+                case "huggingface":
+                    return Results.Ok(new[] { "meta-llama/Llama-3-70b-chat-hf", "mistralai/Mixtral-8x7B-Instruct-v0.1", "microsoft/Phi-3-mini-4k-instruct" });
+
+                default:
+                    return Results.Ok(Array.Empty<string>());
+            }
+        }).WithTags("Settings").WithName("GetProviderModels");
     }
 }

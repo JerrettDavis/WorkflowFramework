@@ -77,6 +77,10 @@ public sealed class StepDefinitionApiDto
     [JsonPropertyName("finallyBody")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<StepDefinitionApiDto>? FinallyBody { get; set; }
+
+    [JsonPropertyName("config")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Config { get; set; }
 }
 
 public sealed class CreateWorkflowRequest
@@ -136,6 +140,25 @@ public sealed class ValidationResultDto
     public bool IsValid { get; set; }
     public int ErrorCount { get; set; }
     public int WarningCount { get; set; }
+}
+
+public sealed class DashboardSettingsDto
+{
+    public string OllamaUrl { get; set; } = "http://localhost:11434";
+    public string? OpenAiApiKey { get; set; }
+    public string? AnthropicApiKey { get; set; }
+    public string? HuggingFaceApiKey { get; set; }
+    public string? OpenAiBaseUrl { get; set; }
+    public string? DefaultProvider { get; set; }
+    public string? DefaultModel { get; set; }
+    public int DefaultTimeoutSeconds { get; set; } = 300;
+    public int MaxConcurrentRuns { get; set; } = 5;
+}
+
+public sealed class OllamaTestResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = "";
 }
 
 public sealed class WorkflowTemplate

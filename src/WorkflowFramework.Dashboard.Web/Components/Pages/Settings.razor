@@ -1,0 +1,201 @@
+@page "/settings"
+@using WorkflowFramework.Dashboard.Web.Models
+@using WorkflowFramework.Dashboard.Web.Services
+@inject DashboardApiClient Api
+
+<div class="min-h-screen bg-gray-950 text-gray-100 p-6">
+    <div class="max-w-3xl mx-auto space-y-8">
+        <div class="flex items-center gap-3">
+            <a href="/" class="text-gray-400 hover:text-white transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </a>
+            <h1 class="text-2xl font-bold">Settings</h1>
+        </div>
+
+        @if (_toast is not null)
+        {
+            <div class="@(_toastSuccess ? "bg-green-900/50 border-green-700" : "bg-red-900/50 border-red-700") border rounded-lg px-4 py-3 text-sm">
+                @_toast
+            </div>
+        }
+
+        @if (_loading)
+        {
+            <div class="text-gray-400">Loading settings...</div>
+        }
+        else if (_settings is not null)
+        {
+            <!-- AI Providers -->
+            <section class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    AI Providers
+                </h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Ollama URL</label>
+                        <div class="flex gap-2">
+                            <input type="text" @bind="_settings.OllamaUrl" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                            <button @onclick="TestOllama" disabled="@_testingOllama" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition disabled:opacity-50">
+                                @(_testingOllama ? "Testing..." : "Test Connection")
+                            </button>
+                        </div>
+                        @if (_ollamaTestResult is not null)
+                        {
+                            <p class="mt-1 text-xs @(_ollamaTestResult.Success ? "text-green-400" : "text-red-400")">@_ollamaTestResult.Message</p>
+                        }
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">OpenAI API Key</label>
+                        <input type="password" @bind="_settings.OpenAiApiKey" placeholder="sk-..." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">OpenAI Base URL (optional)</label>
+                        <input type="text" @bind="_settings.OpenAiBaseUrl" placeholder="https://api.openai.com/v1" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Anthropic API Key</label>
+                        <input type="password" @bind="_settings.AnthropicApiKey" placeholder="sk-ant-..." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Hugging Face API Key</label>
+                        <input type="password" @bind="_settings.HuggingFaceApiKey" placeholder="hf_..." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Default Provider</label>
+                        <select @bind="_settings.DefaultProvider" @bind:after="OnProviderChanged" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none">
+                            <option value="">— Select —</option>
+                            <option value="ollama">Ollama</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="anthropic">Anthropic</option>
+                            <option value="huggingface">Hugging Face</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Default Model</label>
+                        <select @bind="_settings.DefaultModel" disabled="@(_loadingModels || _models.Count == 0)" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none disabled:opacity-50">
+                            <option value="">@(_loadingModels ? "Loading models..." : "— Select provider first —")</option>
+                            @foreach (var m in _models)
+                            {
+                                <option value="@m">@m</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Execution Settings -->
+            <section class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    Execution
+                </h2>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Default Timeout (seconds)</label>
+                        <input type="number" @bind="_settings.DefaultTimeoutSeconds" min="1" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Max Concurrent Runs</label>
+                        <input type="number" @bind="_settings.MaxConcurrentRuns" min="1" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                    </div>
+                </div>
+            </section>
+
+            <!-- Save -->
+            <div class="flex justify-end">
+                <button @onclick="SaveSettings" disabled="@_saving" class="px-6 py-2.5 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-semibold transition disabled:opacity-50">
+                    @(_saving ? "Saving..." : "Save Settings")
+                </button>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private DashboardSettingsDto? _settings;
+    private bool _loading = true;
+    private bool _saving;
+    private bool _testingOllama;
+    private bool _loadingModels;
+    private List<string> _models = [];
+    private OllamaTestResult? _ollamaTestResult;
+    private string? _toast;
+    private bool _toastSuccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _settings = await Api.GetSettingsAsync();
+            if (!string.IsNullOrEmpty(_settings?.DefaultProvider))
+                await LoadModels(_settings.DefaultProvider);
+        }
+        catch (Exception ex)
+        {
+            ShowToast($"Failed to load settings: {ex.Message}", false);
+        }
+        finally { _loading = false; }
+    }
+
+    private async Task OnProviderChanged()
+    {
+        if (!string.IsNullOrEmpty(_settings?.DefaultProvider))
+            await LoadModels(_settings.DefaultProvider);
+        else
+            _models = [];
+    }
+
+    private async Task LoadModels(string provider)
+    {
+        _loadingModels = true;
+        try { _models = await Api.GetProviderModelsAsync(provider); }
+        catch { _models = []; }
+        finally { _loadingModels = false; }
+    }
+
+    private async Task SaveSettings()
+    {
+        if (_settings is null) return;
+        _saving = true;
+        try
+        {
+            _settings = await Api.UpdateSettingsAsync(_settings);
+            ShowToast("Settings saved successfully!", true);
+        }
+        catch (Exception ex) { ShowToast($"Failed to save: {ex.Message}", false); }
+        finally { _saving = false; }
+    }
+
+    private async Task TestOllama()
+    {
+        _testingOllama = true;
+        _ollamaTestResult = null;
+        try
+        {
+            // Save current URL first so server uses it
+            if (_settings is not null) await Api.UpdateSettingsAsync(_settings);
+            _ollamaTestResult = await Api.TestOllamaConnectionAsync();
+        }
+        catch (Exception ex) { _ollamaTestResult = new() { Success = false, Message = ex.Message }; }
+        finally { _testingOllama = false; }
+    }
+
+    private async void ShowToast(string message, bool success)
+    {
+        _toast = message;
+        _toastSuccess = success;
+        StateHasChanged();
+        await Task.Delay(3000);
+        _toast = null;
+        StateHasChanged();
+    }
+}

@@ -81,4 +81,10 @@ public sealed class InMemoryWorkflowDefinitionStore : IWorkflowDefinitionStore
         _store[duplicate.Id] = duplicate;
         return Task.FromResult<SavedWorkflowDefinition?>(duplicate);
     }
+
+    public Task SeedAsync(SavedWorkflowDefinition workflow, CancellationToken ct = default)
+    {
+        _store.TryAdd(workflow.Id, workflow);
+        return Task.CompletedTask;
+    }
 }

@@ -13,4 +13,5 @@ public interface IWorkflowDefinitionStore
     Task<SavedWorkflowDefinition?> UpdateAsync(string id, CreateWorkflowRequest request, CancellationToken ct = default);
     Task<bool> DeleteAsync(string id, CancellationToken ct = default);
     Task<SavedWorkflowDefinition?> DuplicateAsync(string id, CancellationToken ct = default);
+    Task SeedAsync(SavedWorkflowDefinition workflow, CancellationToken ct = default);
 }

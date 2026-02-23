@@ -115,19 +115,129 @@
                 </div>
             }
 
-            @* Schema fields from API *@
+            @* Schema-driven configuration fields *@
             @if (_schemaFields.Count > 0)
             {
                 <div class="border-t border-gray-700 pt-2">
                     <label class="block text-xs text-gray-400 mb-1.5 uppercase tracking-wider font-semibold">Configuration</label>
                     @foreach (var field in _schemaFields)
                     {
-                        <div class="mb-2">
-                            <label class="block text-xs text-gray-400 mb-1">@field.Label</label>
-                            <input type="text"
-                                   value="@(NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? string.Empty)"
-                                   @oninput='e => UpdateConfig(field.Name, e.Value)'
-                                   class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                        <div class="mb-3">
+                            <label class="block text-xs text-gray-400 mb-1">
+                                @field.Label
+                                @if (field.Required) { <span class="text-red-400 ml-0.5">*</span> }
+                            </label>
+
+                            @switch (field.UiType)
+                            {
+                                case "providerSelect":
+                                    <select value="@GetConfigValue(field)"
+                                            @onchange='e => UpdateConfig(field.Name, e.Value)'
+                                            class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                        <option value="">— Select provider —</option>
+                                        <option value="ollama">Ollama</option>
+                                        <option value="openai">OpenAI</option>
+                                        <option value="anthropic">Anthropic</option>
+                                        <option value="huggingface">HuggingFace</option>
+                                    </select>
+                                    break;
+
+                                case "modelSelect":
+                                    <select value="@GetConfigValue(field)"
+                                            @onchange='e => UpdateConfig(field.Name, e.Value)'
+                                            class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                        <option value="">— Select model —</option>
+                                        @foreach (var m in GetModelsForProvider(field.DependsOn is not null ? NodeConfig.GetValueOrDefault(field.DependsOn)?.ToString() ?? "" : ""))
+                                        {
+                                            <option value="@m">@m</option>
+                                        }
+                                    </select>
+                                    break;
+
+                                case "select":
+                                    <select value="@GetConfigValue(field)"
+                                            @onchange='e => UpdateConfig(field.Name, e.Value)'
+                                            class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                        <option value="">— Select —</option>
+                                        @if (field.Options is not null)
+                                        {
+                                            @foreach (var opt in field.Options)
+                                            {
+                                                <option value="@opt">@opt</option>
+                                            }
+                                        }
+                                    </select>
+                                    break;
+
+                                case "textarea":
+                                    <textarea rows="@(field.Rows > 0 ? field.Rows : 3)"
+                                              placeholder="@(field.Default ?? "")"
+                                              @oninput='e => UpdateConfig(field.Name, e.Value)'
+                                              class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y">@(NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? string.Empty)</textarea>
+                                    break;
+
+                                case "json":
+                                    <textarea rows="@(field.Rows > 0 ? field.Rows : 4)"
+                                              placeholder="@(field.Default ?? "")"
+                                              @oninput='e => UpdateConfig(field.Name, e.Value)'
+                                              class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y font-mono text-xs">@(NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? string.Empty)</textarea>
+                                    break;
+
+                                case "slider":
+                                    <div class="flex items-center gap-2">
+                                        <input type="range"
+                                               min="@field.Min" max="@field.Max" step="@(field.Step > 0 ? field.Step : 1)"
+                                               value="@(NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? field.Default ?? "0")"
+                                               @oninput='e => UpdateConfig(field.Name, e.Value)'
+                                               class="flex-1 accent-blue-500" />
+                                        <span class="text-xs text-gray-300 w-10 text-right font-mono">@(NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? field.Default ?? "0")</span>
+                                    </div>
+                                    break;
+
+                                case "number":
+                                    <input type="number"
+                                           value="@GetConfigValue(field)"
+                                           placeholder="@(field.Default ?? "")"
+                                           min="@(field.Min)" max="@(field.Max)" step="@(field.Step > 0 ? field.Step : 1)"
+                                           @oninput='e => UpdateConfig(field.Name, e.Value)'
+                                           class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                    break;
+
+                                case "boolean":
+                                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                                        <div class="relative">
+                                            <input type="checkbox"
+                                                   checked="@IsBoolChecked(field)"
+                                                   @onchange='e => UpdateConfig(field.Name, (bool)(e.Value ?? false) ? "true" : "false")'
+                                                   class="sr-only peer" />
+                                            <div class="w-9 h-5 bg-gray-600 rounded-full peer peer-checked:bg-blue-500 transition-colors"></div>
+                                            <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-4"></div>
+                                        </div>
+                                        <span class="text-xs text-gray-300">@(IsBoolChecked(field) ? "Enabled" : "Disabled")</span>
+                                    </label>
+                                    break;
+
+                                case "password":
+                                    <input type="password"
+                                           value="@GetConfigValue(field)"
+                                           placeholder="@(field.Default ?? "")"
+                                           @oninput='e => UpdateConfig(field.Name, e.Value)'
+                                           class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                    break;
+
+                                default:
+                                    <input type="text"
+                                           value="@GetConfigValue(field)"
+                                           placeholder="@(field.Default ?? "")"
+                                           @oninput='e => UpdateConfig(field.Name, e.Value)'
+                                           class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                    break;
+                            }
+
+                            @if (field.HelpText is not null)
+                            {
+                                <p class="text-[10px] text-gray-500 mt-0.5">@field.HelpText</p>
+                            }
                         </div>
                     }
                 </div>
@@ -207,10 +317,40 @@
     {
         public string Name { get; set; } = "";
         public string Label { get; set; } = "";
+        public string UiType { get; set; } = "text";
+        public string? HelpText { get; set; }
+        public bool Required { get; set; }
+        public int Rows { get; set; }
+        public double Min { get; set; }
+        public double Max { get; set; } = 100;
+        public double Step { get; set; }
+        public string? Default { get; set; }
+        public string? DependsOn { get; set; }
+        public List<string>? Options { get; set; }
     }
 
     private static bool IsContainerType(string? type) => type?.ToLowerInvariant() is
         "parallel" or "conditional" or "trycatch" or "saga" or "foreach" or "while" or "dowhile" or "retry";
+
+    private string GetConfigValue(SchemaField field)
+    {
+        return NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? string.Empty;
+    }
+
+    private bool IsBoolChecked(SchemaField field)
+    {
+        var val = NodeConfig.GetValueOrDefault(field.Name)?.ToString()?.ToLowerInvariant();
+        return val == "true" || (val is null && field.Default == "true");
+    }
+
+    private static List<string> GetModelsForProvider(string provider) => provider?.ToLowerInvariant() switch
+    {
+        "ollama"      => ["llama3.1", "llama3.2", "mistral", "codellama", "phi3", "gemma2", "qwen2.5"],
+        "openai"      => ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo", "o1", "o1-mini"],
+        "anthropic"   => ["claude-sonnet-4-20250514", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"],
+        "huggingface" => ["meta-llama/Llama-3.1-8B", "mistralai/Mistral-7B-v0.3", "google/gemma-2-9b"],
+        _             => []
+    };
 
     protected override async Task OnParametersSetAsync()
     {
@@ -241,15 +381,80 @@
                 if (info.ConfigSchema is not null)
                 {
                     var schema = info.ConfigSchema.Value;
+                    // Collect top-level required array
+                    var topRequired = new HashSet<string>();
+                    if (schema.TryGetProperty("required", out var reqArray) && reqArray.ValueKind == System.Text.Json.JsonValueKind.Array)
+                    {
+                        foreach (var r in reqArray.EnumerateArray())
+                            topRequired.Add(r.GetString() ?? "");
+                    }
+
                     if (schema.TryGetProperty("properties", out var props))
                     {
                         foreach (var prop in props.EnumerateObject())
                         {
-                            _schemaFields.Add(new SchemaField
+                            var field = new SchemaField { Name = prop.Name };
+
+                            // Label
+                            field.Label = prop.Value.TryGetProperty("label", out var lbl)
+                                ? lbl.GetString() ?? prop.Name
+                                : prop.Name[..1].ToUpper() + prop.Name[1..];
+
+                            // uiType
+                            if (prop.Value.TryGetProperty("uiType", out var ui))
+                                field.UiType = ui.GetString() ?? "text";
+                            else if (prop.Value.TryGetProperty("type", out var t))
                             {
-                                Name = prop.Name,
-                                Label = prop.Name[..1].ToUpper() + prop.Name[1..]
-                            });
+                                var schemaType = t.GetString();
+                                field.UiType = schemaType == "boolean" ? "boolean" : schemaType == "number" ? "number" : "text";
+                            }
+
+                            // Required (field-level or top-level)
+                            if (prop.Value.TryGetProperty("required", out var req) && req.ValueKind == System.Text.Json.JsonValueKind.True)
+                                field.Required = true;
+                            else if (topRequired.Contains(prop.Name))
+                                field.Required = true;
+
+                            // HelpText
+                            if (prop.Value.TryGetProperty("helpText", out var ht))
+                                field.HelpText = ht.GetString();
+
+                            // Rows
+                            if (prop.Value.TryGetProperty("rows", out var rows))
+                                field.Rows = rows.GetInt32();
+
+                            // Min/Max/Step
+                            if (prop.Value.TryGetProperty("min", out var mn))
+                                field.Min = mn.GetDouble();
+                            if (prop.Value.TryGetProperty("max", out var mx))
+                                field.Max = mx.GetDouble();
+                            if (prop.Value.TryGetProperty("step", out var st))
+                                field.Step = st.GetDouble();
+
+                            // Default
+                            if (prop.Value.TryGetProperty("default", out var def))
+                                field.Default = def.ToString();
+
+                            // DependsOn
+                            if (prop.Value.TryGetProperty("dependsOn", out var dep))
+                                field.DependsOn = dep.GetString();
+
+                            // Options (from enum or options array)
+                            if (prop.Value.TryGetProperty("options", out var opts) && opts.ValueKind == System.Text.Json.JsonValueKind.Array)
+                            {
+                                field.Options = [];
+                                foreach (var o in opts.EnumerateArray())
+                                    field.Options.Add(o.GetString() ?? "");
+                            }
+                            else if (prop.Value.TryGetProperty("enum", out var en) && en.ValueKind == System.Text.Json.JsonValueKind.Array)
+                            {
+                                field.Options = [];
+                                field.UiType = field.UiType == "text" ? "select" : field.UiType;
+                                foreach (var o in en.EnumerateArray())
+                                    field.Options.Add(o.GetString() ?? "");
+                            }
+
+                            _schemaFields.Add(field);
                         }
                     }
                 }
