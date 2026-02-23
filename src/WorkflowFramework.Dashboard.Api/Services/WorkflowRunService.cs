@@ -9,14 +9,22 @@ namespace WorkflowFramework.Dashboard.Api.Services;
 public sealed class WorkflowRunService
 {
     private readonly IWorkflowDefinitionStore _store;
+    private readonly WorkflowDefinitionCompiler _compiler;
+    private readonly WorkflowExecutionNotifier _notifier;
     private readonly ConcurrentDictionary<string, RunState> _runs = new();
+    private readonly ConcurrentDictionary<string, CancellationTokenSource> _cancellations = new();
 
-    public WorkflowRunService(IWorkflowDefinitionStore store)
+    public WorkflowRunService(
+        IWorkflowDefinitionStore store,
+        WorkflowDefinitionCompiler compiler,
+        WorkflowExecutionNotifier notifier)
     {
         _store = store;
+        _compiler = compiler;
+        _notifier = notifier;
     }
 
-    /// <summary>Starts a workflow run (simulated — records the run).</summary>
+    /// <summary>Starts a workflow run with real async execution.</summary>
     public async Task<RunSummary?> StartRunAsync(string workflowId, CancellationToken ct = default)
     {
         var workflow = await _store.GetByIdAsync(workflowId, ct);
@@ -32,11 +40,57 @@ public sealed class WorkflowRunService
         };
         _runs[run.RunId] = run;
 
-        // Simulate completion after creation (in real impl this would be async execution)
-        run.Status = "Completed";
-        run.CompletedAt = DateTimeOffset.UtcNow;
+        var cts = new CancellationTokenSource();
+        _cancellations[run.RunId] = cts;
+
+        // Fire-and-forget execution (tracked by run state)
+        _ = ExecuteWorkflowAsync(run, workflow.Definition, cts.Token);
 
         return ToSummary(run);
+    }
+
+    private async Task ExecuteWorkflowAsync(
+        Serialization.WorkflowDefinitionDto definition,
+        RunState run,
+        CancellationToken ct)
+        => await ExecuteWorkflowAsync(run, definition, ct);
+
+    private async Task ExecuteWorkflowAsync(
+        RunState run,
+        Serialization.WorkflowDefinitionDto definition,
+        CancellationToken ct)
+    {
+        try
+        {
+            var compiledWorkflow = _compiler.Compile(definition, _notifier);
+            var context = new DashboardWorkflowContext(run.RunId, ct);
+            context.Properties["WorkflowName"] = definition.Name;
+
+            var result = await compiledWorkflow.ExecuteAsync(context);
+
+            run.Status = result.Status == WorkflowStatus.Completed ? "Completed" : "Failed";
+            run.CompletedAt = DateTimeOffset.UtcNow;
+            run.StepResults = context.Properties
+                .Where(p => p.Key.Contains('.'))
+                .ToDictionary(p => p.Key, p => p.Value?.ToString() ?? "");
+            if (result.Errors.Count > 0)
+                run.Error = string.Join("; ", result.Errors.Select(e => $"[{e.StepName}] {e.Exception.Message}"));
+        }
+        catch (OperationCanceledException)
+        {
+            run.Status = "Cancelled";
+            run.CompletedAt = DateTimeOffset.UtcNow;
+        }
+        catch (Exception ex)
+        {
+            run.Status = "Failed";
+            run.Error = ex.Message;
+            run.CompletedAt = DateTimeOffset.UtcNow;
+        }
+        finally
+        {
+            _cancellations.TryRemove(run.RunId, out _);
+        }
     }
 
     /// <summary>Lists recent runs.</summary>
@@ -65,6 +119,11 @@ public sealed class WorkflowRunService
 
         if (run.Status == "Running")
         {
+            if (_cancellations.TryRemove(runId, out var cts))
+            {
+                cts.Cancel();
+                cts.Dispose();
+            }
             run.Status = "Cancelled";
             run.CompletedAt = DateTimeOffset.UtcNow;
         }
@@ -78,7 +137,9 @@ public sealed class WorkflowRunService
         WorkflowName = state.WorkflowName,
         Status = state.Status,
         StartedAt = state.StartedAt,
-        CompletedAt = state.CompletedAt
+        CompletedAt = state.CompletedAt,
+        StepResults = state.StepResults,
+        Error = state.Error
     };
 
     private sealed class RunState
@@ -89,5 +150,7 @@ public sealed class WorkflowRunService
         public string Status { get; set; } = string.Empty;
         public DateTimeOffset StartedAt { get; set; }
         public DateTimeOffset? CompletedAt { get; set; }
+        public Dictionary<string, string>? StepResults { get; set; }
+        public string? Error { get; set; }
     }
 }

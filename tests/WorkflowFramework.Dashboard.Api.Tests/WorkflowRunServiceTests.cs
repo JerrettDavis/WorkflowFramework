@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.SignalR;
 using Xunit;
 using FluentAssertions;
+using WorkflowFramework.Dashboard.Api.Hubs;
 using WorkflowFramework.Dashboard.Api.Models;
 using WorkflowFramework.Dashboard.Api.Services;
 using WorkflowFramework.Serialization;
@@ -13,7 +15,10 @@ public class WorkflowRunServiceTests
 
     public WorkflowRunServiceTests()
     {
-        _runService = new WorkflowRunService(_store);
+        var settingsService = new DashboardSettingsService();
+        var compiler = new WorkflowDefinitionCompiler(settingsService);
+        var notifier = new WorkflowExecutionNotifier(new FakeHubContext());
+        _runService = new WorkflowRunService(_store, compiler, notifier);
     }
 
     private async Task<SavedWorkflowDefinition> CreateWorkflow()
@@ -46,7 +51,19 @@ public class WorkflowRunServiceTests
         run!.RunId.Should().NotBeNullOrEmpty();
         run.WorkflowId.Should().Be(wf.Id);
         run.WorkflowName.Should().Be("TestWorkflow");
-        run.Status.Should().Be("Completed");
+        run.Status.Should().BeOneOf("Running", "Completed");
+    }
+
+    [Fact]
+    public async Task StartRunAsync_CompletesAsynchronously()
+    {
+        var wf = await CreateWorkflow();
+        var run = await _runService.StartRunAsync(wf.Id);
+        await Task.Delay(2000);
+
+        var fetched = await _runService.GetRunAsync(run!.RunId);
+        fetched.Should().NotBeNull();
+        fetched!.Status.Should().Be("Completed");
     }
 
     [Fact]
@@ -91,7 +108,38 @@ public class WorkflowRunServiceTests
         var wf = await CreateWorkflow();
         var run = await _runService.StartRunAsync(wf.Id);
         var result = await _runService.CancelRunAsync(run!.RunId);
-
         result.Should().BeTrue();
+    }
+
+    // Minimal fakes for IHubContext
+    private sealed class FakeHubContext : IHubContext<WorkflowExecutionHub, IWorkflowExecutionClient>
+    {
+        public IHubClients<IWorkflowExecutionClient> Clients { get; } = new FakeHubClients();
+        public IGroupManager Groups => throw new NotImplementedException();
+    }
+
+    private sealed class FakeHubClients : IHubClients<IWorkflowExecutionClient>
+    {
+        private readonly IWorkflowExecutionClient _client = new FakeClient();
+        public IWorkflowExecutionClient All => _client;
+        public IWorkflowExecutionClient AllExcept(IReadOnlyList<string> excludedConnectionIds) => _client;
+        public IWorkflowExecutionClient Client(string connectionId) => _client;
+        public IWorkflowExecutionClient Clients(IReadOnlyList<string> connectionIds) => _client;
+        public IWorkflowExecutionClient Group(string groupName) => _client;
+        public IWorkflowExecutionClient GroupExcept(string groupName, IReadOnlyList<string> excludedConnectionIds) => _client;
+        public IWorkflowExecutionClient Groups(IReadOnlyList<string> groupNames) => _client;
+        public IWorkflowExecutionClient User(string userId) => _client;
+        public IWorkflowExecutionClient Users(IReadOnlyList<string> userIds) => _client;
+    }
+
+    private sealed class FakeClient : IWorkflowExecutionClient
+    {
+        public Task RunStarted(string runId, string workflowName) => Task.CompletedTask;
+        public Task StepStarted(string runId, string stepName, int stepIndex) => Task.CompletedTask;
+        public Task StepCompleted(string runId, string stepName, string status, long durationMs, string? output) => Task.CompletedTask;
+        public Task StepFailed(string runId, string stepName, string error) => Task.CompletedTask;
+        public Task RunCompleted(string runId, string status, long totalDurationMs) => Task.CompletedTask;
+        public Task RunFailed(string runId, string error) => Task.CompletedTask;
+        public Task LogMessage(string runId, string level, string message, DateTimeOffset timestamp) => Task.CompletedTask;
     }
 }

@@ -11,4 +11,6 @@ public sealed class RunSummary
     public string Status { get; set; } = string.Empty;
     public DateTimeOffset StartedAt { get; set; }
     public DateTimeOffset? CompletedAt { get; set; }
+    public Dictionary<string, string>? StepResults { get; set; }
+    public string? Error { get; set; }
 }

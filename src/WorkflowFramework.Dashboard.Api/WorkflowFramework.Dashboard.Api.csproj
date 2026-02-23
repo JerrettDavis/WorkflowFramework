@@ -8,6 +8,11 @@
   <ItemGroup>
     <ProjectReference Include="..\WorkflowFramework.Dashboard.ServiceDefaults\WorkflowFramework.Dashboard.ServiceDefaults.csproj" />
     <ProjectReference Include="..\WorkflowFramework.Serialization\WorkflowFramework.Serialization.csproj" />
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Extensions.AI\WorkflowFramework.Extensions.AI.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Agents\WorkflowFramework.Extensions.Agents.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Http\WorkflowFramework.Extensions.Http.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Extensions.HumanTasks\WorkflowFramework.Extensions.HumanTasks.csproj" />
   </ItemGroup>
 
 </Project>

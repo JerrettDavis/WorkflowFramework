@@ -21,6 +21,7 @@ public static class DashboardApiExtensions
     {
         services.AddSingleton<IWorkflowDefinitionStore, InMemoryWorkflowDefinitionStore>();
         services.AddSingleton(StepTypeRegistry.CreateDefault());
+        services.AddSingleton<WorkflowDefinitionCompiler>();
         services.AddSingleton<WorkflowRunService>();
         services.AddSingleton<IWorkflowTemplateLibrary, InMemoryWorkflowTemplateLibrary>();
         services.AddSingleton<WorkflowVersioningService>();
