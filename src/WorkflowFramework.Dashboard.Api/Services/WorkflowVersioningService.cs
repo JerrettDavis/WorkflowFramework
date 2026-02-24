@@ -8,7 +8,7 @@ namespace WorkflowFramework.Dashboard.Api.Services;
 /// <summary>
 /// Manages workflow version history with in-memory storage.
 /// </summary>
-public sealed class WorkflowVersioningService
+public sealed class WorkflowVersioningService : IWorkflowVersioningService
 {
     private readonly ConcurrentDictionary<string, List<WorkflowVersion>> _versions = new();
 

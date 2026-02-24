@@ -24,9 +24,9 @@ public static class DashboardApiExtensions
         services.AddSingleton<WorkflowDefinitionCompiler>();
         services.AddSingleton<WorkflowRunService>();
         services.AddSingleton<IWorkflowTemplateLibrary, InMemoryWorkflowTemplateLibrary>();
-        services.AddSingleton<WorkflowVersioningService>();
-        services.AddSingleton<AuditTrailService>();
-        services.AddSingleton<DashboardSettingsService>();
+        services.AddSingleton<IWorkflowVersioningService, WorkflowVersioningService>();
+        services.AddSingleton<IAuditTrailService, AuditTrailService>();
+        services.AddSingleton<IDashboardSettingsService, DashboardSettingsService>();
         services.AddHttpClient("OllamaClient");
         return services;
     }
@@ -94,7 +94,7 @@ public static class DashboardApiExtensions
             return workflow is null ? Results.NotFound() : Results.Ok(workflow);
         }).WithName("GetWorkflow");
 
-        group.MapPost("/", async (CreateWorkflowRequest request, IWorkflowDefinitionStore store, WorkflowVersioningService versioning, AuditTrailService audit, HttpContext http, CancellationToken ct) =>
+        group.MapPost("/", async (CreateWorkflowRequest request, IWorkflowDefinitionStore store, IWorkflowVersioningService versioning, IAuditTrailService audit, HttpContext http, CancellationToken ct) =>
         {
             if (request.Definition is null)
                 return Results.BadRequest("Definition is required.");
@@ -105,7 +105,7 @@ public static class DashboardApiExtensions
             return Results.Created($"/api/workflows/{created.Id}", created);
         }).WithName("CreateWorkflow");
 
-        group.MapPut("/{id}", async (string id, CreateWorkflowRequest request, IWorkflowDefinitionStore store, WorkflowVersioningService versioning, AuditTrailService audit, HttpContext http, CancellationToken ct) =>
+        group.MapPut("/{id}", async (string id, CreateWorkflowRequest request, IWorkflowDefinitionStore store, IWorkflowVersioningService versioning, IAuditTrailService audit, HttpContext http, CancellationToken ct) =>
         {
             if (request.Definition is null)
                 return Results.BadRequest("Definition is required.");
@@ -117,7 +117,7 @@ public static class DashboardApiExtensions
             return Results.Ok(updated);
         }).WithName("UpdateWorkflow");
 
-        group.MapDelete("/{id}", async (string id, IWorkflowDefinitionStore store, AuditTrailService audit, HttpContext http, CancellationToken ct) =>
+        group.MapDelete("/{id}", async (string id, IWorkflowDefinitionStore store, IAuditTrailService audit, HttpContext http, CancellationToken ct) =>
         {
             var deleted = await store.DeleteAsync(id, ct);
             if (!deleted) return Results.NotFound();
@@ -131,7 +131,7 @@ public static class DashboardApiExtensions
             return duplicate is null ? Results.NotFound() : Results.Created($"/api/workflows/{duplicate.Id}", duplicate);
         }).WithName("DuplicateWorkflow");
 
-        group.MapPost("/{id}/run", async (string id, WorkflowRunService runService, AuditTrailService audit, HttpContext http, CancellationToken ct) =>
+        group.MapPost("/{id}/run", async (string id, WorkflowRunService runService, IAuditTrailService audit, HttpContext http, CancellationToken ct) =>
         {
             var run = await runService.StartRunAsync(id, ct);
             if (run is null) return Results.NotFound();
@@ -233,7 +233,7 @@ public static class DashboardApiExtensions
             return template is null ? Results.NotFound() : Results.Ok(template);
         }).WithName("GetTemplate");
 
-        group.MapPost("/{id}/use", async (string id, IWorkflowTemplateLibrary library, IWorkflowDefinitionStore store, WorkflowVersioningService versioning, AuditTrailService audit, HttpContext http, CancellationToken ct) =>
+        group.MapPost("/{id}/use", async (string id, IWorkflowTemplateLibrary library, IWorkflowDefinitionStore store, IWorkflowVersioningService versioning, IAuditTrailService audit, HttpContext http, CancellationToken ct) =>
         {
             var template = await library.GetTemplateAsync(id, ct);
             if (template is null)
@@ -255,7 +255,7 @@ public static class DashboardApiExtensions
     {
         var group = endpoints.MapGroup("/api/workflows").WithTags("Versioning");
 
-        group.MapGet("/{id}/versions", (string id, WorkflowVersioningService versioning) =>
+        group.MapGet("/{id}/versions", (string id, IWorkflowVersioningService versioning) =>
         {
             var versions = versioning.GetVersions(id);
             return Results.Ok(versions.Select(v => new
@@ -267,13 +267,13 @@ public static class DashboardApiExtensions
             }));
         }).WithName("ListWorkflowVersions");
 
-        group.MapGet("/{id}/versions/{version:int}", (string id, int version, WorkflowVersioningService versioning) =>
+        group.MapGet("/{id}/versions/{version:int}", (string id, int version, IWorkflowVersioningService versioning) =>
         {
             var v = versioning.GetVersion(id, version);
             return v is null ? Results.NotFound() : Results.Ok(v);
         }).WithName("GetWorkflowVersion");
 
-        group.MapPost("/{id}/versions/{version:int}/restore", async (string id, int version, WorkflowVersioningService versioning, IWorkflowDefinitionStore store, AuditTrailService audit, HttpContext http, CancellationToken ct) =>
+        group.MapPost("/{id}/versions/{version:int}/restore", async (string id, int version, IWorkflowVersioningService versioning, IWorkflowDefinitionStore store, IAuditTrailService audit, HttpContext http, CancellationToken ct) =>
         {
             var v = versioning.GetVersion(id, version);
             if (v is null) return Results.NotFound();
@@ -291,7 +291,7 @@ public static class DashboardApiExtensions
             return Results.Ok(updated);
         }).WithName("RestoreWorkflowVersion");
 
-        group.MapGet("/{id}/diff", (string id, int from, int to, WorkflowVersioningService versioning) =>
+        group.MapGet("/{id}/diff", (string id, int from, int to, IWorkflowVersioningService versioning) =>
         {
             var diff = versioning.Diff(id, from, to);
             return diff is null ? Results.NotFound() : Results.Ok(diff);
@@ -302,13 +302,13 @@ public static class DashboardApiExtensions
     {
         var group = endpoints.MapGroup("/api/audit").WithTags("Audit");
 
-        group.MapGet("/", (string? action, string? workflowId, string? userId, DateTimeOffset? from, DateTimeOffset? to, int? limit, AuditTrailService audit) =>
+        group.MapGet("/", (string? action, string? workflowId, string? userId, DateTimeOffset? from, DateTimeOffset? to, int? limit, IAuditTrailService audit) =>
         {
             var entries = audit.Query(action, workflowId, userId, from, to, limit ?? 100);
             return Results.Ok(entries);
         }).WithName("ListAuditEntries");
 
-        group.MapGet("/workflow/{id}", (string id, int? limit, AuditTrailService audit) =>
+        group.MapGet("/workflow/{id}", (string id, int? limit, IAuditTrailService audit) =>
         {
             var entries = audit.GetForWorkflow(id, limit ?? 100);
             return Results.Ok(entries);
@@ -348,16 +348,16 @@ public static class DashboardApiExtensions
     {
         var group = endpoints.MapGroup("/api/settings").WithTags("Settings");
 
-        group.MapGet("/", (DashboardSettingsService svc) => Results.Ok(svc.Get()))
+        group.MapGet("/", (IDashboardSettingsService svc) => Results.Ok(svc.Get()))
             .WithName("GetSettings");
 
-        group.MapPut("/", (DashboardSettings settings, DashboardSettingsService svc) =>
+        group.MapPut("/", (DashboardSettings settings, IDashboardSettingsService svc) =>
         {
             svc.Update(settings);
             return Results.Ok(svc.Get());
         }).WithName("UpdateSettings");
 
-        group.MapPost("/test-ollama", async (DashboardSettingsService svc, IHttpClientFactory factory) =>
+        group.MapPost("/test-ollama", async (IDashboardSettingsService svc, IHttpClientFactory factory) =>
         {
             var settings = svc.Get();
             try
@@ -375,7 +375,7 @@ public static class DashboardApiExtensions
             }
         }).WithName("TestOllamaConnection");
 
-        endpoints.MapGet("/api/providers/{provider}/models", async (string provider, DashboardSettingsService svc, IHttpClientFactory factory) =>
+        endpoints.MapGet("/api/providers/{provider}/models", async (string provider, IDashboardSettingsService svc, IHttpClientFactory factory) =>
         {
             var settings = svc.Get();
             switch (provider.ToLowerInvariant())

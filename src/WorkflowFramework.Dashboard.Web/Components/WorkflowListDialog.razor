@@ -27,6 +27,7 @@
                     @foreach (var wf in Filtered)
                     {
                         <div class="flex items-center justify-between px-5 py-3 hover:bg-gray-750 border-b border-gray-700/50 cursor-pointer"
+                             data-testid="workflow-list-item"
                              @onclick="() => Select(wf)">
                             <div>
                                 <div class="text-white text-sm font-medium">@wf.Name</div>

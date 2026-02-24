@@ -6,7 +6,7 @@ namespace WorkflowFramework.Dashboard.Api.Services;
 /// <summary>
 /// In-memory audit trail service that logs all dashboard actions.
 /// </summary>
-public sealed class AuditTrailService
+public sealed class AuditTrailService : IAuditTrailService
 {
     private readonly ConcurrentBag<AuditEntry> _entries = [];
 

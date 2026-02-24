@@ -53,6 +53,7 @@
     <Project Path="src/WorkflowFramework.Dashboard.AppHost/WorkflowFramework.Dashboard.AppHost.csproj" />
     <Project Path="src/WorkflowFramework.Dashboard.ServiceDefaults/WorkflowFramework.Dashboard.ServiceDefaults.csproj" />
     <Project Path="src/WorkflowFramework.Dashboard.Api/WorkflowFramework.Dashboard.Api.csproj" />
+    <Project Path="src/WorkflowFramework.Dashboard.Persistence/WorkflowFramework.Dashboard.Persistence.csproj" />
     <Project Path="src/WorkflowFramework.Dashboard.Web/WorkflowFramework.Dashboard.Web.csproj" />
   </Folder>
   <Folder Name="/tests/">
@@ -64,6 +65,7 @@
     <Project Path="tests/WorkflowFramework.Cli.Tests/WorkflowFramework.Cli.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Dashboard.Tests/WorkflowFramework.Dashboard.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Dashboard.UITests/WorkflowFramework.Dashboard.UITests.csproj" />
+    <Project Path="tests/WorkflowFramework.Dashboard.Persistence.Tests/WorkflowFramework.Dashboard.Persistence.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/WorkflowFramework.Benchmarks/WorkflowFramework.Benchmarks.csproj" />

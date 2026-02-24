@@ -13,6 +13,7 @@
     <ProjectReference Include="..\WorkflowFramework.Extensions.Agents\WorkflowFramework.Extensions.Agents.csproj" />
     <ProjectReference Include="..\WorkflowFramework.Extensions.Http\WorkflowFramework.Extensions.Http.csproj" />
     <ProjectReference Include="..\WorkflowFramework.Extensions.HumanTasks\WorkflowFramework.Extensions.HumanTasks.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Dashboard.Persistence\WorkflowFramework.Dashboard.Persistence.csproj" />
   </ItemGroup>
 
 </Project>

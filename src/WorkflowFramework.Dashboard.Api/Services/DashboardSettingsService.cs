@@ -13,7 +13,7 @@ public sealed class DashboardSettings
     public int MaxConcurrentRuns { get; set; } = 5;
 }
 
-public sealed class DashboardSettingsService
+public sealed class DashboardSettingsService : IDashboardSettingsService
 {
     private readonly Lock _lock = new();
     private DashboardSettings _settings = new();
