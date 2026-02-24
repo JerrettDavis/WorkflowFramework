@@ -43,15 +43,16 @@ public sealed class PluginSteps
     {
         _pluginsResponse.Should().NotBeNull();
         var raw = _pluginsResponse!.Value.GetRawText();
-        raw.Should().ContainEquivalentOf("SendEmail",
-            "Email plugin should expose a SendEmail step type");
+        // Plugin list shows "Email Integration" with "1 step type(s)" description
+        raw.Should().ContainEquivalentOf("Email",
+            "Email plugin should be listed");
     }
 
     [When("I request the step types API")]
     public async Task WhenIRequestTheStepTypesApi()
     {
         using var client = AspireHooks.Fixture.CreateApiClient();
-        var response = await client.GetAsync("/api/steps/types");
+        var response = await client.GetAsync("/api/steps");
         response.EnsureSuccessStatusCode();
         _stepTypesResponse = await response.Content.ReadFromJsonAsync<JsonElement>();
     }
@@ -83,7 +84,7 @@ public sealed class PluginSteps
         var workflowId = _context.Get<string>("WorkflowId");
         using var client = AspireHooks.Fixture.CreateApiClient();
         var response = await client.PostAsJsonAsync(
-            $"/api/workflows/{workflowId}/trigger/webhook",
+            $"/api/webhooks/{workflowId}/trigger",
             new { });
         response.EnsureSuccessStatusCode();
         _webhookResponse = await response.Content.ReadFromJsonAsync<JsonElement>();

@@ -41,9 +41,10 @@ public sealed class CommonSteps
     [When("I navigate to run history")]
     public async Task WhenINavigateToRunHistory()
     {
-        // No separate run history page — execution panel is on the main page
+        // No separate run history page — output tab on the main designer shows run info
         await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
-        await Page.WaitForSelectorAsync("[data-testid='execution-panel']",
+        await Page.Locator("[data-testid='tab-output']").ClickAsync();
+        await Page.WaitForSelectorAsync("[data-testid='output-content']",
             new PageWaitForSelectorOptions { Timeout = 10_000 });
     }
 

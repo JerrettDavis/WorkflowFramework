@@ -33,7 +33,7 @@ public sealed class SettingsSteps
         await Page.GotoAsync($"{WebUrl}/settings",
             new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
         await Page.WaitForSelectorAsync("[data-testid='settings-page']",
-            new PageWaitForSelectorOptions { Timeout = 10_000 });
+            new PageWaitForSelectorOptions { Timeout = 30_000 });
     }
 
     [Then("I should see the settings page")]

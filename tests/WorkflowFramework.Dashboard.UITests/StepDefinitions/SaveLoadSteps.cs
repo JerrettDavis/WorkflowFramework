@@ -78,6 +78,9 @@ public sealed class SaveLoadSteps
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { Timeout = 5_000 });
+        // Wait for items to load
+        await Page.Locator("[data-testid='workflow-list-item']").First
+            .WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var items = Page.Locator("[data-testid='workflow-list-item']");
         var count = await items.CountAsync();
         count.Should().BeGreaterThan(0, "Workflow list should have entries");

@@ -39,8 +39,12 @@ public sealed class ValidationSteps
     [Then("I should see validation errors")]
     public async Task ThenIShouldSeeValidationErrors()
     {
-        var panel = Page.Locator("[data-testid='validation-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Validation panel should be visible");
+        // Switch to the validation tab
+        var tab = Page.Locator("[data-testid='tab-validation']");
+        await tab.ClickAsync();
+        await Page.WaitForTimeoutAsync(500);
+        var content = Page.Locator("[data-testid='validation-content']");
+        (await content.IsVisibleAsync()).Should().BeTrue("Validation content should be visible");
     }
 
     [Then("the toolbar should show an error badge")]

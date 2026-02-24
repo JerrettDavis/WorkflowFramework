@@ -37,6 +37,8 @@ public sealed class AuthSteps
     [Then("I should see the login form")]
     public async Task ThenIShouldSeeTheLoginForm()
     {
+        await Page.WaitForSelectorAsync("[data-testid='login-username']",
+            new PageWaitForSelectorOptions { Timeout = 10_000 });
         var loginUsername = Page.Locator("[data-testid='login-username']");
         (await loginUsername.IsVisibleAsync()).Should().BeTrue("Login form should be visible");
     }
