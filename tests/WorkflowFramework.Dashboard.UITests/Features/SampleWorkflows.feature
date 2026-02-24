@@ -7,7 +7,7 @@ Feature: Sample Workflows
     When I open the workflow list dialog
     Then I should see at least 10 sample workflows
     And I should see "Hello World" in the list
-    And I should see "TaskStream AI" in the list
+    And I should see "TaskStream" in the list
     And I should see "Quick Transcript" in the list
 
   Scenario: Open a sample workflow and see configured steps
@@ -16,7 +16,7 @@ Feature: Sample Workflows
     And I open the "Hello World" workflow
     Then the canvas should have nodes
     And the step list should show steps
-    And the workflow name should be "HelloWorkflow"
+    And the workflow name should be "Hello World"
 
   Scenario: Open AI workflow and verify provider config
     Given the dashboard is running

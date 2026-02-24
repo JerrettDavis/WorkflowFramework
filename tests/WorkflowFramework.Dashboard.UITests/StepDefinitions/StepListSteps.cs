@@ -28,6 +28,8 @@ public sealed class StepListSteps
     [Then("I should see all workflow steps listed")]
     public async Task ThenIShouldSeeAllWorkflowStepsListed()
     {
+        await Page.Locator("[data-testid='step-list-item']").First
+            .WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var items = Page.Locator("[data-testid='step-list-item']");
         var count = await items.CountAsync();
         count.Should().BeGreaterThan(0, "Step list should contain items");
@@ -48,6 +50,8 @@ public sealed class StepListSteps
     [When("I click a step in the step list")]
     public async Task WhenIClickAStepInTheStepList()
     {
+        await Page.Locator("[data-testid='step-list-item']").First
+            .WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var items = Page.Locator("[data-testid='step-list-item']");
         var count = await items.CountAsync();
         count.Should().BeGreaterThan(0, "Must have steps to click");

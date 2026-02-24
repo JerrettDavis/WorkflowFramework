@@ -233,6 +233,7 @@ public sealed class SaveLoadSteps
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { Timeout = 5_000 });
         var list = Page.Locator("[data-testid='workflow-list']");
+        await list.GetByText(expectedName).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var text = await list.TextContentAsync();
         text.Should().Contain(expectedName, $"Workflow list should contain '{expectedName}'");
     }

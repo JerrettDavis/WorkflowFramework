@@ -93,6 +93,7 @@ public sealed class ManagementSteps
     public async Task ThenIShouldSeeInTheWorkflowList(string workflowName)
     {
         var list = Page.Locator("[data-testid='workflow-list']");
+        await list.GetByText(workflowName).First.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var text = await list.TextContentAsync();
         text.Should().Contain(workflowName);
     }

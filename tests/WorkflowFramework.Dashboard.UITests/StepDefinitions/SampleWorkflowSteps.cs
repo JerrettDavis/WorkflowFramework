@@ -32,6 +32,9 @@ public sealed class SampleWorkflowSteps
     [Then("I should see at least {int} sample workflows")]
     public async Task ThenIShouldSeeAtLeastSampleWorkflows(int minCount)
     {
+        // Wait for workflow list items to appear (async load)
+        await Page.Locator("[data-testid='workflow-list-item']").First
+            .WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var items = Page.Locator("[data-testid='workflow-list-item']");
         var count = await items.CountAsync();
         count.Should().BeGreaterThanOrEqualTo(minCount,
@@ -42,6 +45,7 @@ public sealed class SampleWorkflowSteps
     public async Task ThenIShouldSeeInTheList(string workflowName)
     {
         var list = Page.Locator("[data-testid='workflow-list']");
+        await list.GetByText(workflowName).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var text = await list.TextContentAsync();
         text.Should().Contain(workflowName,
             $"Workflow list should contain '{workflowName}'");
@@ -94,7 +98,9 @@ public sealed class SampleWorkflowSteps
         // Click the Steps tab to show the step list
         var stepsTab = Page.Locator("[data-testid='tab-steps']");
         await stepsTab.ClickAsync();
-        await Page.WaitForTimeoutAsync(500);
+        // Wait for step list items to render
+        await Page.Locator("[data-testid='step-list-item']").First
+            .WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
 
         var items = Page.Locator("[data-testid='step-list-item']");
         var count = await items.CountAsync();
