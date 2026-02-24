@@ -1,0 +1,140 @@
+@page "/register"
+@using WorkflowFramework.Dashboard.Web.Services
+@using WorkflowFramework.Dashboard.Web.Models
+@inject DashboardApiClient Api
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="min-h-screen bg-gray-950 flex items-center justify-center px-4">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-white">Workflow Framework</h1>
+            <p class="text-gray-500 mt-2">Create your account</p>
+        </div>
+
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-8 shadow-2xl">
+            @if (!string.IsNullOrEmpty(_error))
+            {
+                <div class="mb-4 p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-400 text-sm">
+                    @_error
+                </div>
+            }
+
+            <EditForm Model="_model" OnValidSubmit="HandleRegister" FormName="register">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1.5">Username</label>
+                        <input type="text" @bind="_model.Username" data-testid="register-username"
+                               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                               placeholder="Choose a username" disabled="@_loading" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1.5">Email</label>
+                        <input type="email" @bind="_model.Email" data-testid="register-email"
+                               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                               placeholder="you@example.com" disabled="@_loading" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1.5">Display Name <span class="text-gray-600">(optional)</span></label>
+                        <input type="text" @bind="_model.DisplayName"
+                               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                               placeholder="How others see you" disabled="@_loading" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1.5">Password</label>
+                        <input type="password" @bind="_model.Password" data-testid="register-password"
+                               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                               placeholder="Create a password" disabled="@_loading" />
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1.5">Confirm Password</label>
+                        <input type="password" @bind="_model.ConfirmPassword"
+                               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition"
+                               placeholder="Confirm your password" disabled="@_loading" />
+                    </div>
+
+                    <button type="submit" data-testid="register-submit" disabled="@_loading"
+                            class="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-purple-600/50 text-white font-medium py-2.5 rounded-lg transition flex items-center justify-center gap-2">
+                        @if (_loading)
+                        {
+                            <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                            <span>Creating account…</span>
+                        }
+                        else
+                        {
+                            <span>Create Account</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+
+            <p class="mt-6 text-center text-sm text-gray-500">
+                Already have an account?
+                <a href="/login" class="text-purple-400 hover:text-purple-300 transition">Sign in</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterModel _model = new();
+    private string? _error;
+    private bool _loading;
+
+    private sealed class RegisterModel
+    {
+        public string Username { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string? DisplayName { get; set; }
+        public string Password { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
+    }
+
+    private async Task HandleRegister()
+    {
+        _error = null;
+        if (string.IsNullOrWhiteSpace(_model.Username) || string.IsNullOrWhiteSpace(_model.Email) || string.IsNullOrWhiteSpace(_model.Password))
+        {
+            _error = "Username, email, and password are required.";
+            return;
+        }
+        if (_model.Password != _model.ConfirmPassword)
+        {
+            _error = "Passwords do not match.";
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            var result = await Api.RegisterAsync(_model.Username, _model.Email, _model.Password, _model.DisplayName);
+            if (result is { Success: true, Token: not null })
+            {
+                Auth.SetAuthenticated(result.UserId ?? "", result.Username ?? _model.Username, _model.DisplayName, result.Token, result.RefreshToken);
+                Api.SetAuthToken(result.Token);
+                await JS.InvokeVoidAsync("authStorage.setToken", result.Token);
+                if (result.RefreshToken is not null)
+                    await JS.InvokeVoidAsync("authStorage.setRefreshToken", result.RefreshToken);
+                Nav.NavigateTo("/", forceLoad: false);
+            }
+            else
+            {
+                _error = result?.Error ?? "Registration failed. Please try again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Connection error: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

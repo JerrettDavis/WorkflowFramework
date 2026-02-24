@@ -30,9 +30,9 @@
     <div class="w-px h-6 bg-gray-600 mx-1"></div>
 
     <button @onclick="OnFitView" class="toolbar-btn" title="Fit View" data-testid="btn-fit">🔍 Fit</button>
-    <button @onclick="OnExportJson" class="toolbar-btn" title="Export JSON" data-testid="btn-export-json">📤 JSON</button>
+    <button @onclick="OnExportJson" class="toolbar-btn" title="Export JSON" data-testid="btn-export-json" data-testid2="btn-export">📤 JSON</button>
     <button @onclick="OnExportYaml" class="toolbar-btn" title="Export YAML" data-testid="btn-export-yaml">📤 YAML</button>
-    <label class="toolbar-btn cursor-pointer" title="Import">
+    <label class="toolbar-btn cursor-pointer" title="Import" data-testid="btn-import">
         📥 Import
         <InputFile OnChange="OnImportFile" style="display:none" accept=".json,.yaml,.yml" />
     </label>

@@ -1,0 +1,169 @@
+@page "/profile"
+@using WorkflowFramework.Dashboard.Web.Services
+@using WorkflowFramework.Dashboard.Web.Models
+@inject DashboardApiClient Api
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="flex-1 bg-gray-950 p-8 overflow-auto" data-testid="profile-page">
+    <div class="max-w-2xl mx-auto space-y-6">
+        <h1 class="text-2xl font-bold text-white">Profile</h1>
+
+        @if (!Auth.IsAuthenticated)
+        {
+            <p class="text-gray-400">Please <a href="/login" class="text-purple-400 hover:text-purple-300">sign in</a> to view your profile.</p>
+        }
+        else
+        {
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <div class="p-3 rounded-lg text-sm @(_messageIsError ? "bg-red-900/30 border border-red-800 text-red-400" : "bg-green-900/30 border border-green-800 text-green-400")">
+                    @_message
+                </div>
+            }
+
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
+                <h2 class="text-lg font-semibold text-white">Account Info</h2>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-500">Username</span>
+                        <p class="text-white">@Auth.Username</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">User ID</span>
+                        <p class="text-gray-400 font-mono text-xs">@Auth.UserId</p>
+                    </div>
+                    @if (_profile is not null)
+                    {
+                        <div>
+                            <span class="text-gray-500">Email</span>
+                            <p class="text-white">@_profile.Email</p>
+                        </div>
+                        <div>
+                            <span class="text-gray-500">Joined</span>
+                            <p class="text-white">@_profile.CreatedAt.ToString("MMM d, yyyy")</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4" data-testid="profile-display-name">
+                <h2 class="text-lg font-semibold text-white">Display Name</h2>
+                <div class="flex gap-3">
+                    <input type="text" @bind="_displayName"
+                           class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition"
+                           placeholder="Enter display name" />
+                    <button @onclick="UpdateDisplayName"
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition text-sm">
+                        Save
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4" data-testid="profile-change-password">
+                <h2 class="text-lg font-semibold text-white">Change Password</h2>
+                <div class="space-y-3">
+                    <input type="password" @bind="_currentPassword"
+                           class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition"
+                           placeholder="Current password" />
+                    <input type="password" @bind="_newPassword"
+                           class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition"
+                           placeholder="New password" />
+                    <input type="password" @bind="_confirmNewPassword"
+                           class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition"
+                           placeholder="Confirm new password" />
+                    <button @onclick="ChangePassword"
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition text-sm">
+                        Change Password
+                    </button>
+                </div>
+            </div>
+
+            <button @onclick="HandleLogout"
+                    class="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-800 px-4 py-2 rounded-lg transition text-sm">
+                Sign Out
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    private UserProfile? _profile;
+    private string _displayName = "";
+    private string _currentPassword = "";
+    private string _newPassword = "";
+    private string _confirmNewPassword = "";
+    private string? _message;
+    private bool _messageIsError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsAuthenticated) return;
+        _displayName = Auth.DisplayName ?? "";
+        try
+        {
+            _profile = await Api.GetCurrentUserAsync();
+            if (_profile?.DisplayName is not null)
+                _displayName = _profile.DisplayName;
+        }
+        catch { /* API may not be available yet */ }
+    }
+
+    private async Task UpdateDisplayName()
+    {
+        _message = null;
+        try
+        {
+            // TODO: call update profile endpoint when available
+            Auth.SetAuthenticated(Auth.UserId!, Auth.Username!, _displayName, Auth.Token!, Auth.RefreshToken);
+            _message = "Display name updated.";
+            _messageIsError = false;
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _messageIsError = true;
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        _message = null;
+        if (_newPassword != _confirmNewPassword)
+        {
+            _message = "New passwords do not match.";
+            _messageIsError = true;
+            return;
+        }
+        try
+        {
+            var ok = await Api.ChangePasswordAsync(_currentPassword, _newPassword);
+            if (ok)
+            {
+                _message = "Password changed successfully.";
+                _messageIsError = false;
+                _currentPassword = _newPassword = _confirmNewPassword = "";
+            }
+            else
+            {
+                _message = "Failed to change password.";
+                _messageIsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            _message = ex.Message;
+            _messageIsError = true;
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        Auth.Logout();
+        Api.SetAuthToken(null);
+        await JS.InvokeVoidAsync("authStorage.clear");
+        Nav.NavigateTo("/login", forceLoad: false);
+    }
+}

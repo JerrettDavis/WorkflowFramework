@@ -14,7 +14,7 @@ public sealed class EfSettingsStoreTests : IDisposable
     public EfSettingsStoreTests()
     {
         _db = _factory.CreateSeeded();
-        _store = new EfSettingsStore(_db);
+        _store = new EfSettingsStore(_db, new AnonymousCurrentUserService());
     }
 
     [Fact]

@@ -563,7 +563,11 @@
         }
       },
       "workflowframework": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.3, )"
+        }
       },
       "workflowframework.extensions.agents": {
         "type": "Project",

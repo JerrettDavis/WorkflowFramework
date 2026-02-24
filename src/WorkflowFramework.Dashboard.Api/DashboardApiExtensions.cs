@@ -1,9 +1,11 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using WorkflowFramework.Dashboard.Api.Models;
+using WorkflowFramework.Dashboard.Api.Plugins;
 using WorkflowFramework.Dashboard.Api.Services;
 using WorkflowFramework.Serialization;
 
@@ -27,6 +29,10 @@ public static class DashboardApiExtensions
         services.AddSingleton<IWorkflowVersioningService, WorkflowVersioningService>();
         services.AddSingleton<IAuditTrailService, AuditTrailService>();
         services.AddSingleton<IDashboardSettingsService, DashboardSettingsService>();
+        services.AddSingleton<PluginRegistry>();
+        services.AddSingleton(TriggerTypeRegistry.CreateDefault());
+        services.AddSingleton<WorkflowSchedulerService>();
+        services.AddHostedService(sp => sp.GetRequiredService<WorkflowSchedulerService>());
         services.AddHttpClient("OllamaClient");
         return services;
     }
@@ -50,6 +56,17 @@ public static class DashboardApiExtensions
         MapTagEndpoints(endpoints);
         MapValidationEndpoints(endpoints);
         MapSettingsEndpoints(endpoints);
+        MapImportExportEndpoints(endpoints);
+        MapWebhookEndpoints(endpoints);
+        MapScheduleEndpoints(endpoints);
+        MapTriggerEndpoints(endpoints);
+
+        // Merge plugin step types into the registry
+        var pluginRegistry = endpoints.ServiceProvider.GetRequiredService<PluginRegistry>();
+        var stepRegistry = endpoints.ServiceProvider.GetRequiredService<StepTypeRegistry>();
+        foreach (var stepType in pluginRegistry.GetAllStepTypes())
+            stepRegistry.Register(stepType);
+
         return endpoints;
     }
 
@@ -181,10 +198,17 @@ public static class DashboardApiExtensions
 
     private static void MapPluginEndpoints(IEndpointRouteBuilder endpoints)
     {
-        endpoints.MapGet("/api/plugins", () =>
+        endpoints.MapGet("/api/plugins", (PluginRegistry registry) =>
         {
-            // Return static plugin list; in a real impl this would scan loaded assemblies
-            var plugins = new[]
+            var plugins = registry.Plugins.Select(p => new PluginInfo
+            {
+                Name = p.Name,
+                Version = p.Version,
+                Description = $"{p.StepTypes.Count} step type(s)"
+            }).ToList();
+
+            // Also include built-in "virtual" plugins
+            plugins.InsertRange(0, new[]
             {
                 new PluginInfo { Name = "WorkflowFramework.Core", Version = "1.0.0", Description = "Core workflow engine" },
                 new PluginInfo { Name = "WorkflowFramework.Integration", Version = "1.0.0", Description = "Enterprise integration patterns" },
@@ -193,9 +217,23 @@ public static class DashboardApiExtensions
                 new PluginInfo { Name = "WorkflowFramework.Http", Version = "1.0.0", Description = "HTTP and webhook steps" },
                 new PluginInfo { Name = "WorkflowFramework.Events", Version = "1.0.0", Description = "Event publishing and subscription" },
                 new PluginInfo { Name = "WorkflowFramework.HumanTasks", Version = "1.0.0", Description = "Human task and approval steps" }
-            };
+            });
+
             return Results.Ok(plugins);
         }).WithTags("Plugins").WithName("ListPlugins");
+
+        endpoints.MapGet("/api/plugins/{id}", (string id, PluginRegistry registry) =>
+        {
+            var plugin = registry.Plugins.FirstOrDefault(p => p.Id == id);
+            if (plugin is null) return Results.NotFound();
+            return Results.Ok(new
+            {
+                plugin.Id,
+                plugin.Name,
+                plugin.Version,
+                StepTypes = plugin.StepTypes
+            });
+        }).WithTags("Plugins").WithName("GetPlugin");
 
         endpoints.MapGet("/api/connectors", () =>
         {
@@ -417,5 +455,247 @@ public static class DashboardApiExtensions
                     return Results.Ok(Array.Empty<string>());
             }
         }).WithTags("Settings").WithName("GetProviderModels");
+    }
+
+    private static void MapImportExportEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        // Export
+        endpoints.MapGet("/api/workflows/{id}/export", async (string id, string? format, IWorkflowDefinitionStore store, CancellationToken ct) =>
+        {
+            var workflow = await store.GetByIdAsync(id, ct);
+            if (workflow is null) return Results.NotFound();
+
+            var exportDto = new WorkflowExportDto
+            {
+                FormatVersion = "1.0",
+                Name = workflow.Definition.Name,
+                Description = workflow.Description,
+                Tags = workflow.Tags,
+                Definition = workflow.Definition,
+                ExportedAt = DateTimeOffset.UtcNow
+            };
+
+            if (string.Equals(format, "yaml", StringComparison.OrdinalIgnoreCase))
+            {
+                var yaml = YamlWriter.Write(workflow.Definition);
+                return Results.Text(yaml, "text/yaml");
+            }
+
+            return Results.Ok(exportDto);
+        }).WithTags("Import/Export").WithName("ExportWorkflow");
+
+        // Import single
+        endpoints.MapPost("/api/workflows/import", async (HttpRequest request, string? format, IWorkflowDefinitionStore store, WorkflowValidator validator, IWorkflowVersioningService versioning, IAuditTrailService audit, CancellationToken ct) =>
+        {
+            WorkflowExportDto? exportDto;
+
+            if (string.Equals(format, "yaml", StringComparison.OrdinalIgnoreCase))
+            {
+                using var reader = new StreamReader(request.Body);
+                var yaml = await reader.ReadToEndAsync(ct);
+                var definition = WorkflowSerializer.FromYaml(yaml);
+                exportDto = new WorkflowExportDto
+                {
+                    Name = definition.Name,
+                    Definition = definition
+                };
+            }
+            else
+            {
+                exportDto = await request.ReadFromJsonAsync<WorkflowExportDto>(ct);
+            }
+
+            if (exportDto is null)
+                return Results.BadRequest("Invalid import data.");
+
+            var validation = validator.Validate(exportDto.Definition);
+            if (!validation.IsValid)
+                return Results.BadRequest(new { errors = validation.Errors });
+
+            var createRequest = new CreateWorkflowRequest
+            {
+                Description = exportDto.Description,
+                Tags = exportDto.Tags,
+                Definition = exportDto.Definition
+            };
+
+            var created = await store.CreateAsync(createRequest, ct);
+            versioning.CreateVersion(created, changeSummary: "Imported");
+            audit.Log("workflow.imported", created.Id, $"Imported workflow '{created.Definition.Name}'");
+            return Results.Created($"/api/workflows/{created.Id}", created);
+        }).WithTags("Import/Export").WithName("ImportWorkflow");
+
+        // Bulk import
+        endpoints.MapPost("/api/workflows/import/bulk", async (List<WorkflowExportDto> exports, IWorkflowDefinitionStore store, WorkflowValidator validator, IWorkflowVersioningService versioning, IAuditTrailService audit, CancellationToken ct) =>
+        {
+            var results = new List<SavedWorkflowDefinition>();
+            var errors = new List<object>();
+
+            for (var i = 0; i < exports.Count; i++)
+            {
+                var exportDto = exports[i];
+                var validation = validator.Validate(exportDto.Definition);
+                if (!validation.IsValid)
+                {
+                    errors.Add(new { index = i, name = exportDto.Name, validationErrors = validation.Errors });
+                    continue;
+                }
+
+                var createRequest = new CreateWorkflowRequest
+                {
+                    Description = exportDto.Description,
+                    Tags = exportDto.Tags,
+                    Definition = exportDto.Definition
+                };
+
+                var created = await store.CreateAsync(createRequest, ct);
+                versioning.CreateVersion(created, changeSummary: "Imported (bulk)");
+                audit.Log("workflow.imported", created.Id, $"Bulk imported workflow '{created.Definition.Name}'");
+                results.Add(created);
+            }
+
+            return Results.Ok(new { imported = results, errors });
+        }).WithTags("Import/Export").WithName("BulkImportWorkflows");
+    }
+
+    private static void MapWebhookEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapPost("/api/webhooks/{workflowId}/trigger", async (string workflowId, HttpRequest request, bool? async_, WorkflowRunService runService, IAuditTrailService audit, CancellationToken ct) =>
+        {
+            // Read optional payload
+            string? payload = null;
+            try
+            {
+                using var reader = new StreamReader(request.Body);
+                var body = await reader.ReadToEndAsync(ct);
+                if (!string.IsNullOrWhiteSpace(body)) payload = body;
+            }
+            catch { }
+
+            var isAsync = request.Query.ContainsKey("async");
+            var run = await runService.StartRunAsync(workflowId, ct);
+            if (run is null) return Results.NotFound();
+
+            audit.Log("webhook.triggered", workflowId, $"Webhook triggered run {run.RunId}");
+
+            var response = new WebhookTriggerResponse
+            {
+                RunId = run.RunId,
+                Status = run.Status,
+                WebhookId = $"wh_{Guid.NewGuid():N}"[..12]
+            };
+
+            if (isAsync)
+                return Results.Accepted($"/api/runs/{run.RunId}", response);
+
+            // For sync, poll until completion (max 60s)
+            var deadline = DateTimeOffset.UtcNow.AddSeconds(60);
+            while (DateTimeOffset.UtcNow < deadline)
+            {
+                var current = await runService.GetRunAsync(run.RunId, ct);
+                if (current?.Status is "Completed" or "Failed" or "Cancelled")
+                {
+                    return Results.Ok(new
+                    {
+                        response.RunId,
+                        current.Status,
+                        response.WebhookId,
+                        current.StepResults,
+                        current.Error
+                    });
+                }
+                await Task.Delay(500, ct);
+            }
+
+            return Results.Ok(response);
+        }).WithTags("Webhooks").WithName("TriggerWebhook");
+    }
+
+    private static void MapTriggerEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        endpoints.MapGet("/api/triggers/types", (TriggerTypeRegistry registry) =>
+        {
+            return Results.Ok(registry.GetAll());
+        }).WithTags("Triggers").WithName("ListTriggerTypes");
+
+        endpoints.MapGet("/api/triggers/status", async (IWorkflowDefinitionStore store, CancellationToken ct) =>
+        {
+            var workflows = await store.GetAllAsync(ct);
+            var statuses = workflows
+                .SelectMany(w => w.Triggers.Select(t => new TriggerStatusDto
+                {
+                    TriggerId = t.Id,
+                    Type = t.Type,
+                    IsActive = t.Enabled,
+                    LastFired = null,
+                    FireCount = 0
+                }))
+                .ToList();
+            return Results.Ok(statuses);
+        }).WithTags("Triggers").WithName("GetTriggerStatuses");
+
+        var wfGroup = endpoints.MapGroup("/api/workflows").WithTags("Triggers");
+
+        wfGroup.MapGet("/{id}/triggers", async (string id, IWorkflowDefinitionStore store, CancellationToken ct) =>
+        {
+            var workflow = await store.GetByIdAsync(id, ct);
+            if (workflow is null) return Results.NotFound();
+            return Results.Ok(workflow.Triggers);
+        }).WithName("GetWorkflowTriggers");
+
+        wfGroup.MapPut("/{id}/triggers", async (string id, SetTriggersRequest request, IWorkflowDefinitionStore store, IAuditTrailService audit, CancellationToken ct) =>
+        {
+            var workflow = await store.GetByIdAsync(id, ct);
+            if (workflow is null) return Results.NotFound();
+            workflow.Triggers = request.Triggers;
+            workflow.LastModified = DateTimeOffset.UtcNow;
+            audit.Log("triggers.updated", id, $"Updated triggers ({request.Triggers.Count} trigger(s))");
+            return Results.Ok(workflow.Triggers);
+        }).WithName("SetWorkflowTriggers");
+
+        wfGroup.MapPost("/{id}/triggers/{triggerId}/test", async (string id, string triggerId, WorkflowRunService runService, IAuditTrailService audit, CancellationToken ct) =>
+        {
+            var run = await runService.StartRunAsync(id, ct);
+            if (run is null) return Results.NotFound();
+            audit.Log("trigger.tested", id, $"Test-fired trigger {triggerId}, run {run.RunId}");
+            return Results.Ok(run);
+        }).WithName("TestFireTrigger");
+    }
+
+    private static void MapScheduleEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        var group = endpoints.MapGroup("/api/workflows").WithTags("Scheduling");
+
+        group.MapPut("/{id}/schedule", async (string id, SetScheduleRequest request, IWorkflowDefinitionStore store, WorkflowSchedulerService scheduler, IAuditTrailService audit, CancellationToken ct) =>
+        {
+            var workflow = await store.GetByIdAsync(id, ct);
+            if (workflow is null) return Results.NotFound();
+
+            if (!SimpleCronParser.IsValid(request.CronExpression))
+                return Results.BadRequest("Invalid cron expression.");
+
+            scheduler.SetSchedule(id, request.CronExpression, request.Enabled);
+            audit.Log("schedule.set", id, $"Schedule set: {request.CronExpression} (enabled: {request.Enabled})");
+            return Results.Ok(new { workflowId = id, cronExpression = request.CronExpression, enabled = request.Enabled });
+        }).WithName("SetWorkflowSchedule");
+
+        group.MapDelete("/{id}/schedule", async (string id, IWorkflowDefinitionStore store, WorkflowSchedulerService scheduler, IAuditTrailService audit, CancellationToken ct) =>
+        {
+            var workflow = await store.GetByIdAsync(id, ct);
+            if (workflow is null) return Results.NotFound();
+
+            scheduler.RemoveSchedule(id);
+            audit.Log("schedule.removed", id, "Schedule removed");
+            return Results.NoContent();
+        }).WithName("RemoveWorkflowSchedule");
+
+        group.MapGet("/{id}/schedule", async (string id, IWorkflowDefinitionStore store, WorkflowSchedulerService scheduler, CancellationToken ct) =>
+        {
+            var workflow = await store.GetByIdAsync(id, ct);
+            if (workflow is null) return Results.NotFound();
+
+            var schedule = scheduler.GetSchedule(id);
+            return schedule is null ? Results.NotFound() : Results.Ok(new { schedule.WorkflowId, schedule.CronExpression, schedule.Enabled, schedule.LastRun });
+        }).WithName("GetWorkflowSchedule");
     }
 }

@@ -1,4 +1,10 @@
 @inherits LayoutComponentBase
+@using WorkflowFramework.Dashboard.Web.Services
+@inject AuthStateService Auth
+@inject DashboardApiClient Api
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IDisposable
 
 <div class="flex flex-col h-screen">
     <nav class="bg-gray-900 border-b border-gray-800 px-6 py-3 flex items-center justify-between">
@@ -6,7 +12,84 @@
         <div class="flex items-center gap-4">
             <a href="/" class="text-sm text-gray-400 hover:text-white transition" data-testid="nav-designer">Designer</a>
             <a href="/settings" class="text-sm text-gray-400 hover:text-white transition" data-testid="nav-settings">Settings</a>
+            @if (Auth.IsAuthenticated)
+            {
+                <div class="relative" data-testid="user-menu">
+                    <button @onclick="ToggleUserMenu" class="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition">
+                        <span>@(Auth.DisplayName ?? Auth.Username)</span>
+                        <span class="text-gray-500 text-xs">▼</span>
+                    </button>
+                    @if (_showUserMenu)
+                    {
+                        <div class="absolute right-0 mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-1">
+                            <a href="/profile" data-testid="user-menu-profile" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition">Profile</a>
+                            <a href="/api-keys" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition">API Keys</a>
+                            <hr class="border-gray-700 my-1" />
+                            <button @onclick="Logout" data-testid="user-menu-logout" class="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 transition">Sign Out</button>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <a href="/login" data-testid="nav-login" class="text-sm text-purple-400 hover:text-purple-300 transition">Login</a>
+            }
         </div>
     </nav>
     @Body
 </div>
+
+@code {
+    private bool _showUserMenu;
+
+    protected override void OnInitialized()
+    {
+        Auth.OnAuthStateChanged += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !Auth.IsAuthenticated)
+        {
+            try
+            {
+                var token = await JS.InvokeAsync<string?>("authStorage.getToken");
+                if (!string.IsNullOrEmpty(token))
+                {
+                    Api.SetAuthToken(token);
+                    var user = await Api.GetCurrentUserAsync();
+                    if (user is not null)
+                    {
+                        var refreshToken = await JS.InvokeAsync<string?>("authStorage.getRefreshToken");
+                        Auth.SetAuthenticated(user.Id, user.Username, user.DisplayName, token, refreshToken);
+                    }
+                    else
+                    {
+                        Api.SetAuthToken(null);
+                        await JS.InvokeVoidAsync("authStorage.clear");
+                    }
+                }
+            }
+            catch
+            {
+                // Auth API not available — stay anonymous
+            }
+        }
+    }
+
+    private void ToggleUserMenu() => _showUserMenu = !_showUserMenu;
+
+    private async Task Logout()
+    {
+        _showUserMenu = false;
+        Auth.Logout();
+        Api.SetAuthToken(null);
+        await JS.InvokeVoidAsync("authStorage.clear");
+        Nav.NavigateTo("/login", forceLoad: false);
+    }
+
+    public void Dispose()
+    {
+        Auth.OnAuthStateChanged -= StateHasChanged;
+    }
+}

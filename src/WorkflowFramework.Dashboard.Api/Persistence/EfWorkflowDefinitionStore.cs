@@ -14,16 +14,28 @@ namespace WorkflowFramework.Dashboard.Api.Persistence;
 public sealed class EfWorkflowDefinitionStore : IWorkflowDefinitionStore
 {
     private readonly DashboardDbContext _db;
+    private readonly ICurrentUserService _currentUser;
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
 
     /// <summary>Default owner ID used when no authentication is configured.</summary>
     public const string SystemUserId = "system";
 
-    public EfWorkflowDefinitionStore(DashboardDbContext db) => _db = db;
+    public EfWorkflowDefinitionStore(DashboardDbContext db, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _currentUser = currentUser;
+    }
+
+    private string EffectiveUserId => _currentUser.UserId ?? SystemUserId;
+    private bool IsScoped => _currentUser.IsAuthenticated && _currentUser.UserId != SystemUserId;
 
     public async Task<IReadOnlyList<SavedWorkflowDefinition>> GetAllAsync(CancellationToken ct = default)
     {
-        var entities = (await _db.Workflows.ToListAsync(ct))
+        IQueryable<WorkflowEntity> query = _db.Workflows;
+        if (IsScoped)
+            query = query.Where(w => w.OwnerId == EffectiveUserId);
+
+        var entities = (await query.ToListAsync(ct))
             .OrderByDescending(w => w.LastModifiedAt)
             .ToList();
         return entities.Select(ToModel).ToList();
@@ -32,7 +44,9 @@ public sealed class EfWorkflowDefinitionStore : IWorkflowDefinitionStore
     public async Task<SavedWorkflowDefinition?> GetByIdAsync(string id, CancellationToken ct = default)
     {
         var entity = await _db.Workflows.FirstOrDefaultAsync(w => w.Id == id, ct);
-        return entity is null ? null : ToModel(entity);
+        if (entity is null) return null;
+        if (IsScoped && entity.OwnerId != EffectiveUserId) return null;
+        return ToModel(entity);
     }
 
     public async Task<SavedWorkflowDefinition> CreateAsync(CreateWorkflowRequest request, CancellationToken ct = default)
@@ -40,7 +54,7 @@ public sealed class EfWorkflowDefinitionStore : IWorkflowDefinitionStore
         var entity = new WorkflowEntity
         {
             Id = Guid.NewGuid().ToString("N"),
-            OwnerId = SystemUserId,
+            OwnerId = EffectiveUserId,
             Name = request.Definition.Name,
             Description = request.Description,
             DefinitionJson = JsonSerializer.Serialize(request.Definition, JsonOptions),
@@ -59,6 +73,7 @@ public sealed class EfWorkflowDefinitionStore : IWorkflowDefinitionStore
     {
         var entity = await _db.Workflows.FindAsync([id], ct);
         if (entity is null) return null;
+        if (IsScoped && entity.OwnerId != EffectiveUserId) return null;
 
         entity.Name = request.Definition.Name;
         entity.Description = request.Description;
@@ -75,6 +90,7 @@ public sealed class EfWorkflowDefinitionStore : IWorkflowDefinitionStore
     {
         var entity = await _db.Workflows.FindAsync([id], ct);
         if (entity is null) return false;
+        if (IsScoped && entity.OwnerId != EffectiveUserId) return false;
 
         entity.IsDeleted = true;
         entity.LastModifiedAt = DateTimeOffset.UtcNow;

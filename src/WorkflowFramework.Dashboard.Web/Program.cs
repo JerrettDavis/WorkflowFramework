@@ -10,6 +10,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddHttpClient<DashboardApiClient>(client =>
     client.BaseAddress = new Uri("https+http://dashboard-api"));
 
+builder.Services.AddScoped<AuthStateService>();
 builder.Services.AddScoped<ToastService>();
 builder.Services.AddScoped<KeyboardShortcutService>();
 builder.Services.AddScoped<UserPreferencesService>();

@@ -3,6 +3,7 @@ using Xunit;
 using FluentAssertions;
 using WorkflowFramework.Dashboard.Api.Hubs;
 using WorkflowFramework.Dashboard.Api.Models;
+using WorkflowFramework.Dashboard.Api.Plugins;
 using WorkflowFramework.Dashboard.Api.Services;
 using WorkflowFramework.Serialization;
 
@@ -16,7 +17,7 @@ public class WorkflowRunServiceTests
     public WorkflowRunServiceTests()
     {
         var settingsService = new DashboardSettingsService();
-        var compiler = new WorkflowDefinitionCompiler(settingsService);
+        var compiler = new WorkflowDefinitionCompiler(settingsService, new PluginRegistry());
         var notifier = new WorkflowExecutionNotifier(new FakeHubContext());
         _runService = new WorkflowRunService(_store, compiler, notifier);
     }

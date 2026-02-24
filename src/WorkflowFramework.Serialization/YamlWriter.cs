@@ -5,7 +5,7 @@ namespace WorkflowFramework.Serialization;
 /// <summary>
 /// Simple YAML writer — no external dependencies.
 /// </summary>
-internal static class YamlWriter
+public static class YamlWriter
 {
     public static string Write(WorkflowDefinitionDto dto)
     {

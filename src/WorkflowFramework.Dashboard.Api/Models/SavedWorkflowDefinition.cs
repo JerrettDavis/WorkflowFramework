@@ -12,4 +12,5 @@ public sealed class SavedWorkflowDefinition
     public List<string> Tags { get; set; } = [];
     public DateTimeOffset LastModified { get; set; }
     public WorkflowDefinitionDto Definition { get; set; } = new();
+    public List<TriggerDefinitionDto> Triggers { get; set; } = [];
 }

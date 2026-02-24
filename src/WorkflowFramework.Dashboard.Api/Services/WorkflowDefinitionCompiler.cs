@@ -1,5 +1,6 @@
 using System.Text.Json;
 using WorkflowFramework.Builder;
+using WorkflowFramework.Dashboard.Api.Plugins;
 using WorkflowFramework.Extensions.AI;
 using WorkflowFramework.Extensions.Agents;
 using WorkflowFramework.Extensions.Http;
@@ -14,10 +15,12 @@ namespace WorkflowFramework.Dashboard.Api.Services;
 public sealed class WorkflowDefinitionCompiler
 {
     private readonly DashboardSettingsService _settings;
+    private readonly PluginRegistry _pluginRegistry;
 
-    public WorkflowDefinitionCompiler(DashboardSettingsService settings)
+    public WorkflowDefinitionCompiler(DashboardSettingsService settings, PluginRegistry pluginRegistry)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+        _pluginRegistry = pluginRegistry ?? throw new ArgumentNullException(nameof(pluginRegistry));
     }
 
     /// <summary>
@@ -178,6 +181,13 @@ public sealed class WorkflowDefinitionCompiler
                 break;
 
             default:
+                // Check plugin registry first
+                var pluginStep = _pluginRegistry.CreateStep(stepDto.Type, stepDto.Name, stepDto.Config);
+                if (pluginStep is not null)
+                {
+                    builder.Step(pluginStep);
+                    break;
+                }
                 builder.Step(stepDto.Name, ctx =>
                 {
                     ctx.Properties[$"{stepDto.Name}.Output"] = $"Step type '{stepDto.Type}' executed (no-op in dashboard)";

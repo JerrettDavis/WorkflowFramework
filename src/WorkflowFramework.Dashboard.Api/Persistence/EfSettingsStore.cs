@@ -11,12 +11,19 @@ namespace WorkflowFramework.Dashboard.Api.Persistence;
 public sealed class EfSettingsStore : IDashboardSettingsService
 {
     private readonly DashboardDbContext _db;
+    private readonly ICurrentUserService _currentUser;
 
     public const string DefaultUserId = "system";
 
-    public EfSettingsStore(DashboardDbContext db) => _db = db;
+    public EfSettingsStore(DashboardDbContext db, ICurrentUserService currentUser)
+    {
+        _db = db;
+        _currentUser = currentUser;
+    }
 
-    public DashboardSettings Get() => Get(DefaultUserId);
+    private string EffectiveUserId => _currentUser.UserId ?? DefaultUserId;
+
+    public DashboardSettings Get() => Get(EffectiveUserId);
 
     public DashboardSettings Get(string userId)
     {
@@ -27,7 +34,7 @@ public sealed class EfSettingsStore : IDashboardSettingsService
         return settings;
     }
 
-    public void Update(DashboardSettings settings) => Update(settings, DefaultUserId);
+    public void Update(DashboardSettings settings) => Update(settings, EffectiveUserId);
 
     public void Update(DashboardSettings settings, string userId)
     {

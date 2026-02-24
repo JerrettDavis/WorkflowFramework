@@ -39,6 +39,7 @@ public static class DashboardPersistenceExtensions
         services.AddScoped<IDashboardSettingsService, EfSettingsStore>();
 
         services.AddScoped<EfWorkflowRunStore>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }

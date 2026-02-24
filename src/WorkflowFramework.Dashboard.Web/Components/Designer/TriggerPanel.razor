@@ -1,0 +1,279 @@
+@using System.Text.Json
+@inject DashboardApiClient Api
+@inject ToastService Toast
+
+<div class="p-4 overflow-y-auto h-full" data-testid="trigger-panel">
+    <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-300">Triggers</h3>
+        <button @onclick="ShowAddTrigger" class="px-2 py-1 text-xs bg-purple-600 hover:bg-purple-500 text-white rounded" data-testid="add-trigger-btn">
+            + Add Trigger
+        </button>
+    </div>
+
+    @if (_showAddForm)
+    {
+        <div class="mb-4 p-3 bg-gray-800 rounded-lg border border-gray-700">
+            <label class="block text-xs text-gray-400 mb-1">Trigger Type</label>
+            <select @bind="_selectedType" class="w-full bg-gray-700 text-white text-sm rounded px-2 py-1 mb-2" data-testid="trigger-type-select">
+                <option value="">Select a trigger type...</option>
+                @foreach (var tt in _triggerTypes)
+                {
+                    <option value="@tt.Type">@tt.Icon @tt.DisplayName</option>
+                }
+            </select>
+            <div class="flex gap-2">
+                <button @onclick="AddTrigger" class="px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded" data-testid="confirm-add-trigger">Add</button>
+                <button @onclick="CancelAdd" class="px-3 py-1 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded">Cancel</button>
+            </div>
+        </div>
+    }
+
+    @if (_triggers.Count == 0 && !_showAddForm)
+    {
+        <p class="text-sm text-gray-500 italic">No triggers configured. Add a trigger to automate workflow execution.</p>
+    }
+
+    @foreach (var trigger in _triggers)
+    {
+        var t = trigger;
+        <div class="mb-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700" data-testid="trigger-item">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <span>@GetIcon(t.Type)</span>
+                    <span class="text-sm font-medium text-gray-200">@(t.Name ?? GetDisplayName(t.Type))</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="checkbox" checked="@t.Enabled"
+                               @onchange="e => OnToggleEnabled(t, e)"
+                               class="accent-purple-500" />
+                        <span class="text-xs text-gray-400">@(t.Enabled ? "Active" : "Disabled")</span>
+                    </label>
+                    @if (!string.IsNullOrEmpty(WorkflowId))
+                    {
+                        <button @onclick="() => TestTrigger(t)" class="text-yellow-400 hover:text-yellow-300 text-xs" title="Test fire" data-testid="test-trigger">▶</button>
+                    }
+                    <button @onclick="() => RemoveTrigger(t)" class="text-red-400 hover:text-red-300 text-xs" data-testid="remove-trigger">✕</button>
+                </div>
+            </div>
+
+            @{
+                var typeInfo = _triggerTypes.FirstOrDefault(ti => ti.Type == t.Type);
+                if (typeInfo?.ConfigSchema is not null)
+                {
+                    try
+                    {
+                        var schema = JsonDocument.Parse(typeInfo.ConfigSchema);
+                        if (schema.RootElement.TryGetProperty("properties", out var props))
+                        {
+                            foreach (var prop in props.EnumerateObject())
+                            {
+                                var key = prop.Name;
+                                var capturedKey = key;
+                                var fieldDef = prop.Value;
+                                var uiType = fieldDef.TryGetProperty("uiType", out var ut) ? ut.GetString() : "text";
+                                var label = fieldDef.TryGetProperty("label", out var lb) ? lb.GetString() : key;
+                                var helpText = fieldDef.TryGetProperty("helpText", out var ht) ? ht.GetString() : null;
+                                var placeholder = fieldDef.TryGetProperty("placeholder", out var ph) ? ph.GetString() : string.Empty;
+                                var defaultVal = fieldDef.TryGetProperty("default", out var dv) ? dv.ToString() : string.Empty;
+                                t.Configuration.TryGetValue(key, out var currentVal);
+                                currentVal ??= defaultVal ?? string.Empty;
+
+                                <div class="mb-2">
+                                    <label class="block text-xs text-gray-400 mb-0.5">@label</label>
+                                    @switch (uiType)
+                                    {
+                                        case "textarea":
+                                            var rows = fieldDef.TryGetProperty("rows", out var r) ? r.GetInt32() : 3;
+                                            <textarea rows="@rows" value="@currentVal"
+                                                      @onchange="e => OnConfigChanged(t, capturedKey, e)"
+                                                      placeholder="@placeholder"
+                                                      class="w-full bg-gray-700 text-white text-xs rounded px-2 py-1 resize-y"></textarea>
+                                            break;
+                                        case "checkbox":
+                                            var isChecked = currentVal is "true" or "True";
+                                            <input type="checkbox" checked="@isChecked"
+                                                   @onchange="e => OnCheckboxConfigChanged(t, capturedKey, e)"
+                                                   class="accent-purple-500" />
+                                            break;
+                                        case "select":
+                                            <select value="@currentVal"
+                                                    @onchange="e => OnConfigChanged(t, capturedKey, e)"
+                                                    class="w-full bg-gray-700 text-white text-xs rounded px-2 py-1">
+                                                @if (fieldDef.TryGetProperty("options", out var opts))
+                                                {
+                                                    foreach (var opt in opts.EnumerateArray())
+                                                    {
+                                                        var optStr = opt.GetString() ?? string.Empty;
+                                                        <option value="@optStr" selected="@(optStr == currentVal)">@optStr</option>
+                                                    }
+                                                }
+                                            </select>
+                                            break;
+                                        case "password":
+                                            <input type="password" value="@currentVal"
+                                                   @onchange="e => OnConfigChanged(t, capturedKey, e)"
+                                                   placeholder="@placeholder"
+                                                   class="w-full bg-gray-700 text-white text-xs rounded px-2 py-1" />
+                                            break;
+                                        case "multiselect":
+                                            @if (fieldDef.TryGetProperty("options", out var msOpts))
+                                            {
+                                                var selected = (currentVal ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+                                                <div class="flex flex-wrap gap-2">
+                                                    @foreach (var opt in msOpts.EnumerateArray())
+                                                    {
+                                                        var optStr = opt.GetString() ?? string.Empty;
+                                                        var capturedOpt = optStr;
+                                                        var isSelected = selected.Contains(optStr);
+                                                        <label class="flex items-center gap-1 text-xs text-gray-300">
+                                                            <input type="checkbox" checked="@isSelected"
+                                                                   @onchange="e => ToggleMultiSelect(t, capturedKey, capturedOpt, e)"
+                                                                   class="accent-purple-500" />
+                                                            @optStr
+                                                        </label>
+                                                    }
+                                                </div>
+                                            }
+                                            break;
+                                        default:
+                                            <input type="text" value="@currentVal"
+                                                   @onchange="e => OnConfigChanged(t, capturedKey, e)"
+                                                   placeholder="@placeholder"
+                                                   class="w-full bg-gray-700 text-white text-xs rounded px-2 py-1" />
+                                            break;
+                                    }
+                                    @if (helpText is not null)
+                                    {
+                                        <span class="text-[10px] text-gray-500">@helpText</span>
+                                    }
+                                </div>
+                            }
+                        }
+                    }
+                    catch { /* invalid schema JSON */ }
+                }
+            }
+        </div>
+    }
+
+    @if (_dirty && _triggers.Count > 0)
+    {
+        <button @onclick="SaveTriggers" class="mt-2 px-4 py-2 text-sm bg-purple-600 hover:bg-purple-500 text-white rounded" data-testid="save-triggers">
+            Save Triggers
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string? WorkflowId { get; set; }
+
+    private List<TriggerDefinitionDto> _triggers = [];
+    private List<TriggerTypeInfoDto> _triggerTypes = [];
+    private bool _showAddForm;
+    private string _selectedType = "";
+    private bool _dirty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _triggerTypes = await Api.GetTriggerTypesAsync();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(WorkflowId))
+        {
+            try
+            {
+                _triggers = await Api.GetWorkflowTriggersAsync(WorkflowId);
+                _dirty = false;
+            }
+            catch { _triggers = []; }
+        }
+        else
+        {
+            _triggers = [];
+        }
+    }
+
+    private void ShowAddTrigger() => _showAddForm = true;
+    private void CancelAdd() => _showAddForm = false;
+
+    private void AddTrigger()
+    {
+        if (string.IsNullOrEmpty(_selectedType)) return;
+        _triggers.Add(new TriggerDefinitionDto { Type = _selectedType });
+        _showAddForm = false;
+        _selectedType = "";
+        _dirty = true;
+    }
+
+    private void RemoveTrigger(TriggerDefinitionDto trigger)
+    {
+        _triggers.Remove(trigger);
+        _dirty = true;
+    }
+
+    private void OnToggleEnabled(TriggerDefinitionDto trigger, ChangeEventArgs e)
+    {
+        trigger.Enabled = (bool)(e.Value ?? false);
+        _dirty = true;
+    }
+
+    private void OnConfigChanged(TriggerDefinitionDto trigger, string key, ChangeEventArgs e)
+    {
+        trigger.Configuration[key] = e.Value?.ToString() ?? string.Empty;
+        _dirty = true;
+    }
+
+    private void OnCheckboxConfigChanged(TriggerDefinitionDto trigger, string key, ChangeEventArgs e)
+    {
+        trigger.Configuration[key] = ((bool)(e.Value ?? false)).ToString().ToLowerInvariant();
+        _dirty = true;
+    }
+
+    private async Task SaveTriggers()
+    {
+        if (string.IsNullOrEmpty(WorkflowId))
+        {
+            Toast.Warning("Save the workflow first before adding triggers.");
+            return;
+        }
+        try
+        {
+            await Api.SaveWorkflowTriggersAsync(WorkflowId, _triggers);
+            _dirty = false;
+            Toast.Success("Triggers saved");
+        }
+        catch (Exception ex)
+        {
+            Toast.Error($"Failed to save triggers: {ex.Message}");
+        }
+    }
+
+    private async Task TestTrigger(TriggerDefinitionDto trigger)
+    {
+        if (string.IsNullOrEmpty(WorkflowId)) return;
+        try
+        {
+            var run = await Api.TestTriggerAsync(WorkflowId, trigger.Id);
+            Toast.Success($"Test run started: {run?.RunId}");
+        }
+        catch (Exception ex)
+        {
+            Toast.Error($"Test failed: {ex.Message}");
+        }
+    }
+
+    private void ToggleMultiSelect(TriggerDefinitionDto trigger, string key, string option, ChangeEventArgs e)
+    {
+        trigger.Configuration.TryGetValue(key, out var current);
+        var values = (current ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+        if ((bool)(e.Value ?? false)) values.Add(option); else values.Remove(option);
+        trigger.Configuration[key] = string.Join(",", values);
+        _dirty = true;
+    }
+
+    private string GetIcon(string type) => _triggerTypes.FirstOrDefault(t => t.Type == type)?.Icon ?? "⚡";
+    private string GetDisplayName(string type) => _triggerTypes.FirstOrDefault(t => t.Type == type)?.DisplayName ?? type;
+}

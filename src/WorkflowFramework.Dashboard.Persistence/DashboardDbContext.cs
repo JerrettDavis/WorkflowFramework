@@ -18,6 +18,7 @@ public sealed class DashboardDbContext : DbContext
     public DbSet<StepRunEntity> StepRuns => Set<StepRunEntity>();
     public DbSet<AuditEntryEntity> AuditEntries => Set<AuditEntryEntity>();
     public DbSet<UserSettingEntity> UserSettings => Set<UserSettingEntity>();
+    public DbSet<ApiKeyEntity> ApiKeys => Set<ApiKeyEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,6 +83,15 @@ public sealed class DashboardDbContext : DbContext
             e.HasKey(s => s.Id);
             e.HasIndex(s => new { s.UserId, s.Key }).IsUnique();
             e.HasOne(s => s.User).WithMany(u => u.Settings).HasForeignKey(s => s.UserId);
+        });
+
+        // ApiKeyEntity
+        modelBuilder.Entity<ApiKeyEntity>(e =>
+        {
+            e.HasKey(k => k.Id);
+            e.HasIndex(k => k.UserId);
+            e.HasIndex(k => k.KeyPrefix);
+            e.HasOne(k => k.User).WithMany(u => u.ApiKeys).HasForeignKey(k => k.UserId);
         });
     }
 }

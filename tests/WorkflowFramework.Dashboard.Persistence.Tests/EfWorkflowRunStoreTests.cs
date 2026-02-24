@@ -22,7 +22,7 @@ public sealed class EfWorkflowRunStoreTests : IDisposable
             Id = TestWorkflowId, OwnerId = "system", Name = "Test Workflow"
         });
         _db.SaveChanges();
-        _store = new EfWorkflowRunStore(_db);
+        _store = new EfWorkflowRunStore(_db, new WorkflowFramework.Dashboard.Api.Services.AnonymousCurrentUserService());
     }
 
     [Fact]

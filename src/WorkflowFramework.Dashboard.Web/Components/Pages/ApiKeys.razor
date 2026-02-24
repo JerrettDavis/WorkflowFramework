@@ -1,0 +1,174 @@
+@page "/api-keys"
+@using WorkflowFramework.Dashboard.Web.Services
+@using WorkflowFramework.Dashboard.Web.Models
+@inject DashboardApiClient Api
+@inject AuthStateService Auth
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="flex-1 bg-gray-950 p-8 overflow-auto" data-testid="api-keys-page">
+    <div class="max-w-3xl mx-auto space-y-6">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-white">API Keys</h1>
+            <button @onclick="() => _showCreate = !_showCreate" data-testid="api-key-create"
+                    class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded-lg transition">
+                + New Key
+            </button>
+        </div>
+
+        @if (!Auth.IsAuthenticated)
+        {
+            <p class="text-gray-400">Please <a href="/login" class="text-purple-400 hover:text-purple-300">sign in</a> to manage API keys.</p>
+        }
+        else
+        {
+            @if (_createdKey is not null)
+            {
+                <div class="bg-yellow-900/20 border border-yellow-700 rounded-xl p-6 space-y-3">
+                    <h3 class="text-yellow-400 font-semibold">🔑 New API Key Created</h3>
+                    <p class="text-yellow-200/70 text-sm">Copy this key now — you won't be able to see it again!</p>
+                    <div class="flex gap-2">
+                        <code class="flex-1 bg-gray-800 text-green-400 px-4 py-2 rounded-lg text-sm font-mono break-all">@_createdKey.Key</code>
+                        <button @onclick="CopyKey" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded-lg text-sm transition">Copy</button>
+                    </div>
+                    <button @onclick="() => _createdKey = null" class="text-sm text-gray-500 hover:text-gray-400">Dismiss</button>
+                </div>
+            }
+
+            @if (_showCreate)
+            {
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
+                    <h2 class="text-lg font-semibold text-white">Create API Key</h2>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-1">Name</label>
+                        <input type="text" @bind="_newKeyName"
+                               class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500 transition"
+                               placeholder="e.g. CI/CD Pipeline" />
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">Scopes</label>
+                        <div class="flex flex-wrap gap-3">
+                            @foreach (var scope in _availableScopes)
+                            {
+                                <label class="flex items-center gap-2 text-sm text-gray-300">
+                                    <input type="checkbox" checked="@_selectedScopes.Contains(scope)"
+                                           @onchange="e => ToggleScope(scope, (bool)(e.Value ?? false))"
+                                           class="rounded bg-gray-700 border-gray-600" />
+                                    @scope
+                                </label>
+                            }
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button @onclick="CreateKey" class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded-lg transition">Create</button>
+                        <button @onclick="() => _showCreate = false" class="text-sm text-gray-500 hover:text-gray-400">Cancel</button>
+                    </div>
+                </div>
+            }
+
+            @if (_keys.Count == 0 && !_loading)
+            {
+                <div class="text-center py-12 text-gray-500">
+                    <p>No API keys yet. Create one to get started.</p>
+                </div>
+            }
+
+            @foreach (var key in _keys)
+            {
+                <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 flex items-center justify-between" data-testid="api-key-item">
+                    <div class="space-y-1">
+                        <div class="text-white font-medium">@key.Name</div>
+                        <div class="text-sm text-gray-500 font-mono">@key.KeyPrefix••••••••</div>
+                        <div class="text-xs text-gray-600 flex gap-3">
+                            <span>Created @key.CreatedAt.ToString("MMM d, yyyy")</span>
+                            @if (key.LastUsedAt.HasValue)
+                            {
+                                <span>Last used @key.LastUsedAt.Value.ToString("MMM d")</span>
+                            }
+                            @if (key.ExpiresAt.HasValue)
+                            {
+                                <span class="@(key.ExpiresAt < DateTimeOffset.UtcNow ? "text-red-400" : "")">
+                                    Expires @key.ExpiresAt.Value.ToString("MMM d, yyyy")
+                                </span>
+                            }
+                        </div>
+                        @if (key.Scopes.Count > 0)
+                        {
+                            <div class="flex gap-1.5 mt-1">
+                                @foreach (var s in key.Scopes)
+                                {
+                                    <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded">@s</span>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <button @onclick="() => RevokeKey(key.Id)"
+                            class="text-sm text-red-400 hover:text-red-300 border border-red-800 hover:border-red-700 px-3 py-1.5 rounded-lg transition">
+                        Revoke
+                    </button>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    private List<ApiKeyInfo> _keys = [];
+    private bool _loading;
+    private bool _showCreate;
+    private string _newKeyName = "";
+    private HashSet<string> _selectedScopes = [];
+    private CreateApiKeyResult? _createdKey;
+    private readonly string[] _availableScopes = ["workflows:read", "workflows:write", "runs:read", "runs:write", "settings:read", "settings:write"];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsAuthenticated) return;
+        await LoadKeys();
+    }
+
+    private async Task LoadKeys()
+    {
+        _loading = true;
+        try { _keys = await Api.GetApiKeysAsync(); }
+        catch { /* API may not exist yet */ }
+        finally { _loading = false; }
+    }
+
+    private void ToggleScope(string scope, bool on)
+    {
+        if (on) _selectedScopes.Add(scope);
+        else _selectedScopes.Remove(scope);
+    }
+
+    private async Task CreateKey()
+    {
+        if (string.IsNullOrWhiteSpace(_newKeyName)) return;
+        try
+        {
+            _createdKey = await Api.CreateApiKeyAsync(_newKeyName, _selectedScopes.ToList());
+            _newKeyName = "";
+            _selectedScopes.Clear();
+            _showCreate = false;
+            await LoadKeys();
+        }
+        catch { }
+    }
+
+    private async Task CopyKey()
+    {
+        if (_createdKey is not null)
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _createdKey.Key);
+    }
+
+    private async Task RevokeKey(string id)
+    {
+        try
+        {
+            await Api.RevokeApiKeyAsync(id);
+            await LoadKeys();
+        }
+        catch { }
+    }
+}

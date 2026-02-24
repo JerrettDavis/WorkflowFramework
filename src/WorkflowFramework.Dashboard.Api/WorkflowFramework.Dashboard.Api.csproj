@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\WorkflowFramework.Dashboard.ServiceDefaults\WorkflowFramework.Dashboard.ServiceDefaults.csproj" />
     <ProjectReference Include="..\WorkflowFramework.Serialization\WorkflowFramework.Serialization.csproj" />
     <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />

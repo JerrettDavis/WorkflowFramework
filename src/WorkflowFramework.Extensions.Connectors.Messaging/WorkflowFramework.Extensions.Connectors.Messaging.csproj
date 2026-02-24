@@ -4,6 +4,7 @@
     <Description>Message broker connector abstractions for WorkflowFramework — RabbitMQ, Azure Service Bus, and Kafka configuration models and interfaces.</Description>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
     <ProjectReference Include="..\WorkflowFramework.Extensions.Connectors.Abstractions\WorkflowFramework.Extensions.Connectors.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>

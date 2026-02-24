@@ -16,7 +16,7 @@ public sealed class EfWorkflowDefinitionStoreTests : IDisposable
     public EfWorkflowDefinitionStoreTests()
     {
         _db = _factory.CreateSeeded();
-        _store = new EfWorkflowDefinitionStore(_db);
+        _store = new EfWorkflowDefinitionStore(_db, new AnonymousCurrentUserService());
     }
 
     [Fact]

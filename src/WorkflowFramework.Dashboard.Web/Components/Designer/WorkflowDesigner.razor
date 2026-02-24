@@ -52,6 +52,11 @@
                     data-testid="tab-steps">
                 Steps
             </button>
+            <button @onclick='() => _activeBottomTab = "triggers"'
+                    class="px-4 py-1.5 text-xs @(_activeBottomTab == "triggers" ? "text-blue-400 border-b-2 border-blue-400 bg-gray-850" : "text-gray-400 hover:text-gray-200")"
+                    data-testid="tab-triggers">
+                ⚡ Triggers
+            </button>
             <button @onclick='() => _activeBottomTab = "validation"'
                     class="px-4 py-1.5 text-xs @(_activeBottomTab == "validation" ? "text-blue-400 border-b-2 border-blue-400 bg-gray-850" : "text-gray-400 hover:text-gray-200")"
                     data-testid="tab-validation">
@@ -93,6 +98,10 @@
                     <StepListPanel @ref="_stepListPanel"
                                    SelectedNodeId="@_selectedNodeId"
                                    OnNodeClicked="HandleFocusNode" />
+                }
+                else if (_activeBottomTab == "triggers")
+                {
+                    <TriggerPanel WorkflowId="@_currentWorkflowId" />
                 }
                 else if (_activeBottomTab == "validation")
                 {
@@ -385,18 +394,52 @@
 
     private async Task HandleExportJson()
     {
-        var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
-        var json = System.Text.Json.JsonSerializer.Serialize(definition, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
-        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] JSON copied to clipboard");
+        try
+        {
+            if (_currentWorkflowId is not null)
+            {
+                var export = await Api.ExportWorkflowAsync(_currentWorkflowId);
+                if (export is not null)
+                {
+                    await JS.InvokeVoidAsync("downloadJson", $"{_workflowName}.json", export);
+                    _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Exported workflow as JSON file");
+                    Toast.Success("Exported as JSON");
+                    return;
+                }
+            }
+            // Fallback: copy canvas data to clipboard
+            var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
+            var json = System.Text.Json.JsonSerializer.Serialize(definition, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] JSON copied to clipboard (save workflow first for full export)");
+        }
+        catch (Exception ex)
+        {
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Export failed: {ex.Message}");
+            Toast.Error($"Export failed: {ex.Message}");
+        }
     }
 
     private async Task HandleExportYaml()
     {
-        var definition = await JS.InvokeAsync<object>("workflowEditor.getWorkflowDefinition");
-        var json = System.Text.Json.JsonSerializer.Serialize(definition);
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
-        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Exported (JSON format - YAML requires server-side serializer)");
+        try
+        {
+            if (_currentWorkflowId is not null)
+            {
+                var yaml = await Api.ExportWorkflowYamlAsync(_currentWorkflowId);
+                await JS.InvokeVoidAsync("downloadText", $"{_workflowName}.yaml", yaml, "text/yaml");
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Exported workflow as YAML file");
+                Toast.Success("Exported as YAML");
+                return;
+            }
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Save workflow first to export as YAML");
+            Toast.Warning("Save workflow first to export as YAML");
+        }
+        catch (Exception ex)
+        {
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] YAML export failed: {ex.Message}");
+            Toast.Error($"YAML export failed: {ex.Message}");
+        }
     }
 
     private async Task HandleImport(InputFileChangeEventArgs e)
@@ -406,18 +449,62 @@
             using var stream = e.File.OpenReadStream(maxAllowedSize: 1024 * 1024);
             using var reader = new StreamReader(stream);
             var content = await reader.ReadToEndAsync();
-            var parsed = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(content);
 
-            if (parsed.TryGetProperty("nodes", out var nodes) && parsed.TryGetProperty("edges", out var edges))
+            // Try WorkflowExportDto format (API import)
+            try
             {
-                await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", nodes, edges);
-                _dirty = true;
-                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Imported workflow from {e.File.Name}");
+                var parsed = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(content);
+
+                // Check if it's a canvas format (nodes/edges)
+                if (parsed.TryGetProperty("nodes", out var nodes) && parsed.TryGetProperty("edges", out var edges))
+                {
+                    await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", nodes, edges);
+                    _dirty = true;
+                    _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Imported workflow from {e.File.Name}");
+                    return;
+                }
+
+                // Try API import (WorkflowExportDto format)
+                if (parsed.TryGetProperty("definition", out _) || parsed.TryGetProperty("formatVersion", out _))
+                {
+                    var imported = await Api.ImportWorkflowAsync(content);
+                    if (imported is not null)
+                    {
+                        _currentWorkflowId = imported.Id;
+                        _workflowName = imported.Definition.Name;
+                        _dirty = false;
+                        _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Imported workflow '{imported.Definition.Name}' from {e.File.Name}");
+                        Toast.Success($"Imported '{imported.Definition.Name}'");
+                        await LoadDefinitionIntoCanvas(imported.Definition);
+                        return;
+                    }
+                }
             }
+            catch { }
+
+            // Try YAML import
+            if (e.File.Name.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || e.File.Name.EndsWith(".yml", StringComparison.OrdinalIgnoreCase))
+            {
+                var imported = await Api.ImportWorkflowYamlAsync(content);
+                if (imported is not null)
+                {
+                    _currentWorkflowId = imported.Id;
+                    _workflowName = imported.Definition.Name;
+                    _dirty = false;
+                    _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Imported YAML workflow '{imported.Definition.Name}' from {e.File.Name}");
+                    Toast.Success($"Imported '{imported.Definition.Name}'");
+                    await LoadDefinitionIntoCanvas(imported.Definition);
+                    return;
+                }
+            }
+
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Could not import from {e.File.Name}");
+            Toast.Error("Could not import file");
         }
         catch (Exception ex)
         {
             _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Import failed: {ex.Message}");
+            Toast.Error($"Import failed: {ex.Message}");
         }
     }
 

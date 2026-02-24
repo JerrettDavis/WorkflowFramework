@@ -3,4 +3,8 @@
     <RootNamespace>WorkflowFramework</RootNamespace>
     <Description>Core abstractions and fluent builder for WorkflowFramework - a workflow/pipeline engine for .NET.</Description>
   </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0' AND '$(TargetFramework)' != 'netstandard2.1'">
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
 </Project>

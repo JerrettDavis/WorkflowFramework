@@ -78,6 +78,9 @@
     <!-- SignalR -->
     <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.0-preview.4.25258.110" />
 
+    <!-- JWT Auth -->
+    <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.0-preview.4.25258.110" />
+
     <!-- Reqnroll BDD -->
     <PackageVersion Include="Reqnroll" Version="3.0.0" />
     <PackageVersion Include="Reqnroll.xUnit" Version="3.0.0" />
