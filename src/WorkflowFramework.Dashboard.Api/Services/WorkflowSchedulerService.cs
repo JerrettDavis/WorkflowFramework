@@ -79,7 +79,8 @@ public sealed class WorkflowSchedulerService : BackgroundService
     {
         try
         {
-            var runService = _services.GetRequiredService<WorkflowRunService>();
+            using var scope = _services.CreateScope();
+            var runService = scope.ServiceProvider.GetRequiredService<WorkflowRunService>();
             var run = await runService.StartRunAsync(workflowId, ct);
             if (run is not null)
                 _logger.LogInformation("Scheduled run started for workflow {WorkflowId}: {RunId}", workflowId, run.RunId);

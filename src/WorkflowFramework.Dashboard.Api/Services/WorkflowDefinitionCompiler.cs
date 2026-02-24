@@ -14,10 +14,10 @@ namespace WorkflowFramework.Dashboard.Api.Services;
 /// </summary>
 public sealed class WorkflowDefinitionCompiler
 {
-    private readonly DashboardSettingsService _settings;
+    private readonly IDashboardSettingsService _settings;
     private readonly PluginRegistry _pluginRegistry;
 
-    public WorkflowDefinitionCompiler(DashboardSettingsService settings, PluginRegistry pluginRegistry)
+    public WorkflowDefinitionCompiler(IDashboardSettingsService settings, PluginRegistry pluginRegistry)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _pluginRegistry = pluginRegistry ?? throw new ArgumentNullException(nameof(pluginRegistry));

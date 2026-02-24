@@ -55,6 +55,22 @@ public sealed class ScreenshotHooks
                 case "template-browser":
                     await CaptureElementOrFallback(page, "[data-testid='template-browser']", filename);
                     break;
+                case "trigger-panel":
+                case "trigger-add-form":
+                case "trigger-configured":
+                    await CaptureElementOrFallback(page, "[data-testid='trigger-panel']", filename);
+                    break;
+                case "login-page":
+                case "login-form":
+                    await CaptureElementOrFallback(page, "[data-testid='login-username']", filename);
+                    break;
+                case "register-page":
+                case "register-form":
+                    await CaptureElementOrFallback(page, "[data-testid='register-username']", filename);
+                    break;
+                case "toolbar-import-export":
+                    await CaptureElementOrFallback(page, "[data-testid='toolbar']", filename);
+                    break;
                 case "shortcuts-modal":
                 case "help-modal":
                     await CaptureElementOrFallback(page, "[data-testid='shortcuts-modal']", filename);

@@ -23,8 +23,8 @@ public static class DashboardApiExtensions
     {
         services.AddSingleton<IWorkflowDefinitionStore, InMemoryWorkflowDefinitionStore>();
         services.AddSingleton(StepTypeRegistry.CreateDefault());
-        services.AddSingleton<WorkflowDefinitionCompiler>();
-        services.AddSingleton<WorkflowRunService>();
+        services.AddScoped<WorkflowDefinitionCompiler>();
+        services.AddScoped<WorkflowRunService>();
         services.AddSingleton<IWorkflowTemplateLibrary, InMemoryWorkflowTemplateLibrary>();
         services.AddSingleton<IWorkflowVersioningService, WorkflowVersioningService>();
         services.AddSingleton<IAuditTrailService, AuditTrailService>();
@@ -42,9 +42,12 @@ public static class DashboardApiExtensions
     /// </summary>
     public static IEndpointRouteBuilder MapWorkflowDashboardApi(this IEndpointRouteBuilder endpoints)
     {
-        // Seed sample workflows on first call
-        var store = endpoints.ServiceProvider.GetRequiredService<IWorkflowDefinitionStore>();
-        SampleWorkflowSeeder.SeedAsync(store).GetAwaiter().GetResult();
+        // Seed sample workflows on first call (use a scope for scoped services)
+        using (var scope = endpoints.ServiceProvider.CreateScope())
+        {
+            var store = scope.ServiceProvider.GetRequiredService<IWorkflowDefinitionStore>();
+            SampleWorkflowSeeder.SeedAsync(store).GetAwaiter().GetResult();
+        }
 
         MapWorkflowEndpoints(endpoints);
         MapStepEndpoints(endpoints);
