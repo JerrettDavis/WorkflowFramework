@@ -21,7 +21,7 @@ public sealed class ShortcutSteps
     [When("I press {string}")]
     public async Task WhenIPress(string key)
     {
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='toolbar']", new PageWaitForSelectorOptions { Timeout = 10_000 });
         await Page.Keyboard.PressAsync(key);
         await Page.WaitForTimeoutAsync(500);
@@ -40,7 +40,7 @@ public sealed class ShortcutSteps
     [Given("I have a dirty workflow")]
     public async Task GivenIHaveADirtyWorkflow()
     {
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='toolbar']", new PageWaitForSelectorOptions { Timeout = 10_000 });
         await Page.WaitForTimeoutAsync(500);
     }

@@ -1,3 +1,4 @@
+#if !NETSTANDARD2_0
 namespace WorkflowFramework.Triggers;
 
 /// <summary>
@@ -93,3 +94,5 @@ public class TriggerSourceFactory : ITriggerSourceFactory
         });
     }
 }
+
+#endif

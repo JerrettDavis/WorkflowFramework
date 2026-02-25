@@ -106,7 +106,7 @@ public sealed class SaveLoadSteps
     [When("I reload the page")]
     public async Task WhenIReloadThePage()
     {
-        await Page.ReloadAsync(new PageReloadOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        await Page.ReloadAsync(new PageReloadOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("#workflow-canvas",
             new PageWaitForSelectorOptions { Timeout = 15_000 });
     }

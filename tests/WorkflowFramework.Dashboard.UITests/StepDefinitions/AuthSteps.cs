@@ -22,16 +22,20 @@ public sealed class AuthSteps
     public async Task WhenINavigateToTheLoginPage()
     {
         await Page.GotoAsync($"{WebUrl}/login",
-            new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
-        await Page.WaitForTimeoutAsync(1000);
+            new PageGotoOptions { WaitUntil = WaitUntilState.Load });
+        // Wait for Blazor circuit to render the login form
+        await Page.WaitForSelectorAsync("[data-testid='login-username']",
+            new PageWaitForSelectorOptions { Timeout = 30_000 });
     }
 
     [When("I navigate to the register page")]
     public async Task WhenINavigateToTheRegisterPage()
     {
         await Page.GotoAsync($"{WebUrl}/register",
-            new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
-        await Page.WaitForTimeoutAsync(1000);
+            new PageGotoOptions { WaitUntil = WaitUntilState.Load });
+        // Wait for Blazor circuit to render the register form
+        await Page.WaitForSelectorAsync("[data-testid='register-username']",
+            new PageWaitForSelectorOptions { Timeout = 30_000 });
     }
 
     [Then("I should see the login form")]

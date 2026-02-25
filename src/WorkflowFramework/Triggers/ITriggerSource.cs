@@ -1,3 +1,4 @@
+#if !NETSTANDARD2_0
 namespace WorkflowFramework.Triggers;
 
 /// <summary>
@@ -20,3 +21,5 @@ public interface ITriggerSource : IAsyncDisposable
     /// <summary>Whether the trigger is currently active.</summary>
     bool IsRunning { get; }
 }
+
+#endif

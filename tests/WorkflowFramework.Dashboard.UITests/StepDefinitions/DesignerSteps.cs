@@ -82,7 +82,7 @@ public sealed class DesignerSteps
 
         // Navigate to root (the designer is at /)
         await Page.GotoAsync(AspireHooks.Fixture.WebBaseUrl,
-            new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+            new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("#workflow-canvas",
             new PageWaitForSelectorOptions { Timeout = 10_000 });
 

@@ -15,6 +15,39 @@ public sealed class ScreenshotHooks
     }
 
     /// <summary>
+    /// On failure, capture a screenshot and page HTML for diagnostics.
+    /// </summary>
+    [AfterScenario(Order = 5000)]
+    public async Task CaptureFailureDiagnostics()
+    {
+        if (_scenarioContext.TestError is null) return;
+        if (!_scenarioContext.TryGetValue<IPage>(out var page)) return;
+
+        var safeName = _scenarioContext.ScenarioInfo.Title
+            .Replace(" ", "_").Replace("/", "_").Replace("\\", "_");
+        var dir = Path.Combine(Directory.GetCurrentDirectory(), "test-failures");
+        Directory.CreateDirectory(dir);
+
+        try
+        {
+            await page.ScreenshotAsync(new PageScreenshotOptions
+            {
+                Path = Path.Combine(dir, $"{safeName}.png"),
+                FullPage = true
+            });
+            var html = await page.ContentAsync();
+            await File.WriteAllTextAsync(Path.Combine(dir, $"{safeName}.html"), html);
+            Console.WriteLine($"[DIAG] Failure artifacts saved to {dir}/{safeName}.*");
+            Console.WriteLine($"[DIAG] Page URL: {page.Url}");
+            Console.WriteLine($"[DIAG] Page title: {await page.TitleAsync()}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DIAG] Failed to capture diagnostics: {ex.Message}");
+        }
+    }
+
+    /// <summary>
     /// After each scenario, capture screenshots based on @screenshot:xxx tags.
     /// </summary>
     [AfterScenario(Order = 10000)]

@@ -44,7 +44,7 @@ public sealed class ExecutionSteps
         _context.Set(id, "WorkflowId");
 
         // Navigate to root and open this workflow
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='btn-open']", new PageWaitForSelectorOptions { Timeout = 10_000 });
         var openBtn = Page.Locator("[data-testid='btn-open']");
         await openBtn.ClickAsync();

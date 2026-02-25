@@ -31,7 +31,7 @@ public sealed class SettingsSteps
     public async Task GivenIAmOnTheSettingsPage()
     {
         await Page.GotoAsync($"{WebUrl}/settings",
-            new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+            new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='settings-page']",
             new PageWaitForSelectorOptions { Timeout = 30_000 });
     }
@@ -46,15 +46,15 @@ public sealed class SettingsSteps
     [Then("I should see the AI Providers section")]
     public async Task ThenIShouldSeeTheAiProvidersSection()
     {
-        var section = Page.Locator("[data-testid='settings-ai-providers']");
-        (await section.IsVisibleAsync()).Should().BeTrue("AI Providers section should be visible");
+        await Page.WaitForSelectorAsync("[data-testid='settings-ai-providers']",
+            new PageWaitForSelectorOptions { Timeout = 10_000 });
     }
 
     [Then("I should see the Execution section")]
     public async Task ThenIShouldSeeTheExecutionSection()
     {
-        var section = Page.Locator("[data-testid='settings-execution']");
-        (await section.IsVisibleAsync()).Should().BeTrue("Execution section should be visible");
+        await Page.WaitForSelectorAsync("[data-testid='settings-execution']",
+            new PageWaitForSelectorOptions { Timeout = 10_000 });
     }
 
     [When("I set the Ollama URL to {string}")]
@@ -119,7 +119,7 @@ public sealed class SettingsSteps
     public async Task ThenTheSettingsShouldPersist()
     {
         // Reload and verify provider is still set
-        await Page.ReloadAsync(new PageReloadOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        await Page.ReloadAsync(new PageReloadOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='settings-default-provider']",
             new PageWaitForSelectorOptions { Timeout = 10_000 });
         var select = Page.Locator("[data-testid='settings-default-provider']");

@@ -1,3 +1,4 @@
+#if !NETSTANDARD2_0
 namespace WorkflowFramework.Triggers.Sources;
 
 /// <summary>
@@ -60,3 +61,5 @@ public sealed class ManualTriggerSource : ITriggerSource
         return default;
     }
 }
+
+#endif

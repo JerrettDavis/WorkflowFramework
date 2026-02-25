@@ -1,3 +1,4 @@
+#if !NETSTANDARD2_0
 namespace WorkflowFramework.Triggers;
 
 /// <summary>
@@ -11,3 +12,5 @@ public interface ITriggerSourceFactory
     /// <summary>Returns metadata about all registered trigger types.</summary>
     IReadOnlyList<TriggerTypeInfo> GetAvailableTypes();
 }
+
+#endif

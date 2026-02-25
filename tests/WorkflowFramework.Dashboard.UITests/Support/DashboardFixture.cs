@@ -37,8 +37,8 @@ public sealed class DashboardFixture : IAsyncDisposable
         // Brief delay for endpoints to stabilize
         await Task.Delay(2000);
 
-        WebBaseUrl = GetEndpointSafe("dashboard-web");
-        ApiBaseUrl = GetEndpointSafe("dashboard-api");
+        WebBaseUrl = GetEndpointSafe("dashboard-web").TrimEnd('/');
+        ApiBaseUrl = GetEndpointSafe("dashboard-api").TrimEnd('/');
     }
 
     private string GetEndpointSafe(string resourceName)

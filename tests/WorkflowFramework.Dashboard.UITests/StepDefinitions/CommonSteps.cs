@@ -23,26 +23,31 @@ public sealed class CommonSteps
     [Given("the dashboard is running")]
     public async Task GivenTheDashboardIsRunning()
     {
-        var response = await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        var response = await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         response.Should().NotBeNull();
         response!.Ok.Should().BeTrue();
+        // Wait for Blazor circuit to connect and render the toolbar
+        await Page.WaitForSelectorAsync("[data-testid='toolbar']",
+            new PageWaitForSelectorOptions { Timeout = 30_000 });
     }
 
     [When("I navigate to the designer")]
     public async Task WhenINavigateToTheDesigner()
     {
         // The designer is at the root — Home.razor renders WorkflowDesigner directly
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
-        // Wait for canvas to load
+        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
+        // Wait for Blazor circuit to connect and render canvas
         await Page.WaitForSelectorAsync("#workflow-canvas",
-            new PageWaitForSelectorOptions { Timeout = 15_000 });
+            new PageWaitForSelectorOptions { Timeout = 30_000 });
     }
 
     [When("I navigate to run history")]
     public async Task WhenINavigateToRunHistory()
     {
         // No separate run history page — output tab on the main designer shows run info
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle });
+        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
+        await Page.WaitForSelectorAsync("[data-testid='toolbar']",
+            new PageWaitForSelectorOptions { Timeout = 30_000 });
         await Page.Locator("[data-testid='tab-output']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='output-content']",
             new PageWaitForSelectorOptions { Timeout = 10_000 });

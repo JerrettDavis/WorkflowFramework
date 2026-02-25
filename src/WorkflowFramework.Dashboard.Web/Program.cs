@@ -7,6 +7,20 @@ builder.AddServiceDefaults();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// Configure SignalR/Blazor circuit options for test reliability
+builder.Services.AddSignalR(options =>
+{
+    options.MaximumReceiveMessageSize = 512 * 1024; // 512KB
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+});
+
+builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(options =>
+{
+    options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromSeconds(10);
+    options.DisconnectedCircuitMaxRetained = 10;
+});
+
 builder.Services.AddHttpClient<DashboardApiClient>(client =>
     client.BaseAddress = new Uri("https+http://dashboard-api"));
 

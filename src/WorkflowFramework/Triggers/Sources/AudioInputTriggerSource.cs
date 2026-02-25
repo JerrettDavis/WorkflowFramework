@@ -1,3 +1,4 @@
+#if !NETSTANDARD2_0
 namespace WorkflowFramework.Triggers.Sources;
 
 /// <summary>
@@ -130,3 +131,5 @@ public sealed class AudioInputTriggerSource : ITriggerSource
         }
     }
 }
+
+#endif

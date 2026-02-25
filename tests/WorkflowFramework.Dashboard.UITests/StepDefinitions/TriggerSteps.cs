@@ -120,19 +120,19 @@ public sealed class TriggerSteps
     [Then("the selector should contain file watcher trigger")]
     public async Task ThenTheSelectorShouldContainFileWatcherTrigger()
     {
-        await VerifyTriggerTypeOption("file_watcher");
+        await VerifyTriggerTypeOption("filewatch");
     }
 
     [Then("the selector should contain audio input trigger")]
     public async Task ThenTheSelectorShouldContainAudioInputTrigger()
     {
-        await VerifyTriggerTypeOption("audio_input");
+        await VerifyTriggerTypeOption("audio");
     }
 
     [Then("the selector should contain message queue trigger")]
     public async Task ThenTheSelectorShouldContainMessageQueueTrigger()
     {
-        await VerifyTriggerTypeOption("message_queue");
+        await VerifyTriggerTypeOption("queue");
     }
 
     [Then("the selector should contain manual trigger")]
