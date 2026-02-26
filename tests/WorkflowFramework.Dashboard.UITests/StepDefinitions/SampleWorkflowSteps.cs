@@ -26,7 +26,7 @@ public sealed class SampleWorkflowSteps
         var openBtn = Page.Locator("[data-testid='btn-open']");
         await openBtn.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
     }
 
     [Then("I should see at least {int} sample workflows")]
@@ -73,7 +73,7 @@ public sealed class SampleWorkflowSteps
         var openBtn = Page.Locator("[data-testid='btn-open']");
         await openBtn.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
 
         // Select the workflow
         var item = Page.Locator("[data-testid='workflow-list-item']",

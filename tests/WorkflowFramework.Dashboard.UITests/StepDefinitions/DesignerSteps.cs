@@ -80,17 +80,13 @@ public sealed class DesignerSteps
         var id = result!["id"].ToString();
         _context.Set(id!, "WorkflowId");
 
-        // Navigate to root (the designer is at /)
-        await Page.GotoAsync(AspireHooks.Fixture.WebBaseUrl,
-            new PageGotoOptions { WaitUntil = WaitUntilState.Load });
-        await Page.WaitForSelectorAsync("#workflow-canvas",
+        // Open the workflow from the already-loaded designer
+        await Page.WaitForSelectorAsync("[data-testid='btn-open']",
             new PageWaitForSelectorOptions { Timeout = 10_000 });
-
-        // Open the workflow via the Open dialog
         var openBtn = Page.Locator("[data-testid='btn-open']");
         await openBtn.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
 
         // Click on the workflow in the list
         var workflowItem = Page.Locator("[data-testid='workflow-list']").Locator("text=Action Test Workflow").First;

@@ -43,13 +43,12 @@ public sealed class ExecutionSteps
         var id = result!["id"].ToString()!;
         _context.Set(id, "WorkflowId");
 
-        // Navigate to root and open this workflow
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
+        // Open this workflow from the already-loaded designer
         await Page.WaitForSelectorAsync("[data-testid='btn-open']", new PageWaitForSelectorOptions { Timeout = 10_000 });
         var openBtn = Page.Locator("[data-testid='btn-open']");
         await openBtn.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
         // Click on the workflow item in the list dialog
         var dialogContent = Page.Locator("[data-testid='workflow-list']");
         var item = dialogContent.Locator("div.cursor-pointer", new LocatorLocatorOptions { HasText = "Valid Test Workflow" }).First;

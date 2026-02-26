@@ -34,9 +34,7 @@ public sealed class CommonSteps
     [When("I navigate to the designer")]
     public async Task WhenINavigateToTheDesigner()
     {
-        // The designer is at the root — Home.razor renders WorkflowDesigner directly
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
-        // Wait for Blazor circuit to connect and render canvas
+        await EnsureOnDesignerAsync();
         await Page.WaitForSelectorAsync("#workflow-canvas",
             new PageWaitForSelectorOptions { Timeout = 30_000 });
     }
@@ -44,13 +42,25 @@ public sealed class CommonSteps
     [When("I navigate to run history")]
     public async Task WhenINavigateToRunHistory()
     {
-        // No separate run history page — output tab on the main designer shows run info
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
-        await Page.WaitForSelectorAsync("[data-testid='toolbar']",
-            new PageWaitForSelectorOptions { Timeout = 30_000 });
+        await EnsureOnDesignerAsync();
         await Page.Locator("[data-testid='tab-output']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='output-content']",
             new PageWaitForSelectorOptions { Timeout = 10_000 });
+    }
+
+    /// <summary>
+    /// Ensures the page is on the designer (root). Only navigates if not already there.
+    /// This avoids creating redundant Blazor circuits.
+    /// </summary>
+    private async Task EnsureOnDesignerAsync()
+    {
+        var toolbar = Page.Locator("[data-testid='toolbar']");
+        if (await toolbar.IsVisibleAsync())
+            return; // Already on the designer
+
+        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
+        await Page.WaitForSelectorAsync("[data-testid='toolbar']",
+            new PageWaitForSelectorOptions { Timeout = 30_000 });
     }
 
     /// <summary>

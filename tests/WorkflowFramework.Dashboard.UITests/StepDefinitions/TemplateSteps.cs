@@ -21,7 +21,6 @@ public sealed class TemplateSteps
     [When("I open the template browser")]
     public async Task WhenIOpenTheTemplateBrowser()
     {
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='btn-templates']", new PageWaitForSelectorOptions { Timeout = 10_000 });
         var templateBtn = Page.Locator("[data-testid='btn-templates']");
         await templateBtn.ClickAsync();

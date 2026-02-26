@@ -21,7 +21,6 @@ public sealed class ValidationSteps
     [Given("I have an empty workflow")]
     public async Task GivenIHaveAnEmptyWorkflow()
     {
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='btn-new']", new PageWaitForSelectorOptions { Timeout = 10_000 });
         var newBtn = Page.Locator("[data-testid='btn-new']");
         await newBtn.ClickAsync();

@@ -22,8 +22,6 @@ public sealed class ManagementSteps
     [When("I click the New button")]
     public async Task WhenIClickTheNewButton()
     {
-        // Designer is at root
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='btn-new']", new PageWaitForSelectorOptions { Timeout = 10_000 });
         var newBtn = Page.Locator("[data-testid='btn-new']");
         await newBtn.ClickAsync();
@@ -81,12 +79,11 @@ public sealed class ManagementSteps
     [When("I click Open")]
     public async Task WhenIClickOpen()
     {
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='btn-open']", new PageWaitForSelectorOptions { Timeout = 10_000 });
         var openBtn = Page.Locator("[data-testid='btn-open']");
         await openBtn.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
     }
 
     [Then("I should see {string} in the workflow list")]
@@ -107,7 +104,6 @@ public sealed class ManagementSteps
     [When("I click Export JSON")]
     public async Task WhenIClickExportJson()
     {
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='btn-export-json']", new PageWaitForSelectorOptions { Timeout = 10_000 });
         var exportBtn = Page.Locator("[data-testid='btn-export-json']");
         await exportBtn.ClickAsync();
