@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <IsPackable>false</IsPackable>
     <TargetFramework>net10.0</TargetFramework>
     <TargetFrameworks>net10.0</TargetFrameworks>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
@@ -17,3 +18,4 @@
   </ItemGroup>
 
 </Project>
+

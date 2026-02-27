@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <IsPackable>false</IsPackable>
     <TargetFramework>net10.0</TargetFramework>
     <TargetFrameworks>net10.0</TargetFrameworks>
     <IsAspireSharedProject>true</IsAspireSharedProject>  </PropertyGroup>
@@ -20,3 +21,4 @@
   </ItemGroup>
 
 </Project>
+
