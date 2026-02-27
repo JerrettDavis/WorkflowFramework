@@ -33,14 +33,14 @@ public sealed class NavigationSteps
         var url = Page.Url;
         url.Should().Contain("/settings", "URL should be the settings page");
         var settingsPage = Page.Locator("[data-testid='settings-page']");
-        (await settingsPage.IsVisibleAsync()).Should().BeTrue("Settings page should be visible");
+        await settingsPage.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("I should be on the designer page")]
     public async Task ThenIShouldBeOnTheDesignerPage()
     {
         var canvas = Page.Locator("#workflow-canvas");
-        (await canvas.IsVisibleAsync()).Should().BeTrue("Canvas should be visible on designer page");
+        await canvas.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [When("I click the back arrow")]
@@ -52,3 +52,4 @@ public sealed class NavigationSteps
             new PageWaitForSelectorOptions { Timeout = 10_000 });
     }
 }
+

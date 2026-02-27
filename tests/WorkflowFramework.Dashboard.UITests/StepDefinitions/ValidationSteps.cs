@@ -43,7 +43,7 @@ public sealed class ValidationSteps
         await tab.ClickAsync();
         await Page.WaitForTimeoutAsync(500);
         var content = Page.Locator("[data-testid='validation-content']");
-        (await content.IsVisibleAsync()).Should().BeTrue("Validation content should be visible");
+        await content.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("the toolbar should show an error badge")]
@@ -82,3 +82,4 @@ public sealed class ValidationSteps
         await ThenIShouldSeeValidationErrors();
     }
 }
+

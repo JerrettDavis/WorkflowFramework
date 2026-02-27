@@ -110,32 +110,29 @@ public sealed class SampleWorkflowSteps
     [When("I click on a node of type {string}")]
     public async Task WhenIClickOnANodeOfType(string stepType)
     {
-        // Use JS to find and select the node by type
-        await Page.EvaluateAsync(@"(type) => {
-            const nodes = window.workflowEditor?.getNodes?.() ?? [];
-            const node = nodes.find(n => n.data?.type === type || n.type === type);
-            if (node) window.workflowEditor?.selectNode?.(node.id);
-        }", stepType);
-        await Page.WaitForTimeoutAsync(500);
+        // Wait for nodes to render on the canvas
+        await Page.Locator(".react-flow__node").First
+            .WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
 
-        // Fallback: click the first node that matches
         var nodes = Page.Locator(".react-flow__node");
         var count = await nodes.CountAsync();
+
+        // Try to find a node matching the step type label
+        for (var i = 0; i < count; i++)
+        {
+            var node = nodes.Nth(i);
+            var text = await node.TextContentAsync();
+            if (text?.Contains(stepType, StringComparison.OrdinalIgnoreCase) == true)
+            {
+                await node.ClickAsync();
+                await Page.WaitForTimeoutAsync(500);
+                return;
+            }
+        }
+
+        // Fallback: click first node
         if (count > 0)
         {
-            // Try to find by type label
-            for (var i = 0; i < count; i++)
-            {
-                var node = nodes.Nth(i);
-                var text = await node.TextContentAsync();
-                if (text?.Contains(stepType, StringComparison.OrdinalIgnoreCase) == true)
-                {
-                    await node.ClickAsync();
-                    await Page.WaitForTimeoutAsync(500);
-                    return;
-                }
-            }
-            // Fallback: click first node
             await nodes.First.ClickAsync();
             await Page.WaitForTimeoutAsync(500);
         }
@@ -145,7 +142,7 @@ public sealed class SampleWorkflowSteps
     public async Task ThenThePropertiesPanelShouldShowConfiguration(string configLabel)
     {
         var panel = Page.Locator("[data-testid='properties-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Properties panel should be visible");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var text = await panel.TextContentAsync();
         text.Should().NotBeNullOrEmpty("Properties panel should have content");
     }
@@ -175,3 +172,4 @@ public sealed class SampleWorkflowSteps
         await WhenIOpenTheSampleWorkflow("Order Processing Pipeline");
     }
 }
+

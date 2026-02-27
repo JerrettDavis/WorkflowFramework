@@ -17,8 +17,8 @@ builder.Services.AddSignalR(options =>
 
 builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(options =>
 {
-    options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromSeconds(10);
-    options.DisconnectedCircuitMaxRetained = 10;
+    options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromSeconds(2);
+    options.DisconnectedCircuitMaxRetained = 5;
 });
 
 builder.Services.AddHttpClient<DashboardApiClient>(client =>

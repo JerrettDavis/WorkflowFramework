@@ -82,7 +82,7 @@ public sealed class PropertiesPanelSteps
     public async Task ThenThePropertiesPanelShouldShowField(string fieldLabel)
     {
         var panel = Page.Locator("[data-testid='properties-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Properties panel should be visible");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var text = await panel.TextContentAsync();
         // The panel should have configuration content
         text.Should().NotBeNullOrEmpty("Properties panel should display step configuration");
@@ -276,3 +276,4 @@ public sealed class PropertiesPanelSteps
         value.Should().NotBeNullOrEmpty("Notes should contain text after editing");
     }
 }
+

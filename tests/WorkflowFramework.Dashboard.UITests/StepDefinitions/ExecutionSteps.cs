@@ -89,14 +89,14 @@ public sealed class ExecutionSteps
         await tab.ClickAsync();
         await Page.WaitForTimeoutAsync(500);
         var content = Page.Locator("[data-testid='output-content']");
-        (await content.IsVisibleAsync()).Should().BeTrue("Output panel should be visible");
+        await content.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("the execution panel should show {string}")]
     public async Task ThenTheExecutionPanelShouldShow(string expectedText)
     {
         var panel = Page.Locator("[data-testid='output-content']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Execution panel should be visible");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         // The panel shows run status via text content
         await Page.WaitForTimeoutAsync(1000);
         var text = await panel.TextContentAsync();
@@ -112,7 +112,7 @@ public sealed class ExecutionSteps
         var tab = Page.Locator("[data-testid='tab-output']");
         await tab.ClickAsync();
         var content = Page.Locator("[data-testid='output-content']");
-        (await content.IsVisibleAsync()).Should().BeTrue("Output panel should show progress");
+        await content.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("the run should complete with status {string}")]
@@ -336,7 +336,8 @@ public sealed class ExecutionSteps
     {
         // Execution panel on main page shows run output
         var panel = Page.Locator("[data-testid='output-content']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Execution panel should be visible");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 }
+
 

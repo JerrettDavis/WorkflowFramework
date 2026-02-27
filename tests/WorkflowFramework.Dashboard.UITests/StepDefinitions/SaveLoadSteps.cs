@@ -145,7 +145,7 @@ public sealed class SaveLoadSteps
     public async Task ThenTheUrlShouldMatchTheOriginalConfiguration()
     {
         var panel = Page.Locator("[data-testid='properties-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Properties panel should show config");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("the method should match the original configuration")]
@@ -176,7 +176,7 @@ public sealed class SaveLoadSteps
     public async Task ThenTheProviderShouldBeSet()
     {
         var panel = Page.Locator("[data-testid='properties-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Properties panel should be visible with provider config");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Given("I have a saved workflow {string}")]
@@ -241,4 +241,5 @@ public sealed class SaveLoadSteps
         text.Should().Contain(expectedName, $"Workflow list should contain '{expectedName}'");
     }
 }
+
 

@@ -65,16 +65,16 @@ public sealed class StepListSteps
         // After clicking a step in the list, the canvas should focus on it
         // We verify the canvas still has nodes and is visible
         var canvas = Page.Locator("#workflow-canvas");
-        (await canvas.IsVisibleAsync()).Should().BeTrue("Canvas should be visible");
+        await canvas.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("the properties panel should show that step's config")]
     public async Task ThenThePropertiesPanelShouldShowThatStepsConfig()
     {
         var panel = Page.Locator("[data-testid='properties-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Properties panel should be visible");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var header = Page.Locator("[data-testid='properties-header']");
-        (await header.IsVisibleAsync()).Should().BeTrue("Properties header should show step info");
+        await header.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [When("I drag a step from the palette to the canvas")]
@@ -130,7 +130,8 @@ public sealed class StepListSteps
         }
         // Verify the step list panel itself is visible (not the item count)
         var panel = Page.Locator("[data-testid='step-list-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Step list panel should be visible");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 }
+
 

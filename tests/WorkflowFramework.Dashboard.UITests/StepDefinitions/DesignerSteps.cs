@@ -23,21 +23,21 @@ public sealed class DesignerSteps
     public async Task ThenIShouldSeeTheStepPaletteOnTheLeft()
     {
         var palette = Page.Locator("[data-testid='step-palette']");
-        (await palette.IsVisibleAsync()).Should().BeTrue("Step palette should be visible");
+        await palette.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("I should see an empty canvas")]
     public async Task ThenIShouldSeeAnEmptyCanvas()
     {
         var canvas = Page.Locator("#workflow-canvas");
-        (await canvas.IsVisibleAsync()).Should().BeTrue("Canvas should be visible");
+        await canvas.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("I should see the properties panel on the right")]
     public async Task ThenIShouldSeeThePropertiesPanelOnTheRight()
     {
         var panel = Page.Locator("[data-testid='properties-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Properties panel should be visible");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [When("I type {string} in the step search")]
@@ -111,18 +111,19 @@ public sealed class DesignerSteps
     public async Task ThenThePropertiesPanelShouldShowTheStepConfiguration()
     {
         var panel = Page.Locator("[data-testid='properties-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Properties panel should be visible with step config");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("the toolbar should show save, run, validate, and settings buttons")]
     public async Task ThenTheToolbarShouldShowButtons()
     {
         var toolbar = Page.Locator("[data-testid='toolbar']");
-        (await toolbar.IsVisibleAsync()).Should().BeTrue("Toolbar should be visible");
+        await toolbar.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
 
         // Verify key buttons exist
-        (await Page.Locator("[data-testid='btn-save']").IsVisibleAsync()).Should().BeTrue("Save button should be visible");
-        (await Page.Locator("[data-testid='btn-run']").IsVisibleAsync()).Should().BeTrue("Run button should be visible");
-        (await Page.Locator("[data-testid='btn-validate']").IsVisibleAsync()).Should().BeTrue("Validate button should be visible");
+        await (Page.Locator("[data-testid='btn-save']")).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        await (Page.Locator("[data-testid='btn-run']")).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        await (Page.Locator("[data-testid='btn-validate']")).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 }
+

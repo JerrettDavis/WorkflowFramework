@@ -26,7 +26,7 @@ public sealed class ImportExportSteps
     public async Task ThenIShouldSeeTheImportButtonInTheToolbar()
     {
         var importBtn = Page.Locator("[data-testid='btn-import']");
-        (await importBtn.IsVisibleAsync()).Should().BeTrue("Import button should be visible in toolbar");
+        await importBtn.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [When("I export the workflow via API")]
@@ -129,3 +129,4 @@ public sealed class ImportExportSteps
         importedSteps.Should().Be(originalSteps, "Imported workflow should have same number of steps");
     }
 }
+

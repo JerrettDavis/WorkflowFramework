@@ -32,7 +32,7 @@ public sealed class ManagementSteps
     public async Task ThenIShouldSeeAFreshEmptyCanvas()
     {
         var canvas = Page.Locator("#workflow-canvas");
-        (await canvas.IsVisibleAsync()).Should().BeTrue();
+        await canvas.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("the workflow name should be {string}")]
@@ -118,3 +118,4 @@ public sealed class ManagementSteps
         true.Should().BeTrue("Export action was performed");
     }
 }
+

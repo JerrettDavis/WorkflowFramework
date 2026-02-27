@@ -66,7 +66,8 @@ public sealed class TemplateSteps
     public async Task ThenANewWorkflowShouldBeCreatedWithTemplateSteps()
     {
         var canvas = Page.Locator("#workflow-canvas");
-        (await canvas.IsVisibleAsync()).Should().BeTrue("Should be on designer after using template");
+        await canvas.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 }
+
 

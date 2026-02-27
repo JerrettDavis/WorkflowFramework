@@ -76,8 +76,8 @@ public sealed class TriggerSteps
     [Then("I should see the trigger panel")]
     public async Task ThenIShouldSeeTheTriggerPanel()
     {
-        var panel = Page.Locator("[data-testid='trigger-panel']");
-        (await panel.IsVisibleAsync()).Should().BeTrue("Trigger panel should be visible");
+        await Page.WaitForSelectorAsync("[data-testid='trigger-panel']",
+            new PageWaitForSelectorOptions { Timeout = 10_000 });
     }
 
     [Then("the trigger panel should show an empty state")]
@@ -101,8 +101,8 @@ public sealed class TriggerSteps
     [Then("I should see the trigger type selector")]
     public async Task ThenIShouldSeeTheTriggerTypeSelector()
     {
-        var selector = Page.Locator("[data-testid='trigger-type-select']");
-        (await selector.IsVisibleAsync()).Should().BeTrue("Trigger type selector should be visible");
+        await Page.WaitForSelectorAsync("[data-testid='trigger-type-select']",
+            new PageWaitForSelectorOptions { Timeout = 10_000 });
     }
 
     [Then("the selector should contain schedule trigger")]

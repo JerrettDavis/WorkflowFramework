@@ -40,7 +40,7 @@ public sealed class SettingsSteps
     public async Task ThenIShouldSeeTheSettingsPage()
     {
         var settingsPage = Page.Locator("[data-testid='settings-page']");
-        (await settingsPage.IsVisibleAsync()).Should().BeTrue("Settings page should be visible");
+        await settingsPage.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
     [Then("I should see the AI Providers section")]
@@ -141,7 +141,8 @@ public sealed class SettingsSteps
     {
         var result = Page.Locator("[data-testid='settings-test-result']");
         await result.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
-        (await result.IsVisibleAsync()).Should().BeTrue("Connection test result should be visible");
+        await result.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 }
+
 
