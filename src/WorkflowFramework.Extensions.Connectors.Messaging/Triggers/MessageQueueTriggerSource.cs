@@ -1,3 +1,4 @@
+#if !NETSTANDARD2_0
 using WorkflowFramework.Extensions.Connectors.Abstractions;
 using WorkflowFramework.Triggers;
 
@@ -89,3 +90,5 @@ public sealed class MessageQueueTriggerSource : ITriggerSource
         }
     }
 }
+
+#endif

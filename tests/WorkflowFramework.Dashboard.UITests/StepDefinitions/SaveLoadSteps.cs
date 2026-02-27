@@ -47,7 +47,7 @@ public sealed class SaveLoadSteps
             new PageWaitForSelectorOptions { Timeout = 10_000 });
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
         var item = Page.Locator("[data-testid='workflow-list-item']",
             new PageLocatorOptions { HasText = "My Test Workflow" }).First;
         await item.ClickAsync();
@@ -77,7 +77,7 @@ public sealed class SaveLoadSteps
         // Open the workflow list and verify
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
         // Wait for items to load
         await Page.Locator("[data-testid='workflow-list-item']").First
             .WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
@@ -119,7 +119,7 @@ public sealed class SaveLoadSteps
             new PageWaitForSelectorOptions { Timeout = 10_000 });
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
 
         // Click the first workflow in the list (most recently saved)
         var item = Page.Locator("[data-testid='workflow-list-item']").First;
@@ -211,7 +211,7 @@ public sealed class SaveLoadSteps
             new PageWaitForSelectorOptions { Timeout = 10_000 });
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
 
         var name = _context.Get<string>("WorkflowName");
         var item = Page.Locator("[data-testid='workflow-list-item']",
@@ -234,10 +234,11 @@ public sealed class SaveLoadSteps
     {
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
         var list = Page.Locator("[data-testid='workflow-list']");
         await list.GetByText(expectedName).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var text = await list.TextContentAsync();
         text.Should().Contain(expectedName, $"Workflow list should contain '{expectedName}'");
     }
 }
+

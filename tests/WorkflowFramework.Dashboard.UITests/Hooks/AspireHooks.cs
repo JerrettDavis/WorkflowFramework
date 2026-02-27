@@ -14,6 +14,15 @@ public sealed class AspireHooks
     [BeforeTestRun]
     public static async Task StartAspire()
     {
+        // Delete stale SQLite DB to prevent test pollution from previous runs
+        var dbPath = Path.Combine(
+            Directory.GetCurrentDirectory(), "..", "..", "..", "..", "..",
+            "src", "WorkflowFramework.Dashboard.Api", "dashboard.db");
+        foreach (var file in Directory.GetFiles(Path.GetDirectoryName(dbPath)!, "dashboard.db*"))
+        {
+            try { File.Delete(file); } catch { /* may be locked */ }
+        }
+
         _fixture = new DashboardFixture();
         await _fixture.StartAsync();
     }

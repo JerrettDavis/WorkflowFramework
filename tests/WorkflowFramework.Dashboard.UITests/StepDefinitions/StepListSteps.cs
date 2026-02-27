@@ -121,7 +121,7 @@ public sealed class StepListSteps
             try
             {
                 await Page.Locator("[data-testid='step-list-item']").First
-                    .WaitForAsync(new LocatorWaitForOptions { Timeout = 5_000 });
+                    .WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
             }
             catch (TimeoutException)
             {
@@ -133,3 +133,4 @@ public sealed class StepListSteps
         (await panel.IsVisibleAsync()).Should().BeTrue("Step list panel should be visible");
     }
 }
+

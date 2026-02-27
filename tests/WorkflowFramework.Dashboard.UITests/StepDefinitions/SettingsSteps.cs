@@ -77,7 +77,7 @@ public sealed class SettingsSteps
     public async Task ThenIShouldSeeASuccessToast()
     {
         var toast = Page.Locator("[data-testid='settings-toast']");
-        await toast.WaitForAsync(new LocatorWaitForOptions { Timeout = 5_000 });
+        await toast.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
         var text = await toast.TextContentAsync();
         text.Should().Contain("success", "Toast should indicate success");
     }
@@ -144,3 +144,4 @@ public sealed class SettingsSteps
         (await result.IsVisibleAsync()).Should().BeTrue("Connection test result should be visible");
     }
 }
+

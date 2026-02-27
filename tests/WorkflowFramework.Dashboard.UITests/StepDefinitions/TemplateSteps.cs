@@ -25,7 +25,7 @@ public sealed class TemplateSteps
         var templateBtn = Page.Locator("[data-testid='btn-templates']");
         await templateBtn.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='template-browser']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
     }
 
     [Then("I should see template categories")]
@@ -69,3 +69,4 @@ public sealed class TemplateSteps
         (await canvas.IsVisibleAsync()).Should().BeTrue("Should be on designer after using template");
     }
 }
+

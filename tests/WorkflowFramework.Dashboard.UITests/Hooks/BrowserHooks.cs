@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using Microsoft.Playwright;
 using Reqnroll;
 using WorkflowFramework.Dashboard.UITests.Support;
@@ -38,20 +39,28 @@ public sealed class BrowserHooks
     {
         if (_scenarioContext.TryGetValue<IPage>(out var page))
         {
-            // Explicitly stop the Blazor circuit via JS before closing
-            try
-            {
-                await page.EvaluateAsync(@"() => {
-                    if (window.Blazor) {
-                        try { window.Blazor.disconnect && window.Blazor.disconnect(); } catch {}
-                    }
-                }");
-            }
-            catch { /* page may already be navigated away */ }
-
             var context = page.Context;
             await page.CloseAsync();
             await context.CloseAsync();
+            // Let the server process the WebSocket close and free the circuit
+            await Task.Delay(1000);
+        }
+    }
+
+    /// <summary>
+    /// Clean up test-created workflows to prevent test pollution.
+    /// </summary>
+    [AfterScenario(Order = 19000)]
+    public async Task CleanupTestWorkflows()
+    {
+        if (_scenarioContext.TryGetValue<string>("WorkflowId", out var id))
+        {
+            try
+            {
+                using var client = AspireHooks.Fixture.CreateApiClient();
+                await client.DeleteAsync($"/api/workflows/{id}");
+            }
+            catch { /* best effort cleanup */ }
         }
     }
 

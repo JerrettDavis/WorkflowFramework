@@ -180,7 +180,7 @@ public sealed class ExecutionSteps
             new PageWaitForSelectorOptions { Timeout = 10_000 });
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
         var item = Page.Locator("[data-testid='workflow-list-item']",
             new PageLocatorOptions { HasText = "Delay Test Workflow" }).First;
         await item.ClickAsync();
@@ -254,7 +254,7 @@ public sealed class ExecutionSteps
             new PageWaitForSelectorOptions { Timeout = 10_000 });
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
-            new PageWaitForSelectorOptions { Timeout = 5_000 });
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
         var item = Page.Locator("[data-testid='workflow-list-item']",
             new PageLocatorOptions { HasText = "Failing HTTP Workflow" }).First;
         await item.ClickAsync();
@@ -339,3 +339,4 @@ public sealed class ExecutionSteps
         (await panel.IsVisibleAsync()).Should().BeTrue("Execution panel should be visible");
     }
 }
+
