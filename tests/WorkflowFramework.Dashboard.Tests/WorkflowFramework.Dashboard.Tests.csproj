@@ -6,6 +6,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\WorkflowFramework.Dashboard\WorkflowFramework.Dashboard.csproj" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <ProjectReference Include="..\..\src\WorkflowFramework.Dashboard.Web\WorkflowFramework.Dashboard.Web.csproj" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
