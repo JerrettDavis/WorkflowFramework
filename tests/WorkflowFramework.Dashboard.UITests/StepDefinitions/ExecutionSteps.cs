@@ -97,22 +97,59 @@ public sealed class ExecutionSteps
     {
         var panel = Page.Locator("[data-testid='output-content']");
         await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
-        // The panel shows run status via text content
-        await Page.WaitForTimeoutAsync(1000);
-        var text = await panel.TextContentAsync();
-        text.Should().NotBeNullOrEmpty("Execution panel should have content");
+
+        var statusBadge = Page.Locator("[data-testid='run-status-badge']");
+        var matched = false;
+        for (var i = 0; i < 15; i++)
+        {
+            var statusText = await statusBadge.TextContentAsync() ?? "";
+            if (statusText.Contains(expectedText, StringComparison.OrdinalIgnoreCase))
+            {
+                matched = true;
+                break;
+            }
+
+            // Fast workflows can move past Running before the assertion executes.
+            if (expectedText.Equals("Running", StringComparison.OrdinalIgnoreCase) &&
+                (statusText.Contains("Completed", StringComparison.OrdinalIgnoreCase) ||
+                 statusText.Contains("Failed", StringComparison.OrdinalIgnoreCase)))
+            {
+                matched = true;
+                break;
+            }
+
+            await Page.WaitForTimeoutAsync(500);
+        }
+
+        matched.Should().BeTrue($"Execution panel status should show '{expectedText}' (or later terminal state for fast runs).");
     }
 
     [Then("I should see step status updates")]
     [Then("I should see step progress updates")]
     public async Task ThenIShouldSeeStepStatusUpdates()
     {
-        // Wait for execution output to appear in the output tab
-        await Page.WaitForTimeoutAsync(3000);
         var tab = Page.Locator("[data-testid='tab-output']");
         await tab.ClickAsync();
-        var content = Page.Locator("[data-testid='output-content']");
-        await content.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        var panel = Page.Locator("[data-testid='output-content']");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+
+        int knownSteps = 0;
+        for (var i = 0; i < 20; i++)
+        {
+            var raw = (await Page.Locator("[data-testid='run-metric-known']").TextContentAsync())?.Trim();
+            if (int.TryParse(raw, out knownSteps) && knownSteps > 0)
+                break;
+            await Page.WaitForTimeoutAsync(500);
+        }
+        knownSteps.Should().BeGreaterThan(0, "Known step count should be populated from the workflow canvas.");
+
+        var narrative = Page.Locator("[data-testid='run-narrative']");
+        await narrative.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        (await narrative.TextContentAsync()).Should().NotBeNullOrWhiteSpace("Execution narrative should explain run progress.");
+
+        var timelineRows = Page.Locator("[data-testid='run-event-row']");
+        await timelineRows.First.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        (await timelineRows.CountAsync()).Should().BeGreaterThan(0, "Execution timeline should capture progress events.");
     }
 
     [Then("the run should complete with status {string}")]
@@ -145,6 +182,9 @@ public sealed class ExecutionSteps
                 return;
             await Page.WaitForTimeoutAsync(1000);
         }
+
+        var finalText = await panel.TextContentAsync() ?? "";
+        finalText.Should().Contain(stepName, $"Expected completed step '{stepName}' in output feed.");
     }
 
     [Given("I have a workflow with a Delay step of {int}ms")]
@@ -165,7 +205,8 @@ public sealed class ExecutionSteps
                         id = "delay1",
                         type = "Delay",
                         name = "Long Delay",
-                        delaySeconds = Math.Max(1, delayMs / 1000)
+                        delaySeconds = Math.Max(1, delayMs / 1000),
+                        config = new Dictionary<string, string> { ["durationMs"] = delayMs.ToString() }
                     }
                 }
             }
@@ -200,22 +241,29 @@ public sealed class ExecutionSteps
     [When("I cancel the run")]
     public async Task WhenICancelTheRun()
     {
-        // Look for a cancel/stop button in the execution panel or toolbar
-        var cancelBtn = Page.Locator("button:has-text('Cancel'), button:has-text('Stop')").First;
-        if (await cancelBtn.IsVisibleAsync())
-        {
-            await cancelBtn.ClickAsync();
-            await Page.WaitForTimeoutAsync(1000);
-        }
+        var outputTab = Page.Locator("[data-testid='tab-output']");
+        await outputTab.ClickAsync();
+
+        var cancelBtn = Page.Locator("[data-testid='btn-cancel-run']");
+        await cancelBtn.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        await cancelBtn.ClickAsync();
+        await Page.WaitForTimeoutAsync(1000);
     }
 
     [Then("the run should show status {string}")]
     public async Task ThenTheRunShouldShowStatus(string status)
     {
-        var panel = Page.Locator("[data-testid='output-content']");
-        await Page.WaitForTimeoutAsync(2000);
-        var text = await panel.TextContentAsync() ?? "";
-        // Status may or may not show depending on how quickly cancel processes
+        var statusBadge = Page.Locator("[data-testid='run-status-badge']");
+        for (var i = 0; i < 30; i++)
+        {
+            var text = await statusBadge.TextContentAsync() ?? "";
+            if (text.Contains(status, StringComparison.OrdinalIgnoreCase))
+                return;
+            await Page.WaitForTimeoutAsync(1000);
+        }
+
+        var final = await statusBadge.TextContentAsync() ?? "";
+        final.Should().Contain(status, $"Run should reach status '{status}'.");
     }
 
     [Given("I have a workflow with an HttpStep pointing to an invalid URL")]
@@ -276,6 +324,9 @@ public sealed class ExecutionSteps
                 return;
             await Page.WaitForTimeoutAsync(1000);
         }
+
+        var finalText = await panel.TextContentAsync() ?? "";
+        finalText.Should().MatchRegex("(?i)(fail|error)", "Output panel should show failure diagnostics.");
     }
 
     [When("the run completes")]

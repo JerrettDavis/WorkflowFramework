@@ -253,6 +253,20 @@
         const nextIdRef = useRef(1);
         const dotNetRefRef = useRef(dotNetRef);
 
+        const invokeDotNet = useCallback((method, ...args) => {
+            const ref = dotNetRefRef.current;
+            if (!ref) return;
+
+            try {
+                const pending = ref.invokeMethodAsync(method, ...args);
+                if (pending && typeof pending.catch === 'function') {
+                    pending.catch(() => { });
+                }
+            } catch {
+                // Best-effort interop only.
+            }
+        }, []);
+
         // Expose instance for external API
         useEffect(() => {
             _editorInstance = {
@@ -283,11 +297,9 @@
         const notifyCanvasChanged = useCallback(() => {
             if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
             debounceTimerRef.current = setTimeout(() => {
-                if (dotNetRefRef.current) {
-                    try { dotNetRefRef.current.invokeMethodAsync('OnCanvasChanged'); } catch (e) { }
-                }
+                invokeDotNet('OnCanvasChanged');
             }, DEBOUNCE_MS);
-        }, []);
+        }, [invokeDotNet]);
 
         // Push history on meaningful changes
         const pushHistory = useCallback((n, e) => {
@@ -313,40 +325,30 @@
                 setTimeout(() => pushHistory(nodes, updated), 0);
                 return updated;
             });
-            if (dotNetRefRef.current) {
-                try { dotNetRefRef.current.invokeMethodAsync('OnEdgeCreated', connection.source, connection.target, connection.sourceHandle || 'output'); } catch (e) { }
-            }
-        }, [setEdges, pushHistory, nodes]);
+            invokeDotNet('OnEdgeCreated', connection.source, connection.target, connection.sourceHandle || 'output');
+        }, [setEdges, pushHistory, nodes, invokeDotNet]);
 
         const onEdgesDelete = useCallback((deletedEdges) => {
             deletedEdges.forEach(e => {
-                if (dotNetRefRef.current) {
-                    try { dotNetRefRef.current.invokeMethodAsync('OnEdgeRemoved', e.id); } catch (ex) { }
-                }
+                invokeDotNet('OnEdgeRemoved', e.id);
             });
             notifyCanvasChanged();
-        }, [notifyCanvasChanged]);
+        }, [notifyCanvasChanged, invokeDotNet]);
 
         const onNodesDelete = useCallback((deletedNodes) => {
             deletedNodes.forEach(n => {
-                if (dotNetRefRef.current) {
-                    try { dotNetRefRef.current.invokeMethodAsync('OnNodeRemoved', n.id); } catch (ex) { }
-                }
+                invokeDotNet('OnNodeRemoved', n.id);
             });
             notifyCanvasChanged();
-        }, [notifyCanvasChanged]);
+        }, [notifyCanvasChanged, invokeDotNet]);
 
         const onNodeClick = useCallback((event, node) => {
-            if (dotNetRefRef.current) {
-                try { dotNetRefRef.current.invokeMethodAsync('OnNodeSelected', node.id, node.data?.type || null, node.data?.config || null); } catch (e) { }
-            }
-        }, []);
+            invokeDotNet('OnNodeSelected', node.id, node.data?.type || null, node.data?.config || null);
+        }, [invokeDotNet]);
 
         const onPaneClick = useCallback(() => {
-            if (dotNetRefRef.current) {
-                try { dotNetRefRef.current.invokeMethodAsync('OnNodeSelected', null, null, null); } catch (e) { }
-            }
-        }, []);
+            invokeDotNet('OnNodeSelected', null, null, null);
+        }, [invokeDotNet]);
 
         const onNodeDragStop = useCallback(() => {
             notifyCanvasChanged();
@@ -355,9 +357,9 @@
         // Selection change
         const onSelectionChange = useCallback(({ nodes: selNodes }) => {
             if (dotNetRefRef.current && selNodes) {
-                try { dotNetRefRef.current.invokeMethodAsync('OnSelectionChanged', selNodes.map(n => n.id)); } catch (e) { }
+                invokeDotNet('OnSelectionChanged', selNodes.map(n => n.id));
             }
-        }, []);
+        }, [invokeDotNet]);
 
         useOnSelectionChange({ onChange: onSelectionChange });
 
@@ -402,10 +404,8 @@
                 return updated;
             });
 
-            if (dotNetRefRef.current) {
-                try { dotNetRefRef.current.invokeMethodAsync('OnNodeAdded', id, stepType, position.x, position.y); } catch (e) { }
-            }
-        }, [reactFlowInstance, setNodes, pushHistory, edges]);
+            invokeDotNet('OnNodeAdded', id, stepType, position.x, position.y);
+        }, [reactFlowInstance, setNodes, pushHistory, edges, invokeDotNet]);
 
         // Keyboard shortcuts
         useEffect(() => {

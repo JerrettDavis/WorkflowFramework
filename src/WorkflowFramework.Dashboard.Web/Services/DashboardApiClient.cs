@@ -1,5 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net;
+using System.Text.Json;
 using WorkflowFramework.Dashboard.Web.Models;
 
 namespace WorkflowFramework.Dashboard.Web.Services;
@@ -9,19 +11,43 @@ namespace WorkflowFramework.Dashboard.Web.Services;
 /// </summary>
 public sealed class DashboardApiClient(HttpClient http)
 {
+    private static readonly JsonSerializerOptions ValidationJsonOptions = new(JsonSerializerDefaults.Web);
+
     public Uri? BaseAddress => http.BaseAddress;
 
     public string? GetExecutionHubUrl()
+        => GetExecutionHubUrls().FirstOrDefault();
+
+    public IReadOnlyList<string> GetExecutionHubUrls()
     {
         if (http.BaseAddress is null)
-            return null;
+            return [];
 
         var scheme = http.BaseAddress.Scheme;
-        if (!string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase))
-            return null;
+        if (string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase))
+        {
+            return [new Uri(http.BaseAddress, "/hubs/execution").ToString()];
+        }
 
-        return new Uri(http.BaseAddress, "/hubs/execution").ToString();
+        var tokens = scheme.Split('+', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (tokens.Length == 0 || string.IsNullOrWhiteSpace(http.BaseAddress.Authority))
+            return [];
+
+        var urls = new List<string>();
+        foreach (var token in tokens)
+        {
+            if (!token.Equals("http", StringComparison.OrdinalIgnoreCase) &&
+                !token.Equals("https", StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var baseUrl = $"{token.ToLowerInvariant()}://{http.BaseAddress.Authority}";
+            var hubUrl = new Uri(new Uri(baseUrl), "/hubs/execution").ToString();
+            if (!urls.Contains(hubUrl, StringComparer.OrdinalIgnoreCase))
+                urls.Add(hubUrl);
+        }
+
+        return urls;
     }
 
     // Auth
@@ -136,14 +162,14 @@ public sealed class DashboardApiClient(HttpClient http)
     {
         var resp = await http.PostAsync($"/api/workflows/{id}/validate", null, ct);
         resp.EnsureSuccessStatusCode();
-        return await resp.Content.ReadFromJsonAsync<ValidationResultDto>(ct);
+        return await ReadValidationResultAsync(resp, ct);
     }
 
     public async Task<ValidationResultDto?> ValidateDefinitionAsync(WorkflowDefinitionDto definition, CancellationToken ct = default)
     {
         var resp = await http.PostAsJsonAsync("/api/workflows/validate", definition, ct);
         resp.EnsureSuccessStatusCode();
-        return await resp.Content.ReadFromJsonAsync<ValidationResultDto>(ct);
+        return await ReadValidationResultAsync(resp, ct);
     }
 
     // Steps
@@ -174,7 +200,14 @@ public sealed class DashboardApiClient(HttpClient http)
     }
 
     public async Task<RunSummary?> GetRunAsync(string runId, CancellationToken ct = default)
-        => await http.GetFromJsonAsync<RunSummary>($"/api/runs/{runId}", ct);
+    {
+        var resp = await http.GetAsync($"/api/runs/{runId}", ct);
+        if (resp.StatusCode == HttpStatusCode.NotFound)
+            return null;
+
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<RunSummary>(ct);
+    }
 
     public async Task<bool> CancelRunAsync(string runId, CancellationToken ct = default)
     {
@@ -287,5 +320,139 @@ public sealed class DashboardApiClient(HttpClient http)
         var resp = await http.PostAsJsonAsync("/api/voice/submissions", request, ct);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<VoiceSubmissionDto>(ct);
+    }
+
+    private static async Task<ValidationResultDto?> ReadValidationResultAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        var content = await response.Content.ReadAsStringAsync(ct);
+        if (string.IsNullOrWhiteSpace(content))
+            return new ValidationResultDto();
+
+        try
+        {
+            return JsonSerializer.Deserialize<ValidationResultDto>(content, ValidationJsonOptions);
+        }
+        catch (JsonException)
+        {
+            return ParseValidationResultFallback(content);
+        }
+    }
+
+    private static ValidationResultDto ParseValidationResultFallback(string content)
+    {
+        using var document = JsonDocument.Parse(content);
+        var root = document.RootElement;
+
+        var result = new ValidationResultDto();
+        if (root.ValueKind != JsonValueKind.Object)
+            return result;
+
+        if (TryGetPropertyIgnoreCase(root, "errors", out var errorsEl) && errorsEl.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var item in errorsEl.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object)
+                    continue;
+
+                var severity = "Error";
+                if (TryGetPropertyIgnoreCase(item, "severity", out var severityEl))
+                    severity = ParseSeverity(severityEl);
+
+                string? stepName = null;
+                if (TryGetPropertyIgnoreCase(item, "stepName", out var stepEl) && stepEl.ValueKind == JsonValueKind.String)
+                    stepName = stepEl.GetString();
+
+                var message = "";
+                if (TryGetPropertyIgnoreCase(item, "message", out var messageEl))
+                {
+                    message = messageEl.ValueKind == JsonValueKind.String
+                        ? messageEl.GetString() ?? ""
+                        : messageEl.GetRawText();
+                }
+
+                result.Errors.Add(new ValidationErrorDto
+                {
+                    Severity = severity,
+                    StepName = stepName,
+                    Message = message
+                });
+            }
+        }
+
+        var defaultErrors = result.Errors.Count(e => e.Severity.Equals("Error", StringComparison.OrdinalIgnoreCase));
+        var defaultWarnings = result.Errors.Count(e => e.Severity.Equals("Warning", StringComparison.OrdinalIgnoreCase));
+
+        result.ErrorCount = TryGetInt(root, "errorCount", defaultErrors);
+        result.WarningCount = TryGetInt(root, "warningCount", defaultWarnings);
+        result.IsValid = TryGetBool(root, "isValid", result.ErrorCount == 0);
+        return result;
+    }
+
+    private static bool TryGetPropertyIgnoreCase(JsonElement obj, string name, out JsonElement value)
+    {
+        foreach (var property in obj.EnumerateObject())
+        {
+            if (property.NameEquals(name) || property.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
+            {
+                value = property.Value;
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
+    private static string ParseSeverity(JsonElement severityEl)
+    {
+        return severityEl.ValueKind switch
+        {
+            JsonValueKind.String => NormalizeSeverity(severityEl.GetString()),
+            JsonValueKind.Number when severityEl.TryGetInt32(out var number) => number switch
+            {
+                0 => "Info",
+                1 => "Warning",
+                2 => "Error",
+                _ => "Error"
+            },
+            JsonValueKind.Object when TryGetPropertyIgnoreCase(severityEl, "name", out var nameEl) && nameEl.ValueKind == JsonValueKind.String
+                => NormalizeSeverity(nameEl.GetString()),
+            JsonValueKind.Object when TryGetPropertyIgnoreCase(severityEl, "value", out var valueEl)
+                => ParseSeverity(valueEl),
+            _ => "Error"
+        };
+    }
+
+    private static string NormalizeSeverity(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return "Error";
+
+        if (value.Equals("info", StringComparison.OrdinalIgnoreCase) || value == "0")
+            return "Info";
+
+        if (value.Equals("warning", StringComparison.OrdinalIgnoreCase) || value == "1")
+            return "Warning";
+
+        return "Error";
+    }
+
+    private static int TryGetInt(JsonElement root, string name, int fallback)
+    {
+        if (TryGetPropertyIgnoreCase(root, name, out var el) && el.ValueKind == JsonValueKind.Number && el.TryGetInt32(out var value))
+            return value;
+
+        return fallback;
+    }
+
+    private static bool TryGetBool(JsonElement root, string name, bool fallback)
+    {
+        if (TryGetPropertyIgnoreCase(root, name, out var el))
+        {
+            if (el.ValueKind == JsonValueKind.True) return true;
+            if (el.ValueKind == JsonValueKind.False) return false;
+        }
+
+        return fallback;
     }
 }

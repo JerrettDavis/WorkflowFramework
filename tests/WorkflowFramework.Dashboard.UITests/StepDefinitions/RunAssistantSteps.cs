@@ -93,9 +93,16 @@ public sealed class RunAssistantSteps
             new PageWaitForSelectorOptions { Timeout = 15_000 });
 
         var runAssistant = Page.Locator("[data-testid='run-assistant-content']");
-        (await runAssistant.TextContentAsync()).Should().Contain("Interactive Run");
+        (await runAssistant.TextContentAsync()).Should().Contain("Guided Run Setup");
 
-        var startRecordingButton = runAssistant.Locator("button:has-text('Start Recording')").First;
+        var hero = runAssistant.Locator("[data-testid='run-assistant-hero']");
+        await hero.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+
+        var progressFill = runAssistant.Locator("[data-testid='run-assistant-progress-fill']").First;
+        await progressFill.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000, State = WaitForSelectorState.Attached });
+        (await progressFill.GetAttributeAsync("style")).Should().Contain("width:");
+
+        var startRecordingButton = runAssistant.Locator("[data-testid='btn-run-assistant-record']").First;
         await startRecordingButton.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         (await startRecordingButton.IsEnabledAsync()).Should().BeTrue();
     }
@@ -104,19 +111,19 @@ public sealed class RunAssistantSteps
     public async Task WhenIStartRecordingInTheRunAssistant()
     {
         var runAssistant = Page.Locator("[data-testid='run-assistant-content']");
-        var startRecordingButton = runAssistant.Locator("button:has-text('Start Recording')").First;
+        var startRecordingButton = runAssistant.Locator("[data-testid='btn-run-assistant-record']").First;
         await startRecordingButton.ClickAsync();
 
-        var stopRecordingButton = runAssistant.Locator("button:has-text('Stop Recording')").First;
+        var stopRecordingButton = runAssistant.Locator("[data-testid='btn-run-assistant-record']").First;
         await stopRecordingButton.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
-        (await stopRecordingButton.IsVisibleAsync()).Should().BeTrue();
+        (await stopRecordingButton.TextContentAsync()).Should().Contain("Stop Recording");
     }
 
     [When("I stop recording in the run assistant")]
     public async Task WhenIStopRecordingInTheRunAssistant()
     {
         var runAssistant = Page.Locator("[data-testid='run-assistant-content']");
-        var stopRecordingButton = runAssistant.Locator("button:has-text('Stop Recording')").First;
+        var stopRecordingButton = runAssistant.Locator("[data-testid='btn-run-assistant-record']").First;
         await stopRecordingButton.ClickAsync();
 
         await runAssistant.Locator("audio").First
@@ -130,7 +137,7 @@ public sealed class RunAssistantSteps
         var text = await runAssistant.TextContentAsync();
         text.Should().Contain("mock.wav");
 
-        var audioPreview = runAssistant.Locator("audio").First;
+        var audioPreview = runAssistant.Locator("[data-testid='run-assistant-audio-preview'] audio").First;
         (await audioPreview.IsVisibleAsync()).Should().BeTrue();
     }
 
@@ -138,18 +145,42 @@ public sealed class RunAssistantSteps
     public async Task ThenTheRunAssistantShouldAllowContinuingToTheNextStep()
     {
         var runAssistant = Page.Locator("[data-testid='run-assistant-content']");
-        var nextButtons = runAssistant.Locator("button:has-text('Next')");
+        var nextButtons = runAssistant.Locator("[data-testid='btn-run-assistant-next']");
         if (await nextButtons.CountAsync() > 0)
         {
             var nextButton = nextButtons.First;
             await nextButton.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
             (await nextButton.IsEnabledAsync()).Should().BeTrue();
+            var titleBefore = (await runAssistant.Locator("[data-testid='run-assistant-task-title']").TextContentAsync())?.Trim();
+            await nextButton.ClickAsync();
+
+            await Page.WaitForTimeoutAsync(250);
+            var titleAfter = (await runAssistant.Locator("[data-testid='run-assistant-task-title']").TextContentAsync())?.Trim();
+            titleAfter.Should().NotBe(titleBefore, "moving forward should update the active task view");
+        }
+
+        var startWorkflowButtons = runAssistant.Locator("[data-testid='btn-run-assistant-start-workflow']");
+        if (await startWorkflowButtons.CountAsync() > 0)
+        {
+            var startWorkflowButton = startWorkflowButtons.First;
+            await startWorkflowButton.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+            (await startWorkflowButton.IsEnabledAsync()).Should().BeTrue();
+            await startWorkflowButton.ClickAsync();
+
+            var statusBadge = Page.Locator("[data-testid='run-status-badge']");
+            await statusBadge.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
+
+            var statusText = await statusBadge.TextContentAsync() ?? "";
+            statusText.Should().MatchRegex("(?i)(running|completed|failed|cancelled)");
+
+            var narrative = Page.Locator("[data-testid='run-narrative']");
+            await narrative.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
             return;
         }
 
-        var startWorkflowButton = runAssistant.Locator("button:has-text('Start Workflow')").First;
-        await startWorkflowButton.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
-        (await startWorkflowButton.IsEnabledAsync()).Should().BeTrue();
+        var remainingNextButtons = runAssistant.Locator("[data-testid='btn-run-assistant-next']");
+        (await remainingNextButtons.CountAsync()).Should().BeGreaterThan(0, "workflow should still expose a path to continue interactive tasks");
+        (await remainingNextButtons.First.IsEnabledAsync()).Should().BeTrue();
     }
 
     [Then("the browser should not report run assistant interop errors")]

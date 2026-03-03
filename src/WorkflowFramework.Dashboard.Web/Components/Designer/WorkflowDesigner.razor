@@ -91,7 +91,7 @@
                 @if (_activeBottomTab == "output")
                 {
                     <div class="h-full overflow-y-auto p-3 bg-gray-900 text-xs text-gray-200 space-y-3" data-testid="output-content">
-                        <section class="run-hero">
+                        <section class="run-hero" data-testid="run-hero">
                             <div class="run-hero-row">
                                 <div>
                                     <div class="run-kicker">Live Execution Feed</div>
@@ -110,42 +110,71 @@
                                             <span>Run a workflow to populate execution telemetry.</span>
                                         }
                                     </div>
-                                    <div class="text-[10px] mt-1 @(_runHubConnected ? "text-emerald-300" : "text-amber-300")">
-                                        Feed: @(_runHubConnected ? "Realtime SignalR" : "Polling fallback")
+                                    <div class="run-feed-pill @(_runHubConnected ? "run-feed-realtime" : "run-feed-fallback")" data-testid="run-feed-mode">
+                                        Feed: @RunFeedLabel
                                     </div>
                                 </div>
-                                <div class="run-status-badge @GetRunStatusBadgeClass()">
-                                    <span class="run-status-dot"></span>
-                                    @_runStatus
+                                <div class="run-hero-actions">
+                                    <div class="run-status-badge @GetRunStatusBadgeClass()" data-testid="run-status-badge">
+                                        <span class="run-status-dot"></span>
+                                        @_runStatus
+                                    </div>
+                                    @if (_activeRunId is not null && _runStatus == "Running")
+                                    {
+                                        <button @onclick="CancelActiveRunAsync"
+                                                class="run-cancel-btn"
+                                                data-testid="btn-cancel-run">
+                                            Cancel Run
+                                        </button>
+                                    }
                                 </div>
                             </div>
 
                             <div class="run-progress-track">
-                                <div class="run-progress-fill" style="width:@($"{RunProgressPercent:0.#}%")"></div>
+                                <div class="run-progress-fill" style="width:@($"{RunProgressPercent:0.#}%")" data-testid="run-progress-fill"></div>
                             </div>
                         </section>
 
-                        <section class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                        <section class="grid grid-cols-2 md:grid-cols-6 gap-2">
                             <article class="run-metric-card">
                                 <div class="run-metric-label">Elapsed</div>
-                                <div class="run-metric-value">@RunElapsedLabel</div>
+                                <div class="run-metric-value" data-testid="run-metric-elapsed">@RunElapsedLabel</div>
                             </article>
                             <article class="run-metric-card">
                                 <div class="run-metric-label">Known Steps</div>
-                                <div class="run-metric-value">@KnownStepCount</div>
+                                <div class="run-metric-value" data-testid="run-metric-known">@KnownStepCount</div>
+                            </article>
+                            <article class="run-metric-card">
+                                <div class="run-metric-label">Queued</div>
+                                <div class="run-metric-value text-slate-300" data-testid="run-metric-queued">@QueuedStepCount</div>
                             </article>
                             <article class="run-metric-card">
                                 <div class="run-metric-label">Completed</div>
-                                <div class="run-metric-value text-green-300">@CompletedStepCount</div>
+                                <div class="run-metric-value text-green-300" data-testid="run-metric-completed">@CompletedStepCount</div>
                             </article>
                             <article class="run-metric-card">
                                 <div class="run-metric-label">Running</div>
-                                <div class="run-metric-value text-yellow-300">@RunningStepCount</div>
+                                <div class="run-metric-value text-yellow-300" data-testid="run-metric-running">@RunningStepCount</div>
                             </article>
                             <article class="run-metric-card">
                                 <div class="run-metric-label">Failed</div>
-                                <div class="run-metric-value text-red-300">@FailedStepCount</div>
+                                <div class="run-metric-value text-red-300" data-testid="run-metric-failed">@FailedStepCount</div>
                             </article>
+                        </section>
+
+                        <section class="run-narrative-card @(_runStatus == "Running" ? "run-narrative-live" : string.Empty)" data-testid="run-narrative">
+                            <div class="run-narrative-title">What&apos;s Happening Now</div>
+                            <div class="run-narrative-body">@RunNarrative</div>
+                            <div class="run-narrative-foot">
+                                @if (!string.IsNullOrWhiteSpace(RunActionHint))
+                                {
+                                    <span class="run-narrative-chip">@RunActionHint</span>
+                                }
+                                @if (LatestRunEvent is not null)
+                                {
+                                    <span class="run-narrative-timestamp">Last update @LatestRunEvent.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>
+                                }
+                            </div>
                         </section>
 
                         @if (!string.IsNullOrWhiteSpace(_activeStepName))
@@ -166,10 +195,10 @@
 
                         @if (_runTimeline.Count > 0)
                         {
-                            <section class="run-timeline">
+                            <section class="run-timeline" data-testid="run-timeline">
                                 @foreach (var evt in _runTimeline.Take(18))
                                 {
-                                    <article class="run-event-row @GetRunEventRowClass(evt.Kind)">
+                                    <article class="run-event-row @GetRunEventRowClass(evt.Kind)" data-testid="run-event-row">
                                         <div class="run-event-time">@evt.Timestamp.ToLocalTime().ToString("HH:mm:ss")</div>
                                         <div class="run-event-body">
                                             <div class="run-event-title">@evt.Title</div>
@@ -267,186 +296,241 @@
                     <div class="h-full overflow-y-auto p-3 bg-gray-900 text-xs text-gray-200" data-testid="run-assistant-content">
                         @if (!_runAssistantActive || _runAssistantTasks.Count == 0 || CurrentRunTask is null)
                         {
-                            <div class="h-full grid place-items-center text-gray-500">
-                                No interactive inputs needed. Click Run to execute immediately.
+                            <div class="h-full grid place-items-center">
+                                <div class="run-assistant-empty">
+                                    <div class="run-assistant-kicker">Guided Run Setup</div>
+                                    <div class="run-assistant-empty-title">No interactive input is required for this workflow.</div>
+                                    <div class="run-assistant-empty-note">Click Run to start execution immediately.</div>
+                                </div>
                             </div>
                         }
                         else
                         {
                             var task = CurrentRunTask;
-                            <div class="flex items-center justify-between mb-2">
-                                <div>
-                                    <div class="text-[10px] uppercase tracking-wide text-cyan-300">Interactive Run</div>
-                                    <div class="text-sm font-semibold text-gray-100">@task.Title</div>
-                                    <div class="text-gray-400">@task.Instructions</div>
-                                </div>
-                                <button @onclick="CancelRunAssistant"
-                                        class="px-2 py-1 rounded border border-gray-600 text-gray-300 hover:text-white hover:border-gray-500">
-                                    Cancel
-                                </button>
-                            </div>
-
-                            <div class="flex flex-wrap gap-1.5 mb-3">
-                                @for (var i = 0; i < _runAssistantTasks.Count; i++)
-                                {
-                                    var idx = i;
-                                    var stepTask = _runAssistantTasks[idx];
-                                    var stepClass = idx == _runAssistantIndex
-                                        ? "bg-cyan-500/20 text-cyan-200 border-cyan-400/40"
-                                        : stepTask.Completed
-                                            ? "bg-green-500/15 text-green-200 border-green-500/30"
-                                            : "bg-gray-800 text-gray-400 border-gray-700";
-                                    <button @onclick="() => JumpToRunTask(idx)"
-                                            class="px-2 py-1 rounded border @stepClass">
-                                        @(idx + 1). @stepTask.StepName
-                                    </button>
-                                }
-                            </div>
-
-                            @if (task.Kind == RunAssistantTaskKind.Record)
-                            {
-                                <div class="space-y-2">
-                                    <div class="flex flex-wrap gap-2 items-center">
-                                        <select @bind="_runSelectedDeviceId"
-                                                class="px-2 py-1 bg-gray-800 border border-gray-700 rounded text-gray-200"
-                                                disabled="@(!_runRecorderSupported || _runRecording)">
-                                            @if (_runAudioDevices.Count == 0)
-                                            {
-                                                <option value="">Default microphone</option>
-                                            }
-                                            else
-                                            {
-                                                @foreach (var device in _runAudioDevices)
-                                                {
-                                                    <option value="@device.DeviceId">@device.Label</option>
-                                                }
-                                            }
-                                        </select>
-
-                                        <button @onclick="ToggleRunRecordingAsync"
-                                                disabled="@(!_runRecorderSupported || _runBusy)"
-                                                class="px-3 py-1 rounded @( _runRecording ? "bg-red-600 hover:bg-red-500 text-white" : "bg-cyan-600 hover:bg-cyan-500 text-white" ) disabled:opacity-50">
-                                            @(_runRecording ? "Stop Recording" : "Start Recording")
+                            var canAdvanceTask = CanAdvanceRunTask(task);
+                            <div class="run-assistant-shell">
+                                <section class="run-assistant-hero" data-testid="run-assistant-hero">
+                                    <div class="run-assistant-hero-top">
+                                        <div>
+                                            <div class="run-assistant-kicker">Guided Run Setup</div>
+                                            <div class="run-assistant-title" data-testid="run-assistant-task-title">@task.Title</div>
+                                            <div class="run-assistant-subtitle">@task.Instructions</div>
+                                        </div>
+                                        <button @onclick="CancelRunAssistant"
+                                                class="run-assistant-cancel"
+                                                data-testid="btn-cancel-run-assistant">
+                                            Cancel
                                         </button>
-
-                                        <label class="px-3 py-1 rounded border border-gray-600 text-gray-300 hover:text-white cursor-pointer">
-                                            Upload Audio
-                                            <InputFile OnChange="HandleRunAudioUploadAsync"
-                                                       accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm,.flac"
-                                                       disabled="@(_runRecording || _runBusy)" />
-                                        </label>
                                     </div>
 
-                                    @if (_runRecording || !string.IsNullOrWhiteSpace(_runLiveInterimTranscript))
-                                    {
-                                        <div class="p-2 bg-cyan-900/20 border border-cyan-800/50 rounded">
-                                            <div class="text-cyan-200">Live transcript</div>
-                                            <p class="mt-1">@_runLiveFinalTranscript <span class="text-cyan-400/80">@_runLiveInterimTranscript</span></p>
-                                        </div>
-                                    }
-
-                                    @if (_runAudioByStep.TryGetValue(task.StepName, out var recordedAudio))
-                                    {
-                                        <div class="p-2 bg-gray-850 border border-gray-700 rounded">
-                                            <div class="text-gray-200">@recordedAudio.FileName (@FormatFileSize(recordedAudio.Size))</div>
-                                            @if (!string.IsNullOrWhiteSpace(recordedAudio.PreviewUrl))
-                                            {
-                                                <audio class="mt-1 w-full" controls src="@recordedAudio.PreviewUrl"></audio>
-                                            }
-                                        </div>
-                                    }
-                                </div>
-                            }
-                            else if (task.Kind == RunAssistantTaskKind.Transcript)
-                            {
-                                <textarea class="w-full h-36 p-2 bg-gray-850 border border-gray-700 rounded text-gray-200"
-                                          @bind="_runTranscript"
-                                          @bind:event="oninput"
-                                          placeholder="Enter transcript text for this run..."></textarea>
-                            }
-                            else if (task.Kind == RunAssistantTaskKind.Review)
-                            {
-                                <textarea class="w-full h-28 p-2 bg-gray-850 border border-gray-700 rounded text-gray-200"
-                                          value="@GetRunReviewText(task.StepName)"
-                                          @oninput="(e => SetRunReviewText(task.StepName, e.Value?.ToString() ?? string.Empty))"
-                                          placeholder="Review notes or edits..."></textarea>
-                            }
-                            else if (task.Kind == RunAssistantTaskKind.Questions)
-                            {
-                                <div class="space-y-2">
-                                    <div class="flex gap-2">
-                                        <button @onclick="GenerateRunQuestions"
-                                                class="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white">
-                                            Generate from transcript
-                                        </button>
-                                        <button @onclick="AddRunQuestion"
-                                                class="px-3 py-1 rounded border border-gray-600 text-gray-200 hover:text-white">
-                                            Add question
-                                        </button>
+                                    <div class="run-assistant-state-row">
+                                        <span class="run-assistant-state-badge">@RunAssistantStatusLabel</span>
+                                        <span class="run-assistant-hint" data-testid="run-assistant-hint">@RunAssistantHint</span>
                                     </div>
-                                    <div class="space-y-1">
-                                        @for (var i = 0; i < _runQuestions.Count; i++)
+
+                                    <div class="run-assistant-progress-track">
+                                        <div class="run-assistant-progress-fill"
+                                             style="width:@($"{RunAssistantProgressPercent:0.#}%")"
+                                             data-testid="run-assistant-progress-fill"></div>
+                                    </div>
+
+                                    <div class="run-assistant-meta-row">
+                                        <span class="run-assistant-chip">Task @(_runAssistantIndex + 1) / @_runAssistantTasks.Count</span>
+                                        <span class="run-assistant-chip">Completed @RunAssistantCompletedCount</span>
+                                        @if (_runRecording)
                                         {
-                                            var qIndex = i;
+                                            <span class="run-assistant-chip run-assistant-chip-live">Recording live</span>
+                                        }
+                                        @if (_runAudioByStep.Count > 0)
+                                        {
+                                            <span class="run-assistant-chip">@_runAudioByStep.Count audio clip(s) attached</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(_runTranscript))
+                                        {
+                                            <span class="run-assistant-chip">Transcript ready</span>
+                                        }
+                                    </div>
+                                </section>
+
+                                <div class="run-assistant-task-strip" data-testid="run-assistant-task-strip">
+                                    @for (var i = 0; i < _runAssistantTasks.Count; i++)
+                                    {
+                                        var idx = i;
+                                        var stepTask = _runAssistantTasks[idx];
+                                        var stepClass = idx == _runAssistantIndex
+                                            ? "run-assistant-task-pill-active"
+                                            : stepTask.Completed
+                                                ? "run-assistant-task-pill-complete"
+                                                : "run-assistant-task-pill-pending";
+                                        <button @onclick="() => JumpToRunTask(idx)"
+                                                class="run-assistant-task-pill @stepClass"
+                                                data-testid="run-assistant-task-pill">
+                                            <span class="run-assistant-task-ordinal">@(idx + 1)</span>
+                                            <span class="run-assistant-task-name">@stepTask.StepName</span>
+                                        </button>
+                                    }
+                                </div>
+
+                                <section class="run-assistant-panel">
+                                    @if (task.Kind == RunAssistantTaskKind.Record)
+                                    {
+                                        @if (!_runRecorderSupported)
+                                        {
+                                            <div class="run-assistant-callout run-assistant-callout-warning">
+                                                Recording is not available in this browser context. Upload audio to continue.
+                                            </div>
+                                        }
+
+                                        <div class="run-assistant-controls">
+                                            <select @bind="_runSelectedDeviceId"
+                                                    class="run-assistant-select"
+                                                    disabled="@(!_runRecorderSupported || _runRecording)">
+                                                @if (_runAudioDevices.Count == 0)
+                                                {
+                                                    <option value="">Default microphone</option>
+                                                }
+                                                else
+                                                {
+                                                    @foreach (var device in _runAudioDevices)
+                                                    {
+                                                        <option value="@device.DeviceId">@device.Label</option>
+                                                    }
+                                                }
+                                            </select>
+
+                                            <button @onclick="ToggleRunRecordingAsync"
+                                                    disabled="@(!_runRecorderSupported || _runBusy)"
+                                                    class="run-assistant-record-btn @( _runRecording ? "run-assistant-record-stop" : "run-assistant-record-start" )"
+                                                    data-testid="btn-run-assistant-record">
+                                                @(_runRecording ? "Stop Recording" : "Start Recording")
+                                            </button>
+
+                                            <label class="run-assistant-upload-btn">
+                                                Upload Audio
+                                                <InputFile OnChange="HandleRunAudioUploadAsync"
+                                                           accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm,.flac"
+                                                           disabled="@(_runRecording || _runBusy)"
+                                                           data-testid="input-run-audio-upload" />
+                                            </label>
+                                        </div>
+
+                                        @if (_runRecording || !string.IsNullOrWhiteSpace(_runLiveInterimTranscript))
+                                        {
+                                            <div class="run-assistant-live">
+                                                <div class="run-assistant-live-title">Live transcript</div>
+                                                <p class="run-assistant-live-body">@_runLiveFinalTranscript <span class="run-assistant-live-interim">@_runLiveInterimTranscript</span></p>
+                                            </div>
+                                        }
+
+                                        @if (_runAudioByStep.TryGetValue(task.StepName, out var recordedAudio))
+                                        {
+                                            <div class="run-assistant-audio-preview" data-testid="run-assistant-audio-preview">
+                                                <div class="run-assistant-audio-file">@recordedAudio.FileName (@FormatFileSize(recordedAudio.Size))</div>
+                                                @if (!string.IsNullOrWhiteSpace(recordedAudio.PreviewUrl))
+                                                {
+                                                    <audio class="mt-1 w-full" controls src="@recordedAudio.PreviewUrl"></audio>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                    else if (task.Kind == RunAssistantTaskKind.Transcript)
+                                    {
+                                        <textarea class="run-assistant-textarea run-assistant-textarea-tall"
+                                                  @bind="_runTranscript"
+                                                  @bind:event="oninput"
+                                                  placeholder="Enter transcript text for this run..."></textarea>
+                                    }
+                                    else if (task.Kind == RunAssistantTaskKind.Review)
+                                    {
+                                        <textarea class="run-assistant-textarea"
+                                                  value="@GetRunReviewText(task.StepName)"
+                                                  @oninput="(e => SetRunReviewText(task.StepName, e.Value?.ToString() ?? string.Empty))"
+                                                  placeholder="Review notes or edits..."></textarea>
+                                    }
+                                    else if (task.Kind == RunAssistantTaskKind.Questions)
+                                    {
+                                        <div class="space-y-2">
                                             <div class="flex gap-2">
-                                                <input class="flex-1 px-2 py-1 bg-gray-850 border border-gray-700 rounded text-gray-200"
-                                                       value="@_runQuestions[qIndex]"
-                                                       @oninput="(e => SetRunQuestion(qIndex, e.Value?.ToString() ?? string.Empty))" />
-                                                <button @onclick="() => RemoveRunQuestion(qIndex)"
-                                                        class="px-2 py-1 rounded border border-red-700 text-red-300">
-                                                    ✕
+                                                <button @onclick="GenerateRunQuestions"
+                                                        class="run-assistant-primary-btn">
+                                                    Generate from transcript
+                                                </button>
+                                                <button @onclick="AddRunQuestion"
+                                                        class="run-assistant-secondary-btn">
+                                                    Add question
                                                 </button>
                                             </div>
+                                            <div class="space-y-1">
+                                                @for (var i = 0; i < _runQuestions.Count; i++)
+                                                {
+                                                    var qIndex = i;
+                                                    <div class="flex gap-2">
+                                                        <input class="run-assistant-input"
+                                                               value="@_runQuestions[qIndex]"
+                                                               @oninput="(e => SetRunQuestion(qIndex, e.Value?.ToString() ?? string.Empty))" />
+                                                        <button @onclick="() => RemoveRunQuestion(qIndex)"
+                                                                class="run-assistant-danger-btn">
+                                                            Remove
+                                                        </button>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (task.Kind == RunAssistantTaskKind.QaAnswers)
+                                    {
+                                        <div class="space-y-2">
+                                            @if (_runQaPairs.Count == 0)
+                                            {
+                                                <div class="text-gray-500">No Q/A pairs yet. Generate questions first.</div>
+                                            }
+                                            @for (var i = 0; i < _runQaPairs.Count; i++)
+                                            {
+                                                var qaIndex = i;
+                                                <div class="run-assistant-qa-card">
+                                                    <input class="run-assistant-input"
+                                                           value="@_runQaPairs[qaIndex].Question"
+                                                           @oninput="(e => SetRunQaQuestion(qaIndex, e.Value?.ToString() ?? string.Empty))"
+                                                           placeholder="Question" />
+                                                    <textarea class="run-assistant-textarea run-assistant-qa-answer"
+                                                              @oninput="(e => SetRunQaAnswer(qaIndex, e.Value?.ToString() ?? string.Empty))"
+                                                              placeholder="Answer">@_runQaPairs[qaIndex].Answer</textarea>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </section>
+
+                                <div class="run-assistant-footer">
+                                    <div class="run-assistant-requirement">@RunAssistantRequirementHint</div>
+                                    <div class="flex items-center justify-between">
+                                        <button @onclick="GoToPreviousRunTask"
+                                                disabled="@(_runAssistantIndex == 0)"
+                                                class="run-assistant-secondary-btn"
+                                                data-testid="btn-run-assistant-back">
+                                            Back
+                                        </button>
+
+                                        @if (_runAssistantIndex < _runAssistantTasks.Count - 1)
+                                        {
+                                            <button @onclick="GoToNextRunTask"
+                                                    disabled="@(!canAdvanceTask)"
+                                                    class="run-assistant-primary-btn"
+                                                    data-testid="btn-run-assistant-next">
+                                                Next
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button @onclick="RunWithAssistantInputsAsync"
+                                                    disabled="@(!canAdvanceTask || _runBusy)"
+                                                    class="run-assistant-start-btn"
+                                                    data-testid="btn-run-assistant-start-workflow">
+                                                Start Workflow
+                                            </button>
                                         }
                                     </div>
                                 </div>
-                            }
-                            else if (task.Kind == RunAssistantTaskKind.QaAnswers)
-                            {
-                                <div class="space-y-2">
-                                    @if (_runQaPairs.Count == 0)
-                                    {
-                                        <div class="text-gray-500">No Q/A pairs yet. Generate questions first.</div>
-                                    }
-                                    @for (var i = 0; i < _runQaPairs.Count; i++)
-                                    {
-                                        var qaIndex = i;
-                                        <div class="p-2 border border-gray-700 rounded bg-gray-850 space-y-1">
-                                            <input class="w-full px-2 py-1 bg-gray-900 border border-gray-700 rounded text-gray-200"
-                                                   value="@_runQaPairs[qaIndex].Question"
-                                                   @oninput="(e => SetRunQaQuestion(qaIndex, e.Value?.ToString() ?? string.Empty))"
-                                                   placeholder="Question" />
-                                            <textarea class="w-full h-20 p-2 bg-gray-900 border border-gray-700 rounded text-gray-200"
-                                                      @oninput="(e => SetRunQaAnswer(qaIndex, e.Value?.ToString() ?? string.Empty))"
-                                                      placeholder="Answer">@_runQaPairs[qaIndex].Answer</textarea>
-                                        </div>
-                                    }
-                                </div>
-                            }
-
-                            <div class="flex items-center justify-between mt-3">
-                                <button @onclick="GoToPreviousRunTask"
-                                        disabled="@(_runAssistantIndex == 0)"
-                                        class="px-3 py-1 rounded border border-gray-600 text-gray-200 disabled:opacity-40">
-                                    Back
-                                </button>
-
-                                @if (_runAssistantIndex < _runAssistantTasks.Count - 1)
-                                {
-                                    <button @onclick="GoToNextRunTask"
-                                            disabled="@(!CanAdvanceRunTask(task))"
-                                            class="px-3 py-1 rounded bg-cyan-600 hover:bg-cyan-500 text-white disabled:opacity-40">
-                                        Next
-                                    </button>
-                                }
-                                else
-                                {
-                                    <button @onclick="RunWithAssistantInputsAsync"
-                                            disabled="@(!CanAdvanceRunTask(task) || _runBusy)"
-                                            class="px-3 py-1 rounded bg-green-600 hover:bg-green-500 text-white disabled:opacity-40">
-                                        Start Workflow
-                                    </button>
-                                }
                             </div>
                         }
                     </div>
@@ -521,15 +605,72 @@
 
     private int ValidationErrorCount => _validationErrors.Count(e => e.Severity == "Error");
     private int RunAssistantPendingCount => _runAssistantTasks.Count(t => !t.Completed);
+    private int RunAssistantCompletedCount => _runAssistantTasks.Count(t => t.Completed);
     private RunAssistantTask? CurrentRunTask => _runAssistantTasks.Count == 0 || _runAssistantIndex < 0 || _runAssistantIndex >= _runAssistantTasks.Count
         ? null
         : _runAssistantTasks[_runAssistantIndex];
+    private double RunAssistantProgressPercent => _runAssistantTasks.Count == 0
+        ? 0
+        : Math.Clamp((double)RunAssistantCompletedCount / _runAssistantTasks.Count * 100d, 0d, 100d);
+    private string RunAssistantStatusLabel => _runAssistantTasks.Count == 0
+        ? "Ready"
+        : $"Step {_runAssistantIndex + 1} of {_runAssistantTasks.Count}";
+    private string RunAssistantHint => CurrentRunTask?.Kind switch
+    {
+        RunAssistantTaskKind.Record => "Capture clean audio or upload a file to continue.",
+        RunAssistantTaskKind.Transcript => "Review the transcript for accuracy before advancing.",
+        RunAssistantTaskKind.Review => "Provide concise review notes for downstream steps.",
+        RunAssistantTaskKind.Questions => "Generate or curate interview prompts for stronger answers.",
+        RunAssistantTaskKind.QaAnswers => "Fill every answer to package complete run context.",
+        _ => "Collect required inputs, then launch execution."
+    };
+    private string RunAssistantRequirementHint => CurrentRunTask switch
+    {
+        null => "No pending tasks.",
+        _ when CanAdvanceRunTask(CurrentRunTask) => "Requirement met. Continue when ready.",
+        { Kind: RunAssistantTaskKind.Record } => "Requirement: record or upload audio, or provide transcript text.",
+        { Kind: RunAssistantTaskKind.Transcript } => "Requirement: transcript text is required.",
+        { Kind: RunAssistantTaskKind.Review } => "Requirement: review notes are required.",
+        { Kind: RunAssistantTaskKind.Questions } => "Requirement: add at least one question.",
+        { Kind: RunAssistantTaskKind.QaAnswers } => "Requirement: every Q/A pair needs both question and answer.",
+        _ => "Requirement: complete this task to continue."
+    };
     private int CompletedStepCount => _stepStatuses.Count(s => s.Value.Equals("Completed", StringComparison.OrdinalIgnoreCase));
     private int FailedStepCount => _stepStatuses.Count(s => s.Value.Equals("Failed", StringComparison.OrdinalIgnoreCase));
     private int RunningStepCount => _stepStatuses.Count(s => s.Value.Equals("Running", StringComparison.OrdinalIgnoreCase));
     private int KnownStepCount => _stepStatuses.Count;
+    private int QueuedStepCount => Math.Max(KnownStepCount - (CompletedStepCount + FailedStepCount + RunningStepCount), 0);
     private double RunProgressPercent => KnownStepCount == 0 ? 0 : Math.Clamp((double)(CompletedStepCount + FailedStepCount) / KnownStepCount * 100d, 0d, 100d);
     private string RunElapsedLabel => FormatDuration(_runElapsed);
+    private string RunFeedLabel => _runHubConnected ? "Realtime SignalR" : "Polling fallback (1.3s)";
+    private RunTimelineEntry? LatestRunEvent => _runTimeline.Count == 0 ? null : _runTimeline[0];
+    private string? NextQueuedStepName => _stepStatuses
+        .Where(s => s.Value.Equals("Queued", StringComparison.OrdinalIgnoreCase) || s.Value.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+        .Select(s => s.Key)
+        .FirstOrDefault();
+    private string RunNarrative => _runStatus switch
+    {
+        "Running" when !string.IsNullOrWhiteSpace(_activeStepName)
+            => $"Executing '{_activeStepName}'. {CompletedStepCount + FailedStepCount} of {KnownStepCount} steps settled.",
+        "Running" when KnownStepCount > 0
+            => $"{RunningStepCount} active, {QueuedStepCount} queued. Execution telemetry is streaming live.",
+        "Completed"
+            => $"Completed in {RunElapsedLabel}. {CompletedStepCount} step(s) completed, {FailedStepCount} failed.",
+        "Failed"
+            => $"Run failed after {RunElapsedLabel}. Check the latest timeline event for the error path.",
+        "Cancelled"
+            => $"Run cancelled after {RunElapsedLabel}.",
+        _ when _latestRunSummary is not null
+            => $"Latest run status: {_latestRunSummary.Status}. Start a new run to refresh the feed.",
+        _ => "Start a workflow run to see detailed execution telemetry."
+    };
+    private string? RunActionHint => _runStatus switch
+    {
+        "Running" when !string.IsNullOrWhiteSpace(NextQueuedStepName) => $"Up next: {NextQueuedStepName}",
+        "Failed" when !string.IsNullOrWhiteSpace(_runErrorMessage) => "Open Raw run log for full stack and payload context.",
+        _ when !_runHubConnected => "Realtime stream unavailable. Polling mode is active.",
+        _ => null
+    };
     private string BottomPanelHeightClass => _activeBottomTab switch
     {
         "run" => "h-96",
@@ -558,6 +699,14 @@
             try
             {
                 _runSpeechRecognitionSupported = await JS.InvokeAsync<bool>("voiceRecorder.supportsSpeechRecognition");
+            }
+            catch
+            {
+                _runSpeechRecognitionSupported = false;
+            }
+
+            try
+            {
                 var devices = await JS.InvokeAsync<List<AudioDeviceOption>>("voiceRecorder.listInputDevices");
                 _runAudioDevices.Clear();
                 _runAudioDevices.AddRange(devices);
@@ -565,8 +714,9 @@
             }
             catch
             {
-                _runRecorderSupported = false;
-                _runSpeechRecognitionSupported = false;
+                // Device enumeration can fail without blocking manual recording/upload.
+                _runAudioDevices.Clear();
+                _runSelectedDeviceId = null;
             }
         }
     }
@@ -827,6 +977,12 @@
         {
             _activeRunId = run.RunId;
             _latestRunSummary = run;
+            if (request?.Inputs is { Count: > 0 })
+            {
+                var recordingsCount = _runAudioByStep.Count;
+                var questionsCount = _runQuestions.Count(q => !string.IsNullOrWhiteSpace(q));
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Run payload prepared: {recordingsCount} audio clip(s), transcript {(_runTranscript.Length > 0 ? "included" : "empty")}, {questionsCount} question(s).");
+            }
             _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Run started: {run.RunId} (status: {run.Status})");
             if (!string.IsNullOrWhiteSpace(run.Source))
                 _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Source: {run.Source}");
@@ -848,6 +1004,19 @@
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
+            if (stepNames.Count == 0 && !string.IsNullOrWhiteSpace(_currentWorkflowId))
+            {
+                var saved = await Api.GetWorkflowAsync(_currentWorkflowId);
+                if (saved?.Definition is not null)
+                {
+                    stepNames = FlattenSteps(saved.Definition.Steps)
+                        .Select(s => s.Name)
+                        .Where(n => !string.IsNullOrWhiteSpace(n))
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .ToList();
+                }
+            }
+
             _stepStatuses.Clear();
             foreach (var stepName in stepNames)
                 _stepStatuses[stepName] = "Queued";
@@ -855,6 +1024,33 @@
         catch
         {
             // Best-effort hinting only.
+        }
+    }
+
+    private async Task CancelActiveRunAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_activeRunId))
+            return;
+
+        var runId = _activeRunId;
+        try
+        {
+            var cancelled = await Api.CancelRunAsync(runId);
+            if (!cancelled)
+            {
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Cancel request ignored: run {runId} was not active.");
+                return;
+            }
+
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Cancel requested for run {runId}.");
+            AddRunTimeline("warn", "Cancellation requested", "Run cancellation was requested from the dashboard.");
+            await HandleRunStatusChangedAsync("Cancelled", emitTimeline: true);
+            Toast.Info("Run cancelled");
+        }
+        catch (Exception ex)
+        {
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Cancel failed: {ex.Message}");
+            Toast.Error($"Cancel failed: {ex.Message}");
         }
     }
 
@@ -872,6 +1068,8 @@
         _runTimeline.Clear();
 
         AddRunTimeline("info", "Run requested", $"Tracking run {run.RunId[..Math.Min(10, run.RunId.Length)]}.");
+        if (KnownStepCount > 0)
+            AddRunTimeline("info", "Workflow mapped", $"{KnownStepCount} known step(s) primed for tracking.");
         StartRunElapsedTicker();
         StartRunPolling(run.RunId);
         await ConnectRunSignalRAsync(run.RunId);
@@ -879,8 +1077,8 @@
 
     private async Task ConnectRunSignalRAsync(string runId)
     {
-        var hubUrl = Api.GetExecutionHubUrl();
-        if (string.IsNullOrWhiteSpace(hubUrl))
+        var hubUrls = Api.GetExecutionHubUrls();
+        if (hubUrls.Count == 0)
         {
             _runHubConnected = false;
             AddRunTimeline("warn", "Realtime unavailable", "Service-discovery URL is not directly usable for SignalR. Using API polling.");
@@ -888,106 +1086,123 @@
             return;
         }
 
-        try
+        Exception? lastError = null;
+        foreach (var hubUrl in hubUrls)
         {
-            _executionHubClient = new ExecutionHubClient(hubUrl);
-            _executionHubClient.RunStarted += (rid, workflowName) => _ = InvokeAsync(() =>
+            ExecutionHubClient? candidate = null;
+            try
             {
-                if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
-                    return;
-
-                _runStatus = "Running";
-                _runStartedAt ??= DateTimeOffset.UtcNow;
-                AddRunTimeline("running", "Workflow started", workflowName);
-                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] ▶ Workflow started");
-                StateHasChanged();
-            });
-
-            _executionHubClient.StepStarted += (rid, step, idx) => _ = InvokeAsync(() =>
+                candidate = CreateExecutionHubClient(hubUrl);
+                await candidate.SubscribeToRunAsync(runId);
+                _executionHubClient = candidate;
+                _subscribedRunId = runId;
+                _runHubConnected = true;
+                AddRunTimeline("success", "Realtime connected", $"SignalR stream is active ({hubUrl}).");
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] SignalR connected: {hubUrl}");
+                return;
+            }
+            catch (Exception ex)
             {
-                if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
-                    return;
-
-                _activeStepName = step;
-                UpdateStepStatus(step, "Running");
-                AddRunTimeline("running", $"Step {idx}: {step}", "Executing");
-                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] ⏳ Step '{step}' started (#{idx})");
-                StateHasChanged();
-            });
-
-            _executionHubClient.StepCompleted += (rid, step, status, ms, output) => _ = InvokeAsync(() =>
-            {
-                if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
-                    return;
-
-                if (string.Equals(_activeStepName, step, StringComparison.OrdinalIgnoreCase))
-                    _activeStepName = null;
-
-                UpdateStepStatus(step, status);
-                AddRunTimeline(
-                    string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase) ? "error" : "success",
-                    $"Step {status}: {step}",
-                    $"{ms} ms{(string.IsNullOrWhiteSpace(output) ? string.Empty : $" | {TrimForRunEvent(output)}")}");
-                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] {(status.Equals("Failed", StringComparison.OrdinalIgnoreCase) ? "❌" : "✅")} Step '{step}' {status} ({ms}ms)");
-                StateHasChanged();
-            });
-
-            _executionHubClient.StepFailed += (rid, step, err) => _ = InvokeAsync(() =>
-            {
-                if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
-                    return;
-
-                _activeStepName = null;
-                UpdateStepStatus(step, "Failed");
-                AddRunTimeline("error", $"Step failed: {step}", err);
-                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] ❌ Step '{step}' failed: {err}");
-                StateHasChanged();
-            });
-
-            _executionHubClient.RunCompleted += (rid, status, totalMs) => _ = InvokeAsync(async () =>
-            {
-                if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
-                    return;
-
-                _runCompletedAt = DateTimeOffset.UtcNow;
-                _runElapsed = TimeSpan.FromMilliseconds(totalMs);
-                await HandleRunStatusChangedAsync(status, emitTimeline: true);
-            });
-
-            _executionHubClient.RunFailed += (rid, err) => _ = InvokeAsync(async () =>
-            {
-                if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
-                    return;
-
-                _runErrorMessage = err;
-                await HandleRunStatusChangedAsync("Failed", error: err, emitTimeline: true);
-            });
-
-            _executionHubClient.LogMessage += (rid, level, msg, ts) => _ = InvokeAsync(() =>
-            {
-                if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
-                    return;
-
-                _logEntries.Add($"[{ts.ToLocalTime():HH:mm:ss}] [{level}] {msg}");
-                StateHasChanged();
-            });
-
-            await _executionHubClient.SubscribeToRunAsync(runId);
-            _subscribedRunId = runId;
-            _runHubConnected = true;
-            AddRunTimeline("success", "Realtime connected", "SignalR stream is active.");
-        }
-        catch (Exception ex)
-        {
-            _runHubConnected = false;
-            AddRunTimeline("warn", "Realtime unavailable", "Using API polling fallback.");
-            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] SignalR unavailable: {ex.Message}");
-            if (_executionHubClient is not null)
-            {
-                await _executionHubClient.DisposeAsync();
-                _executionHubClient = null;
+                lastError = ex;
+                _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] SignalR connection failed ({hubUrl}): {ex.Message}");
+                if (candidate is not null)
+                {
+                    try { await candidate.DisposeAsync(); } catch { }
+                }
             }
         }
+
+        _runHubConnected = false;
+        AddRunTimeline("warn", "Realtime unavailable", "Using API polling fallback.");
+        if (lastError is not null)
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] SignalR unavailable: {lastError.Message}");
+    }
+
+    private ExecutionHubClient CreateExecutionHubClient(string hubUrl)
+    {
+        var client = new ExecutionHubClient(hubUrl);
+        client.RunStarted += (rid, workflowName) => _ = InvokeAsync(() =>
+        {
+            if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _runStatus = "Running";
+            _runStartedAt ??= DateTimeOffset.UtcNow;
+            AddRunTimeline("running", "Workflow started", workflowName);
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] ▶ Workflow started");
+            StateHasChanged();
+        });
+
+        client.StepStarted += (rid, step, idx) => _ = InvokeAsync(() =>
+        {
+            if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _activeStepName = step;
+            UpdateStepStatus(step, "Running");
+            AddRunTimeline("running", $"Step {idx}: {step}", "Executing");
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] ⏳ Step '{step}' started (#{idx})");
+            StateHasChanged();
+        });
+
+        client.StepCompleted += (rid, step, status, ms, output) => _ = InvokeAsync(() =>
+        {
+            if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (string.Equals(_activeStepName, step, StringComparison.OrdinalIgnoreCase))
+                _activeStepName = null;
+
+            UpdateStepStatus(step, status);
+            AddRunTimeline(
+                string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase) ? "error" : "success",
+                $"Step {status}: {step}",
+                $"{ms} ms{(string.IsNullOrWhiteSpace(output) ? string.Empty : $" | {TrimForRunEvent(output)}")}");
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] {(status.Equals("Failed", StringComparison.OrdinalIgnoreCase) ? "❌" : "✅")} Step '{step}' {status} ({ms}ms)");
+            StateHasChanged();
+        });
+
+        client.StepFailed += (rid, step, err) => _ = InvokeAsync(() =>
+        {
+            if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _activeStepName = null;
+            UpdateStepStatus(step, "Failed");
+            AddRunTimeline("error", $"Step failed: {step}", err);
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] ❌ Step '{step}' failed: {err}");
+            StateHasChanged();
+        });
+
+        client.RunCompleted += (rid, status, totalMs) => _ = InvokeAsync(async () =>
+        {
+            if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _runCompletedAt = DateTimeOffset.UtcNow;
+            _runElapsed = TimeSpan.FromMilliseconds(totalMs);
+            await HandleRunStatusChangedAsync(status, emitTimeline: true);
+        });
+
+        client.RunFailed += (rid, err) => _ = InvokeAsync(async () =>
+        {
+            if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _runErrorMessage = err;
+            await HandleRunStatusChangedAsync("Failed", error: err, emitTimeline: true);
+        });
+
+        client.LogMessage += (rid, level, msg, ts) => _ = InvokeAsync(() =>
+        {
+            if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))
+                return;
+
+            _logEntries.Add($"[{ts.ToLocalTime():HH:mm:ss}] [{level}] {msg}");
+            StateHasChanged();
+        });
+
+        return client;
     }
 
     private void StartRunElapsedTicker()
@@ -1472,11 +1687,18 @@
         try
         {
             _runBusy = true;
-            await JS.InvokeAsync<RecordingStartResult>("voiceRecorder.startRecording", _runSelectedDeviceId, _dotNetRef);
-            _runRecording = true;
+            var startResult = await JS.InvokeAsync<RecordingStartResult>("voiceRecorder.startRecording", _runSelectedDeviceId, _dotNetRef);
+            _runSpeechRecognitionSupported = startResult.SpeechRecognition;
+            _runRecording = startResult.IsRecording;
+            if (!_runRecording)
+            {
+                Toast.Warning("Recorder did not start. Verify browser microphone permissions.");
+            }
         }
         catch (Exception ex)
         {
+            if (ex.Message.Contains("not supported", StringComparison.OrdinalIgnoreCase))
+                _runRecorderSupported = false;
             Toast.Error($"Unable to start recording: {ex.Message}");
         }
         finally
@@ -1832,6 +2054,8 @@
     /// </summary>
     private WorkflowDefinitionDto CanvasToDefinition(System.Text.Json.JsonElement canvasData)
     {
+        static bool IsUnlabeledEdge(CanvasEdge edge) => string.IsNullOrWhiteSpace(edge.Label);
+
         var dto = new WorkflowDefinitionDto { Name = _workflowName };
 
         if (!canvasData.TryGetProperty("nodes", out var nodesEl) || !canvasData.TryGetProperty("edges", out var edgesEl))
@@ -1924,8 +2148,8 @@
 
             if (node.Type.Equals("Conditional", StringComparison.OrdinalIgnoreCase))
             {
-                var thenEdge = outs.FirstOrDefault(e => e.Label == "then");
-                var elseEdge = outs.FirstOrDefault(e => e.Label == "else");
+                var thenEdge = outs.FirstOrDefault(e => string.Equals(e.Label, "then", StringComparison.OrdinalIgnoreCase));
+                var elseEdge = outs.FirstOrDefault(e => string.Equals(e.Label, "else", StringComparison.OrdinalIgnoreCase));
 
                 if (thenEdge is not null)
                     step.Then = BuildStep(thenEdge.Target) ?? BuildChainFrom(thenEdge.Target);
@@ -2042,7 +2266,7 @@
                 }
 
                 // Simple sequential: single unlabeled outgoing edge
-                var seqEdge = outs.FirstOrDefault(e => e.Label is null);
+                var seqEdge = outs.FirstOrDefault(IsUnlabeledEdge);
                 if (seqEdge is null) break;
                 var targetNode = nodeMap.GetValueOrDefault(seqEdge.Target);
                 if (targetNode is null || IsSynthetic(targetNode)) break;

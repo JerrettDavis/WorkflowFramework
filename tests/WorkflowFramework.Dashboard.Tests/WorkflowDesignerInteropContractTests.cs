@@ -40,9 +40,12 @@ public sealed class WorkflowDesignerInteropContractTests
         var tasks = ((IEnumerable?)buildTasks!.Invoke(null, [workflowDefinition]))?.Cast<object>().ToList();
         tasks.Should().NotBeNull();
         tasks!.Should().NotBeEmpty();
-        tasks.Any(task => string.Equals(GetProperty(task, "Kind")?.ToString(), "Record", StringComparison.Ordinal))
-            .Should()
-            .BeTrue();
+        tasks.Count.Should().BeGreaterThanOrEqualTo(5);
+        tasks.Any(task => string.Equals(GetProperty(task, "Kind")?.ToString(), "Record", StringComparison.Ordinal)).Should().BeTrue();
+        tasks.Any(task => string.Equals(GetProperty(task, "Kind")?.ToString(), "Transcript", StringComparison.Ordinal)).Should().BeTrue();
+        tasks.Any(task => string.Equals(GetProperty(task, "Kind")?.ToString(), "Questions", StringComparison.Ordinal)).Should().BeTrue();
+        tasks.Any(task => string.Equals(GetProperty(task, "Kind")?.ToString(), "QaAnswers", StringComparison.Ordinal)).Should().BeTrue();
+        tasks.Any(task => string.Equals(GetProperty(task, "Kind")?.ToString(), "Review", StringComparison.Ordinal)).Should().BeTrue();
     }
 
     [Fact]

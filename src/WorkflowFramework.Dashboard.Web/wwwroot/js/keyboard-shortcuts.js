@@ -42,7 +42,7 @@ window.keyboardShortcuts = {
 
             if (shortcut) {
                 e.preventDefault();
-                dotNetRef.invokeMethodAsync('HandleShortcut', shortcut);
+                dotNetRef.invokeMethodAsync('HandleShortcut', shortcut).catch(() => { });
             }
         };
         document.addEventListener('keydown', this._handler);
