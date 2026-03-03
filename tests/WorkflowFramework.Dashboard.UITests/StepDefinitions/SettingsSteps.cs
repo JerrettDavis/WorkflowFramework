@@ -34,6 +34,12 @@ public sealed class SettingsSteps
             new PageGotoOptions { WaitUntil = WaitUntilState.Load });
         await Page.WaitForSelectorAsync("[data-testid='settings-page']",
             new PageWaitForSelectorOptions { Timeout = 30_000 });
+        // Wait for Blazor circuit to connect (prerendered HTML has the elements but they're not interactive)
+        await Page.WaitForFunctionAsync(
+            "() => window.Blazor !== undefined",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
+        await Page.WaitForTimeoutAsync(500);
     }
 
     [Then("I should see the settings page")]

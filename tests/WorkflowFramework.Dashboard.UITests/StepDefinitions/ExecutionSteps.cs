@@ -163,9 +163,9 @@ public sealed class ExecutionSteps
                     new
                     {
                         id = "delay1",
-                        type = "delay",
+                        type = "Delay",
                         name = "Long Delay",
-                        config = new Dictionary<string, object> { ["delayMs"] = delayMs }
+                        delaySeconds = Math.Max(1, delayMs / 1000)
                     }
                 }
             }

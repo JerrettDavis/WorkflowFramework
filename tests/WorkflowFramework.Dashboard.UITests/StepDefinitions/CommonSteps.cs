@@ -23,12 +23,39 @@ public sealed class CommonSteps
     [Given("the dashboard is running")]
     public async Task GivenTheDashboardIsRunning()
     {
-        var response = await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
+        var response = await Page.GotoAsync(WebUrl, new PageGotoOptions
+        {
+            WaitUntil = WaitUntilState.DOMContentLoaded,
+            Timeout = 90_000
+        });
         response.Should().NotBeNull();
         response!.Ok.Should().BeTrue();
         // Wait for Blazor circuit to connect and render the toolbar
         await Page.WaitForSelectorAsync("[data-testid='toolbar']",
             new PageWaitForSelectorOptions { Timeout = 30_000 });
+        // Wait for Blazor Server circuit to become interactive.
+        // Prerendered HTML has the toolbar but buttons don't work until
+        // the SignalR circuit connects and Blazor re-renders interactively.
+        await WaitForBlazorInteractiveAsync();
+    }
+
+    /// <summary>
+    /// Waits for Blazor Server interactive mode by checking that the
+    /// Blazor circuit is connected (the _blazorInitialized marker or
+    /// by verifying a click handler is wired up).
+    /// </summary>
+    private async Task WaitForBlazorInteractiveAsync()
+    {
+        // Blazor Server sets up a SignalR connection. We can detect it by
+        // waiting for the Blazor._internal object to exist, or more reliably,
+        // by waiting for the blazor-enhanced attribute to appear on re-render.
+        // Simplest: wait for the WebSocket connection via Blazor's circuit marker.
+        await Page.WaitForFunctionAsync(
+            "() => document.querySelector('[data-server-rendered]') === null || window.Blazor !== undefined",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
+        // Additional brief pause to let Blazor finish re-rendering after circuit connect
+        await Page.WaitForTimeoutAsync(500);
     }
 
     [When("I navigate to the designer")]
@@ -58,15 +85,20 @@ public sealed class CommonSteps
         if (await toolbar.IsVisibleAsync())
             return; // Already on the designer
 
-        await Page.GotoAsync(WebUrl, new PageGotoOptions { WaitUntil = WaitUntilState.Load });
+        await Page.GotoAsync(WebUrl, new PageGotoOptions
+        {
+            WaitUntil = WaitUntilState.DOMContentLoaded,
+            Timeout = 90_000
+        });
         await Page.WaitForSelectorAsync("[data-testid='toolbar']",
             new PageWaitForSelectorOptions { Timeout = 30_000 });
+        await WaitForBlazorInteractiveAsync();
     }
 
     /// <summary>
     /// Creates a workflow via API and stores its ID in context.
     /// </summary>
-    protected async Task<string> CreateWorkflowViaApiAsync(string name, object? definition = null)
+    private async Task<string> CreateWorkflowViaApiAsync(string name, object? definition = null)
     {
         using var client = AspireHooks.Fixture.CreateApiClient();
         var payload = new

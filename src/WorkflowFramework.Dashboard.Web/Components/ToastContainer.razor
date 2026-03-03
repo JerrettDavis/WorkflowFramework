@@ -17,14 +17,20 @@
 
     protected override void OnInitialized()
     {
-        Toast.OnChange += StateHasChanged;
+        Toast.OnChange += OnToastChanged;
         _timer = new System.Threading.Timer(_ =>
         {
             var now = DateTimeOffset.UtcNow;
             var expired = Toast.Toasts.Where(t => (now - t.CreatedAt).TotalMilliseconds > t.DurationMs).ToList();
             foreach (var t in expired) Toast.Remove(t.Id);
-            if (expired.Count > 0) InvokeAsync(StateHasChanged);
         }, null, 1000, 1000);
+    }
+
+    private void OnToastChanged()
+    {
+        // Always marshal to the Blazor Dispatcher thread.
+        // OnChange may fire from a Timer thread (toast expiry) or the UI thread.
+        InvokeAsync(StateHasChanged);
     }
 
     private static string GetToastClass(ToastType type) => type switch
@@ -47,7 +53,7 @@
 
     public void Dispose()
     {
-        Toast.OnChange -= StateHasChanged;
+        Toast.OnChange -= OnToastChanged;
         _timer?.Dispose();
     }
 }

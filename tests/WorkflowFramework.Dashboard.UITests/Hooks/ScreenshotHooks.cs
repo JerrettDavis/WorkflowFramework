@@ -40,6 +40,20 @@ public sealed class ScreenshotHooks
             Console.WriteLine($"[DIAG] Failure artifacts saved to {dir}/{safeName}.*");
             Console.WriteLine($"[DIAG] Page URL: {page.Url}");
             Console.WriteLine($"[DIAG] Page title: {await page.TitleAsync()}");
+
+            // Query server-side circuit stats
+            try
+            {
+                using var client = AspireHooks.Fixture.CreateApiClient();
+                // Point at the web server's diagnostics endpoint
+                using var webClient = new HttpClient { BaseAddress = new Uri(AspireHooks.Fixture.WebBaseUrl) };
+                var stats = await webClient.GetStringAsync("/diagnostics/circuits");
+                Console.WriteLine($"[DIAG] Circuit stats: {stats}");
+            }
+            catch (Exception statsEx)
+            {
+                Console.WriteLine($"[DIAG] Circuit stats unavailable: {statsEx.Message}");
+            }
         }
         catch (Exception ex)
         {

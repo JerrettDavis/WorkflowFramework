@@ -9,6 +9,21 @@ namespace WorkflowFramework.Dashboard.Web.Services;
 /// </summary>
 public sealed class DashboardApiClient(HttpClient http)
 {
+    public Uri? BaseAddress => http.BaseAddress;
+
+    public string? GetExecutionHubUrl()
+    {
+        if (http.BaseAddress is null)
+            return null;
+
+        var scheme = http.BaseAddress.Scheme;
+        if (!string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(scheme, "https", StringComparison.OrdinalIgnoreCase))
+            return null;
+
+        return new Uri(http.BaseAddress, "/hubs/execution").ToString();
+    }
+
     // Auth
     public void SetAuthToken(string? token)
     {
@@ -139,9 +154,14 @@ public sealed class DashboardApiClient(HttpClient http)
         => await http.GetFromJsonAsync<StepTypeInfo>($"/api/steps/{Uri.EscapeDataString(type)}", ct);
 
     // Runs
-    public async Task<RunSummary?> RunWorkflowAsync(string id, CancellationToken ct = default)
+    public async Task<RunSummary?> RunWorkflowAsync(string id, StartRunRequestDto? request = null, CancellationToken ct = default)
     {
-        var resp = await http.PostAsync($"/api/workflows/{id}/run", null, ct);
+        HttpResponseMessage resp;
+        if (request is null)
+            resp = await http.PostAsync($"/api/workflows/{id}/run", null, ct);
+        else
+            resp = await http.PostAsJsonAsync($"/api/workflows/{id}/run", request, ct);
+
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<RunSummary>(ct);
     }
@@ -251,5 +271,21 @@ public sealed class DashboardApiClient(HttpClient http)
         var resp = await http.PostAsync($"/api/workflows/{workflowId}/triggers/{triggerId}/test", null, ct);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<RunSummary>(ct);
+    }
+
+    // Voice
+    public async Task<List<VoiceSubmissionDto>> GetVoiceSubmissionsAsync(int? limit = null, CancellationToken ct = default)
+    {
+        var url = "/api/voice/submissions";
+        if (limit.HasValue)
+            url += $"?limit={limit.Value}";
+        return await http.GetFromJsonAsync<List<VoiceSubmissionDto>>(url, ct) ?? [];
+    }
+
+    public async Task<VoiceSubmissionDto?> CreateVoiceSubmissionAsync(VoiceSubmissionRequestDto request, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsJsonAsync("/api/voice/submissions", request, ct);
+        resp.EnsureSuccessStatusCode();
+        return await resp.Content.ReadFromJsonAsync<VoiceSubmissionDto>(ct);
     }
 }

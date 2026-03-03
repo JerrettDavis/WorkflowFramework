@@ -1,0 +1,721 @@
+@page "/voice"
+@using System.Text.RegularExpressions
+@inject DashboardApiClient Api
+@inject IJSRuntime JS
+@inject ToastService Toast
+@implements IAsyncDisposable
+
+<div class="voice-page" data-testid="voice-studio-page">
+    <header class="voice-hero">
+        <p class="voice-kicker">Audio Workbench</p>
+        <h1>Voice Studio</h1>
+        <p>Record or upload audio, curate transcripts, build Q/A payloads, and run workflows with explicit parameters.</p>
+    </header>
+
+    @if (_loading)
+    {
+        <div class="voice-loading">Loading workflows and submissions...</div>
+    }
+    else
+    {
+        <div class="voice-grid">
+            <section class="voice-card">
+                <h2>Capture</h2>
+
+                <label class="voice-label" for="mic-select">Input Device</label>
+                <select id="mic-select" @bind="_selectedDeviceId" class="voice-input" disabled="@(!_recorderSupported || _isRecording)">
+                    @if (_audioDevices.Count == 0)
+                    {
+                        <option value="">Default microphone</option>
+                    }
+                    else
+                    {
+                        @foreach (var device in _audioDevices)
+                        {
+                            <option value="@device.DeviceId">@device.Label</option>
+                        }
+                    }
+                </select>
+
+                <div class="voice-actions">
+                    <button class="voice-btn @(_isRecording ? "danger" : "accent")"
+                            @onclick="ToggleRecordingAsync"
+                            disabled="@(!_recorderSupported || _busy)">
+                        @(_isRecording ? "Stop Recording" : "Start Recording")
+                    </button>
+                    <label class="voice-upload">
+                        <span>Upload Audio</span>
+                        <InputFile OnChange="HandleUploadAsync"
+                                   accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm,.flac"
+                                   disabled="@(_busy || _isRecording)" />
+                    </label>
+                    <button class="voice-btn ghost"
+                            @onclick="ClearAudioAsync"
+                            disabled="@(_currentAudio is null && string.IsNullOrWhiteSpace(_liveFinalTranscript))">
+                        Clear
+                    </button>
+                </div>
+
+                <div class="voice-meta">
+                    <span>Recorder: @(_recorderSupported ? "Ready" : "Unavailable")</span>
+                    <span>Live STT: @(_speechRecognitionSupported ? "Available" : "Unavailable")</span>
+                </div>
+
+                @if (_currentAudio is not null)
+                {
+                    <div class="voice-audio-preview">
+                        <p><strong>@_currentAudio.FileName</strong> (@FormatBytes(_currentAudio.Size))</p>
+                        @if (!string.IsNullOrWhiteSpace(_currentAudio.PreviewUrl))
+                        {
+                            <audio controls src="@_currentAudio.PreviewUrl"></audio>
+                        }
+                    </div>
+                }
+
+                @if (_isRecording || !string.IsNullOrWhiteSpace(_liveInterimTranscript))
+                {
+                    <div class="voice-live">
+                        <div class="voice-live-head">
+                            <strong>Live Transcript</strong>
+                            <label>
+                                <input type="checkbox" @bind="_syncTranscriptWithLive" />
+                                Sync to editor
+                            </label>
+                        </div>
+                        <p>@_liveFinalTranscript<span class="voice-interim">@_liveInterimTranscript</span></p>
+                    </div>
+                }
+            </section>
+
+            <section class="voice-card">
+                <h2>Transcript</h2>
+
+                <div class="voice-inline-fields">
+                    <label>
+                        <span>Language</span>
+                        <select @bind="_language" class="voice-input">
+                            <option value="auto">Auto</option>
+                            <option value="en">English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Speaker Count</span>
+                        <input type="number" min="1" max="10" @bind="_speakerCount" class="voice-input" />
+                    </label>
+                </div>
+
+                <label class="voice-label" for="transcript-editor">Transcript Text</label>
+                <textarea id="transcript-editor"
+                          class="voice-textarea"
+                          @bind="_transcriptText"
+                          @bind:event="oninput"
+                          placeholder="Paste or capture transcript text..."></textarea>
+
+                <div class="voice-actions">
+                    <button class="voice-btn ghost" @onclick="GenerateQuestionsFromTranscript" disabled="@string.IsNullOrWhiteSpace(_transcriptText)">Generate Q/A Prompts</button>
+                    <button class="voice-btn accent" @onclick="SubmitTranscriptionAsync" disabled="@_busy">Submit Transcription</button>
+                </div>
+            </section>
+        </div>
+
+        <section class="voice-card">
+            <div class="voice-card-head">
+                <h2>Q/A Workflow Payload</h2>
+                <button class="voice-btn ghost" @onclick="AddQaPair">Add Pair</button>
+            </div>
+
+            @if (_qaPairs.Count == 0)
+            {
+                <p class="voice-muted">No Q/A pairs yet. Generate prompts from the transcript or add pairs manually.</p>
+            }
+            else
+            {
+                <div class="qa-list">
+                    @for (var i = 0; i < _qaPairs.Count; i++)
+                    {
+                        var pair = _qaPairs[i];
+                        <article class="qa-item">
+                            <div class="qa-head">
+                                <span>Pair @(i + 1)</span>
+                                <button class="qa-remove" @onclick="@(() => RemoveQaPair(i))">Remove</button>
+                            </div>
+                            <input class="voice-input" @bind="pair.Question" @bind:event="oninput" placeholder="Question" />
+                            <textarea class="voice-textarea compact" @bind="pair.Answer" @bind:event="oninput" placeholder="Answer"></textarea>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="voice-card">
+            <h2>Run Workflow</h2>
+
+            <label class="voice-label" for="workflow-search">Workflow Lookup</label>
+            <input id="workflow-search"
+                   class="voice-input"
+                   @bind="_workflowSearch"
+                   @bind:event="oninput"
+                   placeholder="Search by name or description..." />
+
+            <label class="voice-label" for="workflow-select">Voice-Compatible Workflows</label>
+            <select id="workflow-select" class="voice-input" @bind="_selectedWorkflowId">
+                <option value="">Select a workflow...</option>
+                @foreach (var workflow in FilteredWorkflows)
+                {
+                    <option value="@workflow.Id">@workflow.Name (@workflow.StepCount steps)</option>
+                }
+            </select>
+
+            <div class="voice-actions">
+                <button class="voice-btn accent" @onclick="RunWorkflowAsync" disabled="@_busy">Run With Parameters</button>
+            </div>
+
+            @if (_latestRun is not null)
+            {
+                <div class="voice-run">
+                    <p><strong>Run:</strong> @_latestRun.RunId</p>
+                    <p><strong>Status:</strong> @_latestRun.Status</p>
+                    @if (!string.IsNullOrWhiteSpace(_latestRun.Error))
+                    {
+                        <p class="voice-error">@_latestRun.Error</p>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="voice-card">
+            <h2>Recent Submissions</h2>
+
+            @if (_submissions.Count == 0)
+            {
+                <p class="voice-muted">No submissions yet.</p>
+            }
+            else
+            {
+                <div class="submission-list">
+                    @foreach (var submission in _submissions)
+                    {
+                        <button class="submission-item" @onclick="@(() => LoadSubmission(submission))">
+                            <span class="submission-head">
+                                <strong>@(submission.WorkflowName ?? "Unassigned Workflow")</strong>
+                                <span>@submission.CreatedAt.ToLocalTime().ToString("MMM d, HH:mm")</span>
+                            </span>
+                            <span class="submission-meta">@submission.Language • @(submission.QaPairs.Count) Q/A pairs</span>
+                            <span class="submission-preview">@TrimPreview(submission.Transcript)</span>
+                        </button>
+                    }
+                </div>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private readonly List<QaPairEditor> _qaPairs = [];
+    private readonly List<AudioDeviceOption> _audioDevices = [];
+    private List<WorkflowListItem> _workflows = [];
+    private List<VoiceSubmissionDto> _submissions = [];
+
+    private DotNetObjectReference<VoiceStudio>? _dotNetRef;
+    private BrowserAudioPayload? _currentAudio;
+    private RunSummary? _latestRun;
+    private string? _selectedWorkflowId;
+    private string? _selectedDeviceId;
+    private string _workflowSearch = "";
+    private string _language = "auto";
+    private int _speakerCount = 1;
+    private bool _loading = true;
+    private bool _busy;
+    private bool _isRecording;
+    private bool _recorderSupported = true;
+    private bool _speechRecognitionSupported;
+    private bool _syncTranscriptWithLive = true;
+    private string _transcriptText = "";
+    private string _liveFinalTranscript = "";
+    private string _liveInterimTranscript = "";
+
+    private IEnumerable<WorkflowListItem> FilteredWorkflows
+    {
+        get
+        {
+            var source = _workflows;
+            if (!string.IsNullOrWhiteSpace(_workflowSearch))
+            {
+                var term = _workflowSearch.Trim();
+                source = source.Where(w =>
+                    w.Name.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                    (w.Description?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+            }
+
+            var voiceOnly = source.Where(IsVoiceWorkflow).ToList();
+            return voiceOnly.Count > 0 ? voiceOnly : source;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var workflowsTask = Api.GetWorkflowsAsync();
+            var submissionsTask = Api.GetVoiceSubmissionsAsync(limit: 20);
+            await Task.WhenAll(workflowsTask, submissionsTask);
+
+            _workflows = workflowsTask.Result.OrderBy(w => w.Name).ToList();
+            _submissions = submissionsTask.Result.OrderByDescending(s => s.CreatedAt).ToList();
+            _selectedWorkflowId = FilteredWorkflows.FirstOrDefault()?.Id;
+            if (_qaPairs.Count == 0)
+                _qaPairs.Add(new QaPairEditor());
+        }
+        catch (Exception ex)
+        {
+            Toast.Error($"Failed to load voice studio data: {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        _dotNetRef = DotNetObjectReference.Create(this);
+        try
+        {
+            var devices = await JS.InvokeAsync<List<AudioDeviceOption>>("voiceRecorder.listInputDevices");
+            _audioDevices.Clear();
+            _audioDevices.AddRange(devices);
+            _selectedDeviceId = _audioDevices.FirstOrDefault()?.DeviceId;
+            _speechRecognitionSupported = await JS.InvokeAsync<bool>("voiceRecorder.supportsSpeechRecognition");
+        }
+        catch
+        {
+            _recorderSupported = false;
+            _speechRecognitionSupported = false;
+        }
+
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task OnLiveTranscriptUpdated(string finalText, string interimText)
+    {
+        _liveFinalTranscript = finalText ?? "";
+        _liveInterimTranscript = interimText ?? "";
+
+        if (_syncTranscriptWithLive)
+            _transcriptText = string.IsNullOrWhiteSpace(_liveInterimTranscript)
+                ? _liveFinalTranscript
+                : $"{_liveFinalTranscript} {_liveInterimTranscript}".Trim();
+
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task ToggleRecordingAsync()
+    {
+        if (_busy)
+            return;
+
+        if (_isRecording)
+        {
+            await StopRecordingAsync();
+            return;
+        }
+
+        try
+        {
+            _busy = true;
+            await JS.InvokeAsync<RecordingStartResult>("voiceRecorder.startRecording", _selectedDeviceId, _dotNetRef);
+            _isRecording = true;
+            _busy = false;
+            Toast.Info("Recording started.");
+        }
+        catch (Exception ex)
+        {
+            _busy = false;
+            Toast.Error($"Unable to start recording: {ex.Message}");
+        }
+    }
+
+    private async Task StopRecordingAsync()
+    {
+        try
+        {
+            _busy = true;
+            var payload = await JS.InvokeAsync<BrowserAudioPayload?>("voiceRecorder.stopRecording");
+            _isRecording = false;
+            _busy = false;
+
+            if (payload is null)
+            {
+                Toast.Warning("No audio was captured.");
+                return;
+            }
+
+            _currentAudio = payload;
+            if (string.IsNullOrWhiteSpace(_transcriptText) && !string.IsNullOrWhiteSpace(payload.LiveTranscript))
+                _transcriptText = payload.LiveTranscript;
+
+            Toast.Success("Recording captured.");
+        }
+        catch (Exception ex)
+        {
+            _busy = false;
+            _isRecording = false;
+            Toast.Error($"Unable to stop recording: {ex.Message}");
+        }
+    }
+
+    private async Task HandleUploadAsync(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null)
+            return;
+
+        try
+        {
+            _busy = true;
+            await using var stream = file.OpenReadStream(maxAllowedSize: 1024L * 1024L * 30L);
+            await using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            _currentAudio = new BrowserAudioPayload
+            {
+                FileName = file.Name,
+                MimeType = file.ContentType ?? "audio/wav",
+                Size = ms.Length,
+                Base64 = Convert.ToBase64String(ms.ToArray()),
+                PreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}"
+            };
+            Toast.Success($"Loaded '{file.Name}'.");
+        }
+        catch (Exception ex)
+        {
+            Toast.Error($"Upload failed: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ClearAudioAsync()
+    {
+        _currentAudio = null;
+        _liveFinalTranscript = "";
+        _liveInterimTranscript = "";
+        await JS.InvokeVoidAsync("voiceRecorder.clearPreview");
+    }
+
+    private async Task SubmitTranscriptionAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_transcriptText))
+        {
+            Toast.Warning("Transcript text is required.");
+            return;
+        }
+
+        try
+        {
+            _busy = true;
+            var selected = _workflows.FirstOrDefault(w => w.Id == _selectedWorkflowId);
+            var submission = await Api.CreateVoiceSubmissionAsync(new VoiceSubmissionRequestDto
+            {
+                WorkflowId = _selectedWorkflowId,
+                WorkflowName = selected?.Name,
+                Transcript = _transcriptText.Trim(),
+                Language = _language,
+                AudioFileName = _currentAudio?.FileName,
+                AudioMimeType = _currentAudio?.MimeType,
+                AudioSizeBytes = _currentAudio?.Size,
+                Parameters = BuildParameterMap(),
+                QaPairs = BuildQaPairs()
+            });
+
+            if (submission is not null)
+            {
+                _submissions.Insert(0, submission);
+                _submissions = _submissions
+                    .OrderByDescending(s => s.CreatedAt)
+                    .Take(20)
+                    .ToList();
+                Toast.Success("Transcription submitted.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast.Error($"Submission failed: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RunWorkflowAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_selectedWorkflowId))
+        {
+            Toast.Warning("Select a workflow first.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_transcriptText))
+        {
+            Toast.Warning("Transcript text is required.");
+            return;
+        }
+
+        try
+        {
+            _busy = true;
+            var run = await Api.RunWorkflowAsync(_selectedWorkflowId, BuildRunRequest());
+            _latestRun = run;
+
+            if (run is null)
+            {
+                Toast.Error("Workflow could not be started.");
+                return;
+            }
+
+            Toast.Info($"Run started: {run.RunId}");
+            await PollRunUntilCompleted(run.RunId);
+        }
+        catch (Exception ex)
+        {
+            Toast.Error($"Run failed to start: {ex.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task PollRunUntilCompleted(string runId)
+    {
+        var deadline = DateTimeOffset.UtcNow.AddSeconds(30);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            await Task.Delay(600);
+            var current = await Api.GetRunAsync(runId);
+            if (current is null)
+                continue;
+
+            _latestRun = current;
+            StateHasChanged();
+            if (current.Status is "Completed" or "Failed" or "Cancelled")
+                return;
+        }
+    }
+
+    private void GenerateQuestionsFromTranscript()
+    {
+        if (string.IsNullOrWhiteSpace(_transcriptText))
+            return;
+
+        var generated = new List<QaPairEditor>();
+        var qPattern = Regex.Matches(_transcriptText, @"([^?.!\n]{8,}\?)");
+        foreach (Match match in qPattern)
+        {
+            var question = match.Value.Trim();
+            if (question.Length >= 12)
+                generated.Add(new QaPairEditor { Question = question });
+        }
+
+        if (generated.Count == 0)
+        {
+            var sentences = Regex.Split(_transcriptText, @"(?<=[.!])\s+")
+                .Select(s => s.Trim())
+                .Where(s => s.Length > 30)
+                .Take(3)
+                .ToList();
+
+            foreach (var sentence in sentences)
+            {
+                generated.Add(new QaPairEditor
+                {
+                    Question = $"Can you expand on: {TrimSentence(sentence)}?"
+                });
+            }
+        }
+
+        if (generated.Count == 0)
+        {
+            generated =
+            [
+                new QaPairEditor { Question = "What is the primary goal of this recording?" },
+                new QaPairEditor { Question = "Which actions or decisions were discussed?" },
+                new QaPairEditor { Question = "What follow-up work is required?" }
+            ];
+        }
+
+        _qaPairs.Clear();
+        _qaPairs.AddRange(generated);
+        Toast.Info($"Prepared {_qaPairs.Count} Q/A prompts.");
+    }
+
+    private void AddQaPair() => _qaPairs.Add(new QaPairEditor());
+
+    private void RemoveQaPair(int index)
+    {
+        if (index < 0 || index >= _qaPairs.Count)
+            return;
+        _qaPairs.RemoveAt(index);
+        if (_qaPairs.Count == 0)
+            _qaPairs.Add(new QaPairEditor());
+    }
+
+    private void LoadSubmission(VoiceSubmissionDto submission)
+    {
+        _selectedWorkflowId = submission.WorkflowId;
+        _transcriptText = submission.Transcript;
+        _language = submission.Language ?? "auto";
+        _qaPairs.Clear();
+        _qaPairs.AddRange(submission.QaPairs.Select(q => new QaPairEditor
+        {
+            Question = q.Question,
+            Answer = q.Answer
+        }));
+        if (_qaPairs.Count == 0)
+            _qaPairs.Add(new QaPairEditor());
+    }
+
+    private StartRunRequestDto BuildRunRequest()
+    {
+        var qaPayload = BuildQaPairs()
+            .Select(q => new Dictionary<string, object?>
+            {
+                ["question"] = q.Question,
+                ["answer"] = q.Answer
+            })
+            .ToList();
+
+        var parameters = BuildParameterMap().ToDictionary(kvp => kvp.Key, kvp => (object?)kvp.Value);
+
+        var voicePayload = new Dictionary<string, object?>
+        {
+            ["transcript"] = _transcriptText.Trim(),
+            ["language"] = _language,
+            ["audioFileName"] = _currentAudio?.FileName,
+            ["audioMimeType"] = _currentAudio?.MimeType,
+            ["audioSizeBytes"] = _currentAudio?.Size
+        };
+
+        return new StartRunRequestDto
+        {
+            Source = "voice-studio",
+            Inputs = new Dictionary<string, object?>
+            {
+                ["transcript"] = _transcriptText.Trim(),
+                ["voice"] = voicePayload,
+                ["qaPairs"] = qaPayload,
+                ["parameters"] = parameters
+            }
+        };
+    }
+
+    private Dictionary<string, string> BuildParameterMap()
+    {
+        return new Dictionary<string, string>
+        {
+            ["language"] = _language,
+            ["speakerCount"] = _speakerCount.ToString()
+        };
+    }
+
+    private List<VoiceQaPairDto> BuildQaPairs()
+    {
+        return _qaPairs
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.Question) || !string.IsNullOrWhiteSpace(pair.Answer))
+            .Select(pair => new VoiceQaPairDto
+            {
+                Question = pair.Question.Trim(),
+                Answer = pair.Answer.Trim()
+            })
+            .ToList();
+    }
+
+    private static bool IsVoiceWorkflow(WorkflowListItem workflow)
+    {
+        var text = $"{workflow.Name} {workflow.Description}".ToLowerInvariant();
+        return text.Contains("voice")
+            || text.Contains("audio")
+            || text.Contains("transcrib")
+            || text.Contains("meeting")
+            || text.Contains("interview")
+            || text.Contains("brain");
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes <= 0) return "0 B";
+        string[] suffixes = ["B", "KB", "MB", "GB"];
+        var idx = 0;
+        double value = bytes;
+        while (value >= 1024 && idx < suffixes.Length - 1)
+        {
+            value /= 1024;
+            idx++;
+        }
+        return $"{value:0.#} {suffixes[idx]}";
+    }
+
+    private static string TrimSentence(string sentence)
+    {
+        const int max = 72;
+        var trimmed = sentence.Trim();
+        return trimmed.Length <= max ? trimmed : $"{trimmed[..max].TrimEnd()}...";
+    }
+
+    private static string TrimPreview(string text)
+    {
+        const int max = 140;
+        if (string.IsNullOrWhiteSpace(text))
+            return "";
+        var compact = Regex.Replace(text, @"\s+", " ").Trim();
+        return compact.Length <= max ? compact : $"{compact[..max].TrimEnd()}...";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_isRecording)
+        {
+            try { await JS.InvokeVoidAsync("voiceRecorder.stopRecording"); } catch { }
+        }
+        try { await JS.InvokeVoidAsync("voiceRecorder.dispose"); } catch { }
+        _dotNetRef?.Dispose();
+    }
+
+    private sealed class QaPairEditor
+    {
+        public string Question { get; set; } = "";
+        public string Answer { get; set; } = "";
+    }
+
+    private sealed class AudioDeviceOption
+    {
+        public string DeviceId { get; set; } = "";
+        public string Label { get; set; } = "";
+    }
+
+    private sealed class RecordingStartResult
+    {
+        public bool IsRecording { get; set; }
+        public bool SpeechRecognition { get; set; }
+    }
+
+    private sealed class BrowserAudioPayload
+    {
+        public string FileName { get; set; } = "";
+        public string MimeType { get; set; } = "audio/webm";
+        public long Size { get; set; }
+        public string Base64 { get; set; } = "";
+        public string? PreviewUrl { get; set; }
+        public string? LiveTranscript { get; set; }
+    }
+}

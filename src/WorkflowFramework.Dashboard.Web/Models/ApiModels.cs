@@ -103,9 +103,13 @@ public sealed class RunSummary
     public string RunId { get; set; } = "";
     public string WorkflowId { get; set; } = "";
     public string WorkflowName { get; set; } = "";
+    public string? Source { get; set; }
     public string Status { get; set; } = "";
     public DateTimeOffset StartedAt { get; set; }
     public DateTimeOffset? CompletedAt { get; set; }
+    public Dictionary<string, string>? Inputs { get; set; }
+    public Dictionary<string, string>? StepResults { get; set; }
+    public string? Error { get; set; }
 }
 
 public enum TemplateDifficulty
@@ -129,6 +133,7 @@ public sealed class WorkflowTemplateSummary
 
 public sealed class ValidationErrorDto
 {
+    [JsonConverter(typeof(ValidationSeverityStringConverter))]
     public string Severity { get; set; } = "Error";
     public string? StepName { get; set; }
     public string Message { get; set; } = "";
@@ -140,6 +145,36 @@ public sealed class ValidationResultDto
     public bool IsValid { get; set; }
     public int ErrorCount { get; set; }
     public int WarningCount { get; set; }
+}
+
+public sealed class ValidationSeverityStringConverter : JsonConverter<string>
+{
+    public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var value = reader.GetString();
+            return string.IsNullOrWhiteSpace(value) ? "Error" : value;
+        }
+
+        if (reader.TokenType == JsonTokenType.Number && reader.TryGetInt32(out var number))
+        {
+            return number switch
+            {
+                0 => "Info",
+                1 => "Warning",
+                2 => "Error",
+                _ => "Error"
+            };
+        }
+
+        return "Error";
+    }
+
+    public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(string.IsNullOrWhiteSpace(value) ? "Error" : value);
+    }
 }
 
 public sealed class DashboardSettingsDto
@@ -257,4 +292,44 @@ public sealed class TriggerTypeInfoDto
     public string Category { get; set; } = "";
     public string? ConfigSchema { get; set; }
     public string? Icon { get; set; }
+}
+
+public sealed class StartRunRequestDto
+{
+    public Dictionary<string, object?>? Inputs { get; set; }
+    public string? Source { get; set; }
+}
+
+public sealed class VoiceSubmissionRequestDto
+{
+    public string? WorkflowId { get; set; }
+    public string? WorkflowName { get; set; }
+    public string Transcript { get; set; } = "";
+    public string? Language { get; set; }
+    public string? AudioFileName { get; set; }
+    public string? AudioMimeType { get; set; }
+    public long? AudioSizeBytes { get; set; }
+    public Dictionary<string, string>? Parameters { get; set; }
+    public List<VoiceQaPairDto> QaPairs { get; set; } = [];
+}
+
+public sealed class VoiceSubmissionDto
+{
+    public string Id { get; set; } = "";
+    public DateTimeOffset CreatedAt { get; set; }
+    public string? WorkflowId { get; set; }
+    public string? WorkflowName { get; set; }
+    public string Transcript { get; set; } = "";
+    public string? Language { get; set; }
+    public string? AudioFileName { get; set; }
+    public string? AudioMimeType { get; set; }
+    public long? AudioSizeBytes { get; set; }
+    public Dictionary<string, string>? Parameters { get; set; }
+    public List<VoiceQaPairDto> QaPairs { get; set; } = [];
+}
+
+public sealed class VoiceQaPairDto
+{
+    public string Question { get; set; } = "";
+    public string Answer { get; set; } = "";
 }

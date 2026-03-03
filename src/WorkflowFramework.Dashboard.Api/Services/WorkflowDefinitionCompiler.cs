@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using WorkflowFramework.Builder;
 using WorkflowFramework.Dashboard.Api.Plugins;
 using WorkflowFramework.Extensions.AI;
@@ -47,7 +48,9 @@ public sealed class WorkflowDefinitionCompiler
                 builder.Step(stepDto.Name, async ctx =>
                 {
                     var expression = stepDto.Config?.GetValueOrDefault("expression") ?? "No action defined";
-                    ctx.Properties[$"{stepDto.Name}.Output"] = $"Executed: {expression}";
+                    var rendered = RenderActionExpression(expression, ctx.Properties);
+                    ctx.Properties[$"{stepDto.Name}.Output"] = $"Executed: {rendered}";
+                    ctx.Properties[$"{stepDto.Name}.Expression"] = rendered;
                     await Task.CompletedTask;
                 });
                 break;
@@ -228,6 +231,49 @@ public sealed class WorkflowDefinitionCompiler
                 DefaultModel = model
             })
         };
+    }
+
+    private static string RenderActionExpression(string expression, IDictionary<string, object?> properties)
+    {
+        if (string.IsNullOrWhiteSpace(expression))
+            return "No action defined";
+
+        return Regex.Replace(
+            expression,
+            @"\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}",
+            match =>
+            {
+                var key = match.Groups[1].Value;
+                var value = ResolvePropertyValue(properties, key);
+                return value ?? match.Value;
+            });
+    }
+
+    private static string? ResolvePropertyValue(IDictionary<string, object?> properties, string key)
+    {
+        if (properties.TryGetValue(key, out var direct) && direct is not null)
+            return Convert.ToString(direct);
+
+        if (!key.Contains('.'))
+            return null;
+
+        var segments = key.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (segments.Length == 0)
+            return null;
+
+        if (!properties.TryGetValue(segments[0], out var current))
+            return null;
+
+        for (var i = 1; i < segments.Length; i++)
+        {
+            if (current is not Dictionary<string, object?> map)
+                return null;
+
+            if (!map.TryGetValue(segments[i], out current))
+                return null;
+        }
+
+        return current is null ? null : Convert.ToString(current);
     }
 }
 

@@ -819,6 +819,7 @@
 
         _activeBottomTab = "output";
         _bottomPanelCollapsed = false;
+        await SeedStepStatusesFromCanvasAsync();
 
         _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Running workflow: {_workflowName}...");
         var run = await Api.RunWorkflowAsync(_currentWorkflowId, request);
@@ -835,9 +836,31 @@
         }
     }
 
+    private async Task SeedStepStatusesFromCanvasAsync()
+    {
+        try
+        {
+            var canvasData = await JS.InvokeAsync<System.Text.Json.JsonElement>("workflowEditor.getWorkflowDefinition");
+            var definition = CanvasToDefinition(canvasData);
+            var stepNames = FlattenSteps(definition.Steps)
+                .Select(s => s.Name)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            _stepStatuses.Clear();
+            foreach (var stepName in stepNames)
+                _stepStatuses[stepName] = "Queued";
+        }
+        catch
+        {
+            // Best-effort hinting only.
+        }
+    }
+
     private async Task BeginRunTrackingAsync(RunSummary run)
     {
-        await StopRunTrackingAsync(clearHistory: true);
+        await StopRunTrackingAsync(clearHistory: false);
 
         _activeRunId = run.RunId;
         _runStatus = string.IsNullOrWhiteSpace(run.Status) ? "Running" : run.Status;
@@ -846,6 +869,7 @@
         _runElapsed = (_runCompletedAt ?? DateTimeOffset.UtcNow) - _runStartedAt.Value;
         _runErrorMessage = run.Error;
         _latestRunSummary = run;
+        _runTimeline.Clear();
 
         AddRunTimeline("info", "Run requested", $"Tracking run {run.RunId[..Math.Min(10, run.RunId.Length)]}.");
         StartRunElapsedTicker();
@@ -855,9 +879,18 @@
 
     private async Task ConnectRunSignalRAsync(string runId)
     {
+        var hubUrl = Api.GetExecutionHubUrl();
+        if (string.IsNullOrWhiteSpace(hubUrl))
+        {
+            _runHubConnected = false;
+            AddRunTimeline("warn", "Realtime unavailable", "Service-discovery URL is not directly usable for SignalR. Using API polling.");
+            _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] SignalR unavailable: unsupported hub URL scheme; polling enabled.");
+            return;
+        }
+
         try
         {
-            _executionHubClient = new ExecutionHubClient("https+http://dashboard-api/hubs/execution");
+            _executionHubClient = new ExecutionHubClient(hubUrl);
             _executionHubClient.RunStarted += (rid, workflowName) => _ = InvokeAsync(() =>
             {
                 if (!string.Equals(rid, _activeRunId, StringComparison.OrdinalIgnoreCase))

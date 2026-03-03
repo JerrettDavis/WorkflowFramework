@@ -24,7 +24,7 @@ public static class DashboardApiExtensions
         services.AddSingleton<IWorkflowDefinitionStore, InMemoryWorkflowDefinitionStore>();
         services.AddSingleton(StepTypeRegistry.CreateDefault());
         services.AddScoped<WorkflowDefinitionCompiler>();
-        services.AddScoped<WorkflowRunService>();
+        services.AddSingleton<WorkflowRunService>();
         services.AddSingleton<IWorkflowTemplateLibrary, InMemoryWorkflowTemplateLibrary>();
         services.AddSingleton<IWorkflowVersioningService, WorkflowVersioningService>();
         services.AddSingleton<IAuditTrailService, AuditTrailService>();
@@ -32,6 +32,7 @@ public static class DashboardApiExtensions
         services.AddSingleton<PluginRegistry>();
         services.AddSingleton(TriggerTypeRegistry.CreateDefault());
         services.AddSingleton<WorkflowSchedulerService>();
+        services.AddSingleton<VoiceSubmissionStore>();
         services.AddHostedService(sp => sp.GetRequiredService<WorkflowSchedulerService>());
         services.AddHttpClient("OllamaClient");
         return services;
@@ -63,6 +64,7 @@ public static class DashboardApiExtensions
         MapWebhookEndpoints(endpoints);
         MapScheduleEndpoints(endpoints);
         MapTriggerEndpoints(endpoints);
+        MapVoiceEndpoints(endpoints);
 
         // Merge plugin step types into the registry
         var pluginRegistry = endpoints.ServiceProvider.GetRequiredService<PluginRegistry>();
@@ -151,9 +153,22 @@ public static class DashboardApiExtensions
             return duplicate is null ? Results.NotFound() : Results.Created($"/api/workflows/{duplicate.Id}", duplicate);
         }).WithName("DuplicateWorkflow");
 
-        group.MapPost("/{id}/run", async (string id, WorkflowRunService runService, IAuditTrailService audit, HttpContext http, CancellationToken ct) =>
+        group.MapPost("/{id}/run", async (string id, HttpRequest request, WorkflowRunService runService, IAuditTrailService audit, HttpContext http, CancellationToken ct) =>
         {
-            var run = await runService.StartRunAsync(id, ct);
+            StartRunRequest? startRequest = null;
+            if (request.ContentLength is > 0)
+            {
+                try
+                {
+                    startRequest = await request.ReadFromJsonAsync<StartRunRequest>(ct);
+                }
+                catch (JsonException)
+                {
+                    return Results.BadRequest("Invalid run request payload.");
+                }
+            }
+
+            var run = await runService.StartRunAsync(id, startRequest?.Inputs, startRequest?.Source, ct);
             if (run is null) return Results.NotFound();
             audit.Log("run.started", id, $"Run started: {run.RunId}", ipAddress: http.Connection.RemoteIpAddress?.ToString());
             return Results.Ok(run);
@@ -576,7 +591,16 @@ public static class DashboardApiExtensions
             catch { }
 
             var isAsync = request.Query.ContainsKey("async");
-            var run = await runService.StartRunAsync(workflowId, ct);
+            Dictionary<string, JsonElement>? runInputs = null;
+            if (!string.IsNullOrWhiteSpace(payload))
+            {
+                runInputs = new Dictionary<string, JsonElement>
+                {
+                    ["webhookPayload"] = ParseWebhookPayload(payload)
+                };
+            }
+
+            var run = await runService.StartRunAsync(workflowId, runInputs, "webhook", ct);
             if (run is null) return Results.NotFound();
 
             audit.Log("webhook.triggered", workflowId, $"Webhook triggered run {run.RunId}");
@@ -658,11 +682,49 @@ public static class DashboardApiExtensions
 
         wfGroup.MapPost("/{id}/triggers/{triggerId}/test", async (string id, string triggerId, WorkflowRunService runService, IAuditTrailService audit, CancellationToken ct) =>
         {
-            var run = await runService.StartRunAsync(id, ct);
+            var run = await runService.StartRunAsync(id, source: "trigger-test", ct: ct);
             if (run is null) return Results.NotFound();
             audit.Log("trigger.tested", id, $"Test-fired trigger {triggerId}, run {run.RunId}");
             return Results.Ok(run);
         }).WithName("TestFireTrigger");
+    }
+
+    private static void MapVoiceEndpoints(IEndpointRouteBuilder endpoints)
+    {
+        var group = endpoints.MapGroup("/api/voice").WithTags("Voice");
+
+        group.MapGet("/submissions", (int? limit, VoiceSubmissionStore store) =>
+        {
+            return Results.Ok(store.List(limit ?? 50));
+        }).WithName("ListVoiceSubmissions");
+
+        group.MapGet("/submissions/{id}", (string id, VoiceSubmissionStore store) =>
+        {
+            var submission = store.Get(id);
+            return submission is null ? Results.NotFound() : Results.Ok(submission);
+        }).WithName("GetVoiceSubmission");
+
+        group.MapPost("/submissions", (VoiceSubmissionRequest request, VoiceSubmissionStore store, IAuditTrailService audit, HttpContext http) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Transcript))
+                return Results.BadRequest("Transcript is required.");
+
+            var created = store.Save(request);
+            audit.Log("voice.submission.created", created.WorkflowId, $"Saved voice submission {created.Id}", ipAddress: http.Connection.RemoteIpAddress?.ToString());
+            return Results.Created($"/api/voice/submissions/{created.Id}", created);
+        }).WithName("CreateVoiceSubmission");
+    }
+
+    private static JsonElement ParseWebhookPayload(string payload)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<JsonElement>(payload);
+        }
+        catch (JsonException)
+        {
+            return JsonSerializer.SerializeToElement(payload);
+        }
     }
 
     private static void MapScheduleEndpoints(IEndpointRouteBuilder endpoints)

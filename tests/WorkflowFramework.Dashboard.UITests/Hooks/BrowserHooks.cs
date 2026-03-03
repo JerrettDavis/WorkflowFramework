@@ -39,15 +39,9 @@ public sealed class BrowserHooks
     {
         if (_scenarioContext.TryGetValue<IPage>(out var page))
         {
-            // Navigate away to force the Blazor SignalR connection to close cleanly
-            try { await page.GotoAsync("about:blank", new() { Timeout = 2_000 }); }
-            catch { /* best effort */ }
-
             var context = page.Context;
             await page.CloseAsync();
             await context.CloseAsync();
-            // Allow server to process circuit disconnect
-            await Task.Delay(500);
         }
     }
 
