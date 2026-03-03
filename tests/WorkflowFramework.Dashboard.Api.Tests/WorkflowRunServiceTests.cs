@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using FluentAssertions;
 using WorkflowFramework.Dashboard.Api.Hubs;
@@ -16,10 +17,17 @@ public class WorkflowRunServiceTests
 
     public WorkflowRunServiceTests()
     {
+        var services = new ServiceCollection();
+        services.AddSingleton<IWorkflowDefinitionStore>(_store);
         var settingsService = new DashboardSettingsService();
-        var compiler = new WorkflowDefinitionCompiler(settingsService, new PluginRegistry());
+        services.AddSingleton<IDashboardSettingsService>(settingsService);
+        services.AddSingleton(new PluginRegistry());
+        services.AddSingleton<WorkflowDefinitionCompiler>();
+        var serviceProvider = services.BuildServiceProvider();
+
         var notifier = new WorkflowExecutionNotifier(new FakeHubContext());
-        _runService = new WorkflowRunService(_store, compiler, notifier);
+        var scopeFactory = serviceProvider.GetRequiredService<IServiceScopeFactory>();
+        _runService = new WorkflowRunService(scopeFactory, notifier);
     }
 
     private async Task<SavedWorkflowDefinition> CreateWorkflow()
