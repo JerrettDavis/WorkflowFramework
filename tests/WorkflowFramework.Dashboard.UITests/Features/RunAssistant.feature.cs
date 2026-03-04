@@ -112,6 +112,15 @@ namespace WorkflowFramework.Dashboard.UITests.Features
 Feature: Run Assistant
   Audio workflows should provide interactive recording UX and stay free of interop exceptions
 
+  Scenario: Blog Interview workflow opens guided recording tasks
+    Given the browser voice recorder is mocked
+    And the dashboard is running
+    And I open the ""Blog Interview"" sample workflow
+    When I run the workflow
+    Then the run assistant should open with recording controls
+    And the run assistant should expose multiple interactive tasks
+    And the browser should not report run assistant interop errors
+
   Scenario: Record audio in run assistant for Quick Transcript workflow
     Given the browser voice recorder is mocked
     And the dashboard is running
@@ -121,7 +130,8 @@ Feature: Run Assistant
     When I start recording in the run assistant
     And I stop recording in the run assistant
     Then the run assistant should show captured audio
-    And the run assistant should allow continuing to the next step
+    When I complete the run assistant flow and start the workflow
+    Then the output feed should show detailed execution telemetry
     And the browser should not report run assistant interop errors
 ", global::Io.Cucumber.Messages.Types.SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN);
         }
@@ -129,47 +139,75 @@ Feature: Run Assistant
         private static global::Io.Cucumber.Messages.Types.GherkinDocument GherkinDocumentFunc()
         {
             return new global::Io.Cucumber.Messages.Types.GherkinDocument("Features/RunAssistant.feature", new global::Io.Cucumber.Messages.Types.Feature(new global::Io.Cucumber.Messages.Types.Location(2, new System.Nullable<long>(1)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "cd5f356bf9503f5bb1c0fe537e22a960")}), "en", "Feature", "Run Assistant", "  Audio workflows should provide interactive recording UX and stay free of intero" +
+                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "dcd95530737c505c9bc1fa53f5aff383")}), "en", "Feature", "Run Assistant", "  Audio workflows should provide interactive recording UX and stay free of intero" +
                         "p exceptions", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.FeatureChild>(new global::Io.Cucumber.Messages.Types.FeatureChild[] {
-                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(5, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Record audio in run assistant for Quick Transcript workflow", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(6, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the browser voice recorder is mocked", null, null, "890f4245e0c4d459b5e45b982810a821"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the dashboard is running", null, null, "3cbc848fb2f1c15197550a61fc6382b1"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I open the \"Quick Transcript\" sample workflow", null, null, "fe296213f0759852af70e689f83a0c9a"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I run the workflow", null, null, "210ec2dfb413fe518eaee3781cd582fd"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the run assistant should open with recording controls", null, null, "5f1f51cdca8ced54a6e31eb1c222b43d"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(11, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I start recording in the run assistant", null, null, "9b966f67af65f45d8912c0ff8aa37356"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(12, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I stop recording in the run assistant", null, null, "ef9d74ac9c430a58859283127842db8f"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(13, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the run assistant should show captured audio", null, null, "588ee08f29b9cb5ab75d5b3482e7249b"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(14, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the run assistant should allow continuing to the next step", null, null, "d1fbcd670373425da383db42a7eee22c"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the browser should not report run assistant interop errors", null, null, "8de3710e9fdd9b5381b9e8b5e9dbce13")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "422d413fbd7e6e539b4a9a9f124b8ba5"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(5, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Blog Interview workflow opens guided recording tasks", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(6, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the browser voice recorder is mocked", null, null, "ad1eea19ab75195e8d3e11ffba494eaa"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the dashboard is running", null, null, "0afc92e7af8e5e5e96e97402d95ebec7"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I open the \"Blog Interview\" sample workflow", null, null, "9b5aeacf93da525bbead7239e75c8e4d"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I run the workflow", null, null, "12dd5434a53b0355b145de9273b2092d"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the run assistant should open with recording controls", null, null, "e0b89411362c545f8838b467bc8c715d"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(11, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the run assistant should expose multiple interactive tasks", null, null, "f9fa3cfc24b8935f931b651b7655c029"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(12, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the browser should not report run assistant interop errors", null, null, "cc144f0fc213bf51a3a6c07634d4c161")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "bde369b7d8eff4519a3bb7e177a07190")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(14, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Record audio in run assistant for Quick Transcript workflow", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the browser voice recorder is mocked", null, null, "10a88c6d84ce6b53a280aa570f960130"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(16, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the dashboard is running", null, null, "de99e8254ec03b5fb993cbea850f35a1"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(17, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I open the \"Quick Transcript\" sample workflow", null, null, "bbe1ad08b56db05bb93cb5d5a731b867"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(18, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I run the workflow", null, null, "b56d5113a0cd57589498c161679d7f47"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(19, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the run assistant should open with recording controls", null, null, "39c79d59d2e96f50b77135e8a6e1cfbe"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(20, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I start recording in the run assistant", null, null, "6614c85f225c7f5cb9783786d0f054fa"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(21, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I stop recording in the run assistant", null, null, "71d68c599ada3d5ca405d33ad4805012"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(22, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the run assistant should show captured audio", null, null, "7b42e94b8d3e9c53bbb6b6ae00e544de"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(23, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I complete the run assistant flow and start the workflow", null, null, "e8821ea3b4492a59a437f1d573432c94"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(24, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the output feed should show detailed execution telemetry", null, null, "8b2867ed11935c58acc7a1868dfc74eb"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(25, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the browser should not report run assistant interop errors", null, null, "9ded5b4fdcc7035b8066a7489c0cc0f0")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "fcb7f55579897159a402575b2d54297f"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
         }
         
         private static global::System.Collections.Generic.IEnumerable<Io.Cucumber.Messages.Types.Pickle> PicklesFunc()
         {
             return new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Pickle>(new global::Io.Cucumber.Messages.Types.Pickle[] {
-                        new global::Io.Cucumber.Messages.Types.Pickle("913dbbb4e35c6a5392cebbaa89b36777", "Features/RunAssistant.feature", "Record audio in run assistant for Quick Transcript workflow", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                        new global::Io.Cucumber.Messages.Types.Pickle("695d4624d4744d56b114ec0c0c134b1a", "Features/RunAssistant.feature", "Blog Interview workflow opens guided recording tasks", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "890f4245e0c4d459b5e45b982810a821"}), "e9790a1e3ea49355b3e1c020e97d5829", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the browser voice recorder is mocked"),
+                                                        "ad1eea19ab75195e8d3e11ffba494eaa"}), "c3a5b5d396d68858b9fddec5670bcd7b", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the browser voice recorder is mocked"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "3cbc848fb2f1c15197550a61fc6382b1"}), "a79a55684737a057885e65ac0e842b6c", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "0afc92e7af8e5e5e96e97402d95ebec7"}), "b868b56d2e352b53a02ae7714918512f", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "fe296213f0759852af70e689f83a0c9a"}), "18143c6b682b6b59bcbdcc33bc83a205", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I open the \"Quick Transcript\" sample workflow"),
+                                                        "9b5aeacf93da525bbead7239e75c8e4d"}), "5fa2f88faf3eba55a4d676f989ac27f0", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I open the \"Blog Interview\" sample workflow"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "210ec2dfb413fe518eaee3781cd582fd"}), "672790f3ca2e7f5296c48f2cad8b9d8d", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I run the workflow"),
+                                                        "12dd5434a53b0355b145de9273b2092d"}), "41e90a51d734a45d80cecc1f621b32d8", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I run the workflow"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "5f1f51cdca8ced54a6e31eb1c222b43d"}), "3770271840753a57a7318676901300ca", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the run assistant should open with recording controls"),
+                                                        "e0b89411362c545f8838b467bc8c715d"}), "ae2f4be8fc45295290fd9364620c28d8", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the run assistant should open with recording controls"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "9b966f67af65f45d8912c0ff8aa37356"}), "3a513893ffe9925285cb0a244c741adb", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I start recording in the run assistant"),
+                                                        "f9fa3cfc24b8935f931b651b7655c029"}), "4a4dc5d8b440ef5aba4b177bf86c6442", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the run assistant should expose multiple interactive tasks"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "ef9d74ac9c430a58859283127842db8f"}), "f17cb0ecd82e2057b6bfd5d1488c7f31", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I stop recording in the run assistant"),
+                                                        "cc144f0fc213bf51a3a6c07634d4c161"}), "605098d5a0e00e54a179996dad8a3db5", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the browser should not report run assistant interop errors")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "dcd95530737c505c9bc1fa53f5aff383")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "bde369b7d8eff4519a3bb7e177a07190"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("9d876364685cea5ab203cdc7757fa058", "Features/RunAssistant.feature", "Record audio in run assistant for Quick Transcript workflow", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "588ee08f29b9cb5ab75d5b3482e7249b"}), "d4a874d733b10c5fbffe6ecc36e51f94", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the run assistant should show captured audio"),
+                                                        "10a88c6d84ce6b53a280aa570f960130"}), "45f96cc805237f5d9aa7e7b717943af1", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the browser voice recorder is mocked"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "d1fbcd670373425da383db42a7eee22c"}), "3e760fe483b8e457b7d5114b7baee11a", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the run assistant should allow continuing to the next step"),
+                                                        "de99e8254ec03b5fb993cbea850f35a1"}), "e517d645746b775bae88707303da4e4d", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "8de3710e9fdd9b5381b9e8b5e9dbce13"}), "8337ef6ba596215abeba857a17a2bd4e", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the browser should not report run assistant interop errors")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "cd5f356bf9503f5bb1c0fe537e22a960")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "422d413fbd7e6e539b4a9a9f124b8ba5"}))});
+                                                        "bbe1ad08b56db05bb93cb5d5a731b867"}), "a8b12695bb1d0c58a568ff8276951782", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I open the \"Quick Transcript\" sample workflow"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "b56d5113a0cd57589498c161679d7f47"}), "09a4d30f12828e5db1688ed676669a98", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I run the workflow"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "39c79d59d2e96f50b77135e8a6e1cfbe"}), "a52614eedfd5875483864b0e4643db8c", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the run assistant should open with recording controls"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "6614c85f225c7f5cb9783786d0f054fa"}), "5bafc618729ef45d8aba119772495c1c", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I start recording in the run assistant"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "71d68c599ada3d5ca405d33ad4805012"}), "4e15fa2605dd2d59a6d9fc896984d83f", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I stop recording in the run assistant"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "7b42e94b8d3e9c53bbb6b6ae00e544de"}), "1f681648049c2f51929c723cbeee618b", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the run assistant should show captured audio"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "e8821ea3b4492a59a437f1d573432c94"}), "da2f8cd3a9627d51a95bf2e685c2c145", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I complete the run assistant flow and start the workflow"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "8b2867ed11935c58acc7a1868dfc74eb"}), "6602e1222d7bf85ca87d7ea8a7a1236b", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the output feed should show detailed execution telemetry"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "9ded5b4fdcc7035b8066a7489c0cc0f0"}), "4c61e09aa31935538b6387c195ffb6f2", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the browser should not report run assistant interop errors")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "dcd95530737c505c9bc1fa53f5aff383")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "fcb7f55579897159a402575b2d54297f"}))});
         }
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
@@ -202,15 +240,15 @@ Feature: Run Assistant
             await this.TestTearDownAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="Record audio in run assistant for Quick Transcript workflow")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="Blog Interview workflow opens guided recording tasks")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Run Assistant")]
-        [global::Xunit.TraitAttribute("Description", "Record audio in run assistant for Quick Transcript workflow")]
-        public async global::System.Threading.Tasks.Task RecordAudioInRunAssistantForQuickTranscriptWorkflow()
+        [global::Xunit.TraitAttribute("Description", "Blog Interview workflow opens guided recording tasks")]
+        public async global::System.Threading.Tasks.Task BlogInterviewWorkflowOpensGuidedRecordingTasks()
         {
             string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "0";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Record audio in run assistant for Quick Transcript workflow", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Blog Interview workflow opens guided recording tasks", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
 #line 5
@@ -230,7 +268,7 @@ Feature: Run Assistant
     await testRunner.AndAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 8
-    await testRunner.AndAsync("I open the \"Quick Transcript\" sample workflow", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+    await testRunner.AndAsync("I open the \"Blog Interview\" sample workflow", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 9
     await testRunner.WhenAsync("I run the workflow", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
@@ -239,18 +277,67 @@ Feature: Run Assistant
     await testRunner.ThenAsync("the run assistant should open with recording controls", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
 #line 11
-    await testRunner.WhenAsync("I start recording in the run assistant", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.AndAsync("the run assistant should expose multiple interactive tasks", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 12
+    await testRunner.AndAsync("the browser should not report run assistant interop errors", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Record audio in run assistant for Quick Transcript workflow")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Run Assistant")]
+        [global::Xunit.TraitAttribute("Description", "Record audio in run assistant for Quick Transcript workflow")]
+        public async global::System.Threading.Tasks.Task RecordAudioInRunAssistantForQuickTranscriptWorkflow()
+        {
+            string[] tagsOfScenario = ((string[])(null));
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "1";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Record audio in run assistant for Quick Transcript workflow", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 14
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 15
+    await testRunner.GivenAsync("the browser voice recorder is mocked", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 16
+    await testRunner.AndAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 17
+    await testRunner.AndAsync("I open the \"Quick Transcript\" sample workflow", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 18
+    await testRunner.WhenAsync("I run the workflow", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 19
+    await testRunner.ThenAsync("the run assistant should open with recording controls", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 20
+    await testRunner.WhenAsync("I start recording in the run assistant", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 21
     await testRunner.AndAsync("I stop recording in the run assistant", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 13
+#line 22
     await testRunner.ThenAsync("the run assistant should show captured audio", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 14
-    await testRunner.AndAsync("the run assistant should allow continuing to the next step", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line 23
+    await testRunner.WhenAsync("I complete the run assistant flow and start the workflow", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 15
+#line 24
+    await testRunner.ThenAsync("the output feed should show detailed execution telemetry", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 25
     await testRunner.AndAsync("the browser should not report run assistant interop errors", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
