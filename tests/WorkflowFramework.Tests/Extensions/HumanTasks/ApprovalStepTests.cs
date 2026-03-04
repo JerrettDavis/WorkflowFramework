@@ -47,16 +47,14 @@ public class ApprovalStepTests
         });
         var ctx = CreateContext();
         var execTask = step.ExecuteAsync(ctx);
-        await Task.Delay(30);
 
         // Complete alice's task
-        var aliceTasks = await inbox.GetTasksForAssigneeAsync("alice");
-        await inbox.CompleteTaskAsync(aliceTasks[0].Id, "approved");
-        await Task.Delay(30);
+        var aliceTask = await WaitForLatestTaskAsync(inbox, "alice");
+        await inbox.CompleteTaskAsync(aliceTask.Id, "approved");
 
         // Complete bob's task
-        var bobTasks = await inbox.GetTasksForAssigneeAsync("bob");
-        await inbox.CompleteTaskAsync(bobTasks[0].Id, "approved");
+        var bobTask = await WaitForLatestTaskAsync(inbox, "bob");
+        await inbox.CompleteTaskAsync(bobTask.Id, "approved");
 
         await execTask;
         ctx.Properties["Approval.Approved"].Should().Be(true);
@@ -75,10 +73,9 @@ public class ApprovalStepTests
         });
         var ctx = CreateContext();
         var execTask = step.ExecuteAsync(ctx);
-        await Task.Delay(30);
 
-        var aliceTasks = await inbox.GetTasksForAssigneeAsync("alice");
-        await inbox.CompleteTaskAsync(aliceTasks[0].Id, "rejected");
+        var aliceTask = await WaitForLatestTaskAsync(inbox, "alice");
+        await inbox.CompleteTaskAsync(aliceTask.Id, "rejected");
 
         await execTask;
         ctx.Properties["Approval.Approved"].Should().Be(false);
@@ -100,12 +97,11 @@ public class ApprovalStepTests
         });
         var ctx = CreateContext();
         var execTask = step.ExecuteAsync(ctx);
-        await Task.Delay(50);
 
-        var aliceTasks = await inbox.GetTasksForAssigneeAsync("alice");
-        var bobTasks = await inbox.GetTasksForAssigneeAsync("bob");
-        await inbox.CompleteTaskAsync(aliceTasks[0].Id, "approved");
-        await inbox.CompleteTaskAsync(bobTasks[0].Id, "approved");
+        var aliceTask = await WaitForLatestTaskAsync(inbox, "alice");
+        var bobTask = await WaitForLatestTaskAsync(inbox, "bob");
+        await inbox.CompleteTaskAsync(aliceTask.Id, "approved");
+        await inbox.CompleteTaskAsync(bobTask.Id, "approved");
 
         await execTask;
         ctx.Properties["Approval.Approved"].Should().Be(true);
@@ -124,12 +120,11 @@ public class ApprovalStepTests
         });
         var ctx = CreateContext();
         var execTask = step.ExecuteAsync(ctx);
-        await Task.Delay(50);
 
-        var aliceTasks = await inbox.GetTasksForAssigneeAsync("alice");
-        var bobTasks = await inbox.GetTasksForAssigneeAsync("bob");
-        await inbox.CompleteTaskAsync(aliceTasks[0].Id, "approved");
-        await inbox.CompleteTaskAsync(bobTasks[0].Id, "rejected");
+        var aliceTask = await WaitForLatestTaskAsync(inbox, "alice");
+        var bobTask = await WaitForLatestTaskAsync(inbox, "bob");
+        await inbox.CompleteTaskAsync(aliceTask.Id, "approved");
+        await inbox.CompleteTaskAsync(bobTask.Id, "rejected");
 
         await execTask;
         ctx.Properties["Approval.Approved"].Should().Be(false);
@@ -149,6 +144,23 @@ public class ApprovalStepTests
     public void ApprovalMode_Values()
     {
         Enum.GetValues<ApprovalMode>().Should().HaveCount(2);
+    }
+
+    private static async Task<HumanTask> WaitForLatestTaskAsync(InMemoryTaskInbox inbox, string assignee, int timeoutMs = 2_000)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        while (DateTime.UtcNow < deadline)
+        {
+            var tasks = await inbox.GetTasksForAssigneeAsync(assignee);
+            if (tasks.Count > 0)
+                return tasks[0];
+
+            await Task.Delay(20);
+        }
+
+        var finalTasks = await inbox.GetTasksForAssigneeAsync(assignee);
+        finalTasks.Should().NotBeEmpty($"task for approver '{assignee}' should be created before completion");
+        return finalTasks[0];
     }
 
     private static IWorkflowContext CreateContext() => new Ctx();
