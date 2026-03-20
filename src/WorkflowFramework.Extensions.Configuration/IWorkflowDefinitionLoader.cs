@@ -145,15 +145,24 @@ public sealed class YamlWorkflowDefinitionLoader : IWorkflowDefinitionLoader
 /// </summary>
 public sealed class WorkflowDefinitionBuilder
 {
+    private static readonly HashSet<string> KnownCategories = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "step", "conditional", "parallel", "foreach", "while", "dowhile",
+        "retry", "try", "subworkflow", "approval", "saga"
+    };
+
     private readonly IStepRegistry _stepRegistry;
+    private readonly IReadOnlyDictionary<string, IWorkflow>? _subWorkflows;
 
     /// <summary>
     /// Initializes a new instance of <see cref="WorkflowDefinitionBuilder"/>.
     /// </summary>
-    /// <param name="stepRegistry">The step registry.</param>
-    public WorkflowDefinitionBuilder(IStepRegistry stepRegistry)
+    /// <param name="stepRegistry">The step registry used to resolve step class names.</param>
+    /// <param name="subWorkflows">Optional registry of named sub-workflows (used for <c>type: subworkflow</c>).</param>
+    public WorkflowDefinitionBuilder(IStepRegistry stepRegistry, IReadOnlyDictionary<string, IWorkflow>? subWorkflows = null)
     {
         _stepRegistry = stepRegistry;
+        _subWorkflows = subWorkflows;
     }
 
     /// <summary>
@@ -178,49 +187,373 @@ public sealed class WorkflowDefinitionBuilder
     private void BuildSteps(IWorkflowBuilder builder, List<StepDefinition> steps)
     {
         foreach (var stepDef in steps)
+            BuildStep(builder, stepDef);
+    }
+
+    private void BuildStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var typeCategory = stepDef.Type?.ToLowerInvariant() ?? string.Empty;
+
+        if (KnownCategories.Contains(typeCategory))
         {
-            if (stepDef.Parallel != null && stepDef.Parallel.Count > 0)
+            // New format: type is a composite step category
+            switch (typeCategory)
             {
-                builder.Parallel(p =>
-                {
-                    foreach (var parallelType in stepDef.Parallel)
-                    {
-                        p.Step(_stepRegistry.Resolve(parallelType));
-                    }
-                });
+                case "step":
+                    var className = stepDef.Class
+                        ?? throw new InvalidOperationException(
+                            $"Step '{stepDef.Name ?? "unnamed"}' of type 'step' requires a 'class' property.");
+                    builder.Step(_stepRegistry.Resolve(className));
+                    break;
+
+                case "conditional":
+                    BuildConditionalStep(builder, stepDef);
+                    break;
+
+                case "parallel":
+                    BuildParallelStep(builder, stepDef);
+                    break;
+
+                case "foreach":
+                    BuildForEachStep(builder, stepDef);
+                    break;
+
+                case "while":
+                    BuildWhileStep(builder, stepDef);
+                    break;
+
+                case "dowhile":
+                    BuildDoWhileStep(builder, stepDef);
+                    break;
+
+                case "retry":
+                    BuildRetryGroupStep(builder, stepDef);
+                    break;
+
+                case "try":
+                    BuildTryStep(builder, stepDef);
+                    break;
+
+                case "subworkflow":
+                    BuildSubWorkflowStep(builder, stepDef);
+                    break;
+
+                case "approval":
+                    BuildApprovalStep(builder, stepDef);
+                    break;
+
+                case "saga":
+                    BuildSagaStep(builder, stepDef);
+                    break;
             }
-            else if (stepDef.Condition != null && stepDef.Then != null)
+        }
+        else if (stepDef.Parallel != null && stepDef.Parallel.Count > 0)
+        {
+            // Legacy format: parallel with a flat list of class names
+            builder.Parallel(p =>
             {
-                // Conditional step: condition is a step type name used as a property key check
-                var thenStep = _stepRegistry.Resolve(stepDef.Then);
-                if (stepDef.Else != null)
+                foreach (var parallelType in stepDef.Parallel)
+                    p.Step(_stepRegistry.Resolve(parallelType));
+            });
+        }
+        else if (stepDef.Condition != null && (stepDef.Then != null || stepDef.ThenSteps != null))
+        {
+            // Legacy conditional format
+            Func<IWorkflowContext, bool> predicate = ctx =>
+            {
+                ctx.Properties.TryGetValue(stepDef.Condition, out var val);
+                return val is true or "true";
+            };
+
+            if (stepDef.ThenSteps != null)
+            {
+                var thenStep = BuildStepsAsGroupStep("then", stepDef.ThenSteps);
+                if (stepDef.ElseSteps != null)
                 {
-                    var elseStep = _stepRegistry.Resolve(stepDef.Else);
-                    builder.If(ctx =>
-                    {
-                        ctx.Properties.TryGetValue(stepDef.Condition, out var val);
-                        return val is true or "true";
-                    }).Then(thenStep).Else(elseStep);
+                    var elseStep = BuildStepsAsGroupStep("else", stepDef.ElseSteps);
+                    builder.If(predicate).Then(thenStep).Else(elseStep);
                 }
                 else
                 {
-                    builder.If(ctx =>
-                    {
-                        ctx.Properties.TryGetValue(stepDef.Condition, out var val);
-                        return val is true or "true";
-                    }).Then(thenStep).EndIf();
+                    builder.If(predicate).Then(thenStep).EndIf();
                 }
-            }
-            else if (stepDef.Retry != null && !string.IsNullOrEmpty(stepDef.Type))
-            {
-                var retryStep = _stepRegistry.Resolve(stepDef.Type);
-                builder.Retry(b => b.Step(retryStep), stepDef.Retry.MaxAttempts);
             }
             else
             {
-                var step = _stepRegistry.Resolve(stepDef.Type);
-                builder.Step(step);
+                var thenStep = _stepRegistry.Resolve(stepDef.Then!);
+                if (stepDef.Else != null)
+                {
+                    var elseStep = _stepRegistry.Resolve(stepDef.Else);
+                    builder.If(predicate).Then(thenStep).Else(elseStep);
+                }
+                else
+                {
+                    builder.If(predicate).Then(thenStep).EndIf();
+                }
             }
         }
+        else if (stepDef.Retry != null && !string.IsNullOrEmpty(stepDef.Type))
+        {
+            // Legacy format: single step with retry wrapping
+            var retryStep = _stepRegistry.Resolve(stepDef.Type);
+            builder.Retry(b => b.Step(retryStep), stepDef.Retry.MaxAttempts);
+        }
+        else if (!string.IsNullOrEmpty(stepDef.Class))
+        {
+            // New format shorthand: class without explicit category
+            builder.Step(_stepRegistry.Resolve(stepDef.Class));
+        }
+        else if (!string.IsNullOrEmpty(stepDef.Type))
+        {
+            // Legacy format: type is the class name
+            builder.Step(_stepRegistry.Resolve(stepDef.Type));
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                $"Step '{stepDef.Name ?? "unnamed"}' has no 'type' or 'class' specified.");
+        }
+    }
+
+    private void BuildConditionalStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var conditionKey = stepDef.Condition
+            ?? throw new InvalidOperationException(
+                $"Conditional step '{stepDef.Name ?? "unnamed"}' requires a 'condition' property.");
+
+        Func<IWorkflowContext, bool> predicate = ctx =>
+        {
+            ctx.Properties.TryGetValue(conditionKey, out var val);
+            return val is true or "true";
+        };
+
+        // Prefer nested step definitions; fall back to legacy class-name strings
+        var thenSteps = stepDef.ThenSteps;
+        var elseSteps = stepDef.ElseSteps;
+
+        IStep thenStep;
+        if (thenSteps != null && thenSteps.Count > 0)
+        {
+            thenStep = BuildStepsAsGroupStep("then", thenSteps);
+        }
+        else if (stepDef.Then != null)
+        {
+            thenStep = _stepRegistry.Resolve(stepDef.Then);
+        }
+        else
+        {
+            throw new InvalidOperationException(
+                $"Conditional step '{stepDef.Name ?? "unnamed"}' requires 'then', 'thenSteps', or equivalent.");
+        }
+
+        if (elseSteps != null && elseSteps.Count > 0)
+        {
+            var elseStep = BuildStepsAsGroupStep("else", elseSteps);
+            builder.If(predicate).Then(thenStep).Else(elseStep);
+        }
+        else if (stepDef.Else != null)
+        {
+            var elseStep = _stepRegistry.Resolve(stepDef.Else);
+            builder.If(predicate).Then(thenStep).Else(elseStep);
+        }
+        else
+        {
+            builder.If(predicate).Then(thenStep).EndIf();
+        }
+    }
+
+    private void BuildParallelStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var childSteps = stepDef.Steps;
+        if (childSteps == null || childSteps.Count == 0)
+            throw new InvalidOperationException(
+                $"Parallel step '{stepDef.Name ?? "unnamed"}' requires a non-empty 'steps' list.");
+
+        builder.Parallel(p =>
+        {
+            foreach (var child in childSteps)
+                p.Step(ResolveLeafStep(child));
+        });
+    }
+
+    private void BuildForEachStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var bodySteps = stepDef.Steps ?? [];
+        var itemsKey = stepDef.Condition ?? "items";
+
+        builder.ForEach<object>(
+            ctx => ctx.Properties.TryGetValue(itemsKey, out var col)
+                   && col is IEnumerable<object> enumerable
+                ? enumerable
+                : Array.Empty<object>(),
+            b => BuildSteps(b, bodySteps));
+    }
+
+    private void BuildWhileStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var conditionKey = stepDef.Condition
+            ?? throw new InvalidOperationException(
+                $"While step '{stepDef.Name ?? "unnamed"}' requires a 'condition' property.");
+        var bodySteps = stepDef.Steps ?? [];
+
+        builder.While(
+            ctx =>
+            {
+                ctx.Properties.TryGetValue(conditionKey, out var val);
+                return val is true or "true";
+            },
+            b => BuildSteps(b, bodySteps));
+    }
+
+    private void BuildDoWhileStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var conditionKey = stepDef.Condition
+            ?? throw new InvalidOperationException(
+                $"DoWhile step '{stepDef.Name ?? "unnamed"}' requires a 'condition' property.");
+        var bodySteps = stepDef.Steps ?? [];
+
+        builder.DoWhile(
+            b => BuildSteps(b, bodySteps),
+            ctx =>
+            {
+                ctx.Properties.TryGetValue(conditionKey, out var val);
+                return val is true or "true";
+            });
+    }
+
+    private void BuildRetryGroupStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var bodySteps = stepDef.Steps ?? [];
+        if (bodySteps.Count == 0)
+            throw new InvalidOperationException(
+                $"Retry step '{stepDef.Name ?? "unnamed"}' requires a non-empty 'steps' list.");
+
+        var maxAttempts = stepDef.Retry?.MaxAttempts ?? 3;
+        builder.Retry(b => BuildSteps(b, bodySteps), maxAttempts);
+    }
+
+    private void BuildTryStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var tryBody = stepDef.Steps ?? stepDef.ThenSteps ?? [];
+        var finallyBody = stepDef.ElseSteps ?? [];
+
+        if (finallyBody.Count > 0)
+        {
+            builder.Try(b => BuildSteps(b, tryBody))
+                   .Finally(b => BuildSteps(b, finallyBody));
+        }
+        else
+        {
+            builder.Try(b => BuildSteps(b, tryBody)).EndTry();
+        }
+    }
+
+    private void BuildSubWorkflowStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var name = stepDef.SubWorkflow ?? stepDef.Class ?? stepDef.Name
+            ?? throw new InvalidOperationException(
+                "Sub-workflow step requires 'subWorkflow', 'class', or 'name' to identify the workflow.");
+
+        if (_subWorkflows != null && _subWorkflows.TryGetValue(name, out var wf))
+        {
+            builder.SubWorkflow(wf);
+        }
+        else
+        {
+            // Fall back to treating the name as a step class registered in the registry
+            builder.Step(_stepRegistry.Resolve(name));
+        }
+    }
+
+    private void BuildApprovalStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        // Try to resolve a registered "approval" step; otherwise create a simple recording step.
+        try
+        {
+            var approvalStep = _stepRegistry.Resolve("approval");
+            builder.Step(approvalStep);
+        }
+        catch (KeyNotFoundException)
+        {
+            var stepName = stepDef.Name ?? "Approval";
+            var message = stepDef.Message ?? "Approval required";
+            builder.Step(stepName, ctx =>
+            {
+                ctx.Properties[$"{stepName}.Message"] = message;
+                ctx.Properties[$"{stepName}.RequiredApprovers"] = stepDef.RequiredApprovers ?? 1;
+                ctx.Properties[$"{stepName}.Status"] = "Pending";
+                return Task.CompletedTask;
+            });
+        }
+    }
+
+    private void BuildSagaStep(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
+        var bodySteps = stepDef.Steps ?? [];
+        if (bodySteps.Count == 0)
+            throw new InvalidOperationException(
+                $"Saga step '{stepDef.Name ?? "unnamed"}' requires a non-empty 'steps' list.");
+
+        // Build a compensating sub-workflow for the saga group
+        var sagaBuilder = Workflow.Create(stepDef.Name ?? "Saga");
+        sagaBuilder.WithCompensation();
+        BuildSteps(sagaBuilder, bodySteps);
+        var sagaWorkflow = sagaBuilder.Build();
+        builder.SubWorkflow(sagaWorkflow);
+    }
+
+    /// <summary>
+    /// Resolves a single leaf <see cref="IStep"/> from a step definition.
+    /// For a simple <c>type: step</c> or direct class-name reference, this returns the registry lookup.
+    /// </summary>
+    private IStep ResolveLeafStep(StepDefinition stepDef)
+    {
+        if (!string.IsNullOrEmpty(stepDef.Class))
+            return _stepRegistry.Resolve(stepDef.Class);
+
+        var typeCategory = stepDef.Type?.ToLowerInvariant() ?? string.Empty;
+
+        if (typeCategory == "step")
+        {
+            var className = stepDef.Class
+                ?? throw new InvalidOperationException(
+                    $"Step '{stepDef.Name ?? "unnamed"}' of type 'step' requires a 'class' property.");
+            return _stepRegistry.Resolve(className);
+        }
+
+        if (!string.IsNullOrEmpty(stepDef.Type) && !KnownCategories.Contains(typeCategory))
+            return _stepRegistry.Resolve(stepDef.Type);
+
+        throw new InvalidOperationException(
+            $"Cannot resolve a single step from composite step definition '{stepDef.Name ?? "unnamed"}' (type='{stepDef.Type}').");
+    }
+
+    /// <summary>
+    /// Builds a list of step definitions into a single <see cref="IStep"/>.
+    /// Multiple steps are grouped into a sequential inline workflow step.
+    /// </summary>
+    private IStep BuildStepsAsGroupStep(string groupName, List<StepDefinition> steps)
+    {
+        if (steps.Count == 0)
+            throw new InvalidOperationException($"Step group '{groupName}' is empty.");
+
+        if (steps.Count == 1)
+            return ResolveLeafStep(steps[0]);
+
+        // Multiple steps: create an inline sequential workflow
+        var subBuilder = Workflow.Create(groupName);
+        BuildSteps(subBuilder, steps);
+        var subWorkflow = subBuilder.Build();
+        return new InlineWorkflowStep(groupName, subWorkflow);
+    }
+
+    /// <summary>
+    /// An inline step that executes a workflow — used when multiple steps must be grouped
+    /// for a conditional Then/Else branch.
+    /// </summary>
+    private sealed class InlineWorkflowStep(string name, IWorkflow workflow) : IStep
+    {
+        public string Name => name;
+        public Task ExecuteAsync(IWorkflowContext context) => workflow.ExecuteAsync(context);
     }
 }
