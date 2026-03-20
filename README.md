@@ -250,7 +250,37 @@ graph TD
 | `WorkflowFramework.Extensions.Distributed.Redis` | Redis lock and queue implementations |
 | `WorkflowFramework.Extensions.Hosting` | ASP.NET Core hosting integration + health checks |
 | `WorkflowFramework.Extensions.Http` | HTTP request steps with fluent builder |
+| `WorkflowFramework.Extensions.AI` | LLM providers, prompt steps, planning, and routing decisions |
+| `WorkflowFramework.Extensions.Agents` | Agent loops, tool orchestration, context management, and hooks |
+| `WorkflowFramework.Extensions.Agents.Mcp` | MCP transports and MCP-backed tool integration |
+| `WorkflowFramework.Extensions.Agents.Skills` | Skill discovery, loading, and skill-backed tools |
 | `WorkflowFramework.Analyzers` | Roslyn analyzers for common mistakes |
+
+### Agentic Workflows
+
+```csharp
+using WorkflowFramework.Extensions.Agents;
+using WorkflowFramework.Extensions.AI;
+
+var provider = new EchoAgentProvider();
+var registry = new ToolRegistry();
+
+var workflow = Workflow.Create("SupportAgent")
+    .AgentPlan(provider, options =>
+    {
+        options.StepName = "Plan";
+        options.PromptTemplate = "Plan how to resolve ticket {TicketId}";
+        options.OutputPropertyName = "Agent.Plan";
+    })
+    .AgentLoop(provider, registry, options =>
+    {
+        options.SystemPrompt = "You are a support agent.";
+        options.InitialUserMessageTemplate = "Resolve ticket {TicketId} using the available tools.";
+    })
+    .Build();
+```
+
+Prompt-based AI steps render workflow properties such as `{TicketId}` before sending prompts to the provider, which makes it easier to build task-driven flows without hand-assembling strings in each step.
 
 ### Polly Integration
 

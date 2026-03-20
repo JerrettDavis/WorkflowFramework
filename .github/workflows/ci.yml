@@ -63,7 +63,7 @@ jobs:
             -reports:"$REPORTS" \
             -targetdir:"coverage-report" \
             -reporttypes:"HtmlInline;Cobertura;TextSummary;lcov;Badges" \
-            -assemblyfilters:"+WorkflowFramework*;-*Tests*" \
+            -assemblyfilters:"+WorkflowFramework;+WorkflowFramework.Extensions.*;+WorkflowFramework.Serialization;+WorkflowFramework.Testing;-*Tests*" \
             -filefilters:"-**/*.Tests/*;-**/*Tests*/**"
           echo "COVERAGE_SUMMARY<<EOF" >> $GITHUB_ENV
           cat coverage-report/Summary.txt >> $GITHUB_ENV
@@ -88,8 +88,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          files: |
-            **/TestResults/*/coverage.cobertura.xml
+          files: coverage-report/Cobertura.xml
           flags: unittests
           fail_ci_if_error: true
           verbose: true
@@ -166,6 +165,20 @@ jobs:
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Exclude="[*Tests]*" \
             -- RunConfiguration.TestSessionTimeout=300000
 
+      - name: Install ReportGenerator
+        run: dotnet tool update -g dotnet-reportgenerator-globaltool
+
+      - name: Combine coverage and create reports
+        shell: bash
+        run: |
+          REPORTS=$(find . -type f -path "*/TestResults/*/coverage.cobertura.xml" | tr '\n' ';')
+          reportgenerator \
+            -reports:"$REPORTS" \
+            -targetdir:"coverage-report" \
+            -reporttypes:"HtmlInline;Cobertura;TextSummary;lcov;Badges" \
+            -assemblyfilters:"+WorkflowFramework;+WorkflowFramework.Extensions.*;+WorkflowFramework.Serialization;+WorkflowFramework.Testing;-*Tests*" \
+            -filefilters:"-**/*.Tests/*;-**/*Tests*/**"
+
       - name: Pack (all packable projects)
         run: >
           dotnet pack WorkflowFramework.slnx
@@ -191,8 +204,7 @@ jobs:
       - name: Upload coverage to Codecov (Release)
         uses: codecov/codecov-action@v5
         with:
-          files: |
-            **/TestResults/*/coverage.cobertura.xml
+          files: coverage-report/Cobertura.xml
           flags: unittests
           fail_ci_if_error: false
           verbose: true

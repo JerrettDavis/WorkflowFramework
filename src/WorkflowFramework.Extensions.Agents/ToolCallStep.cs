@@ -1,6 +1,6 @@
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using WorkflowFramework.Extensions.Agents.Diagnostics;
+using WorkflowFramework.Extensions.AI;
 
 namespace WorkflowFramework.Extensions.Agents;
 
@@ -61,14 +61,6 @@ public sealed class ToolCallStep : IStep
     /// <summary>Substitutes {PropertyName} placeholders from context properties.</summary>
     public static string SubstituteProperties(string template, IDictionary<string, object?> properties)
     {
-        return Regex.Replace(template, @"\{(\w+)\}", match =>
-        {
-            var key = match.Groups[1].Value;
-            if (properties.TryGetValue(key, out var value) && value != null)
-            {
-                return value.ToString() ?? string.Empty;
-            }
-            return match.Value;
-        });
+        return PromptTemplateRenderer.Render(template, properties);
     }
 }

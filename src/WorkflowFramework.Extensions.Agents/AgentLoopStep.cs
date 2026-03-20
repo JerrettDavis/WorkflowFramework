@@ -72,6 +72,18 @@ public sealed class AgentLoopStep : IStep
                 Content = contextPrompt
             });
         }
+        if (!string.IsNullOrWhiteSpace(_options.InitialUserMessageTemplate))
+        {
+            var initialUserMessage = PromptTemplateRenderer.Render(_options.InitialUserMessageTemplate, context.Properties);
+            if (!string.IsNullOrWhiteSpace(initialUserMessage))
+            {
+                contextManager.AddMessage(new ConversationMessage
+                {
+                    Role = ConversationRole.User,
+                    Content = initialUserMessage
+                });
+            }
+        }
 
         string lastResponse = string.Empty;
 
