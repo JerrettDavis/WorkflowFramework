@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using WorkflowFramework.Extensions.Agents;
@@ -97,5 +98,70 @@ public class CommandHookTests
         deserialized!.Decision.Should().Be(HookDecision.Modify);
         deserialized.ModifiedArgs.Should().Be("{\"modified\":true}");
         deserialized.Reason.Should().Be("changed args");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenCommandReturnsHookResult_DeserializesResponse()
+    {
+        var (command, args) = CreatePowerShellCommand(
+            "$null = [Console]::In.ReadToEnd(); [Console]::Out.Write('{\"Decision\":2,\"Reason\":\"rewritten\",\"ModifiedArgs\":\"{\\\"safe\\\":true}\"}')");
+        var hook = new CommandHook(command, args);
+
+        var result = await hook.ExecuteAsync(AgentHookEvent.PreToolCall, new HookContext
+        {
+            StepName = "Planner",
+            ToolName = "search",
+            ToolArgs = "{\"q\":\"incident\"}"
+        });
+
+        result.Decision.Should().Be(HookDecision.Modify);
+        result.Reason.Should().Be("rewritten");
+        result.ModifiedArgs.Should().Be("{\"safe\":true}");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenCommandExitsNonZero_ReturnsDeny()
+    {
+        var (command, args) = CreatePowerShellCommand("exit 7");
+        var hook = new CommandHook(command, args);
+
+        var result = await hook.ExecuteAsync(AgentHookEvent.PreToolCall, new HookContext());
+
+        result.Decision.Should().Be(HookDecision.Deny);
+        result.Reason.Should().Be("Command exited with code 7");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenCommandReturnsInvalidJson_ReturnsAllow()
+    {
+        var (command, args) = CreatePowerShellCommand(
+            "$null = [Console]::In.ReadToEnd(); [Console]::Out.Write('not-json')");
+        var hook = new CommandHook(command, args);
+
+        var result = await hook.ExecuteAsync(AgentHookEvent.PreToolCall, new HookContext());
+
+        result.Decision.Should().Be(HookDecision.Allow);
+    }
+
+    private static (string Command, string[] Args) CreatePowerShellCommand(string script)
+    {
+        var encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+        return (ResolvePowerShellExecutable(), ["-NoLogo", "-NoProfile", "-EncodedCommand", encodedCommand]);
+    }
+
+    private static string ResolvePowerShellExecutable()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return "pwsh";
+        }
+
+        var pwshPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+            "PowerShell",
+            "7",
+            "pwsh.exe");
+
+        return File.Exists(pwshPath) ? "pwsh" : "powershell";
     }
 }

@@ -6,6 +6,11 @@ namespace WorkflowFramework.Tests;
 
 public class CheckpointingTests
 {
+    private sealed class CheckpointData
+    {
+        public string Status { get; set; } = "new";
+    }
+
     [Fact]
     public async Task InMemoryStore_SaveAndLoad_ReturnsCheckpoint()
     {
@@ -165,6 +170,28 @@ public class CheckpointingTests
         var result = await engine.ResumeAsync("done-wf", workflow);
 
         result.Status.Should().Be(WorkflowStatus.Completed);
+        (await store.LoadAsync("done-wf")).Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ResumeAsync_WithContext_AllStepsCompleted_ClearsCheckpoint()
+    {
+        var store = new InMemoryWorkflowCheckpointStore();
+        var workflowId = "done-with-context";
+
+        var workflow = Workflow.Create("test")
+            .Step("Step1", _ => Task.CompletedTask)
+            .Build();
+
+        await store.SaveAsync(workflowId, 0, new Dictionary<string, object?> { ["restored"] = true });
+
+        var engine = new WorkflowResumeEngine(store);
+        var context = new ResumableWorkflowContext(workflowId);
+        var result = await engine.ResumeAsync(workflow, context);
+
+        result.Status.Should().Be(WorkflowStatus.Completed);
+        result.Context.Properties["restored"].Should().Be(true);
+        (await store.LoadAsync(workflowId)).Should().BeNull();
     }
 
     [Fact]
@@ -261,5 +288,59 @@ public class CheckpointingTests
 
         var checkpoint = await store.LoadAsync("wf-1");
         checkpoint!.ContextSnapshot["key"].Should().Be("original");
+    }
+
+    [Fact]
+    public async Task WithCheckpointing_TypedBuilder_SavesCheckpoint()
+    {
+        var store = new InMemoryWorkflowCheckpointStore();
+
+        var workflow = Workflow.Create<CheckpointData>("typed-checkpoint")
+            .Step("UpdateStatus", ctx =>
+            {
+                ctx.Data.Status = "processed";
+                ctx.Properties["typed"] = true;
+                return Task.CompletedTask;
+            })
+            .WithCheckpointing(store)
+            .Build();
+
+        var context = new WorkflowContext<CheckpointData>(new CheckpointData());
+        var result = await workflow.ExecuteAsync(context);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Status.Should().Be("processed");
+
+        var checkpoint = await store.LoadAsync(context.WorkflowId);
+        checkpoint.Should().NotBeNull();
+        checkpoint!.StepIndex.Should().Be(0);
+        checkpoint.ContextSnapshot["typed"].Should().Be(true);
+    }
+
+    [Fact]
+    public void WorkflowCheckpoint_InitializesMetadataAndTimestamp()
+    {
+        var before = DateTimeOffset.UtcNow;
+
+        var checkpoint = new WorkflowCheckpoint
+        {
+            WorkflowId = "wf-123",
+            StepIndex = 2,
+            StepName = "Transform",
+            ContextSnapshot = new Dictionary<string, object?> { ["status"] = "running" },
+            FailedStepName = "Publish",
+            FailedStepIndex = 3
+        };
+
+        var after = DateTimeOffset.UtcNow;
+
+        checkpoint.WorkflowId.Should().Be("wf-123");
+        checkpoint.StepIndex.Should().Be(2);
+        checkpoint.StepName.Should().Be("Transform");
+        checkpoint.ContextSnapshot["status"].Should().Be("running");
+        checkpoint.FailedStepName.Should().Be("Publish");
+        checkpoint.FailedStepIndex.Should().Be(3);
+        checkpoint.Timestamp.Should().BeOnOrAfter(before);
+        checkpoint.Timestamp.Should().BeOnOrBefore(after);
     }
 }

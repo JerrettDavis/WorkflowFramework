@@ -48,6 +48,7 @@ public sealed class WorkflowResumeEngine
         if (resumeFromIndex >= steps.Count)
         {
             // All steps were completed — workflow is done
+            await _store.ClearAsync(context.WorkflowId, context.CancellationToken).ConfigureAwait(false);
             return new WorkflowResult(WorkflowStatus.Completed, context);
         }
 
@@ -105,6 +106,7 @@ public sealed class WorkflowResumeEngine
 
         if (resumeFromIndex >= steps.Count)
         {
+            await _store.ClearAsync(workflowId, cancellationToken).ConfigureAwait(false);
             return new WorkflowResult(WorkflowStatus.Completed, context);
         }
 
