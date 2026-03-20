@@ -64,8 +64,13 @@ public sealed class StepDefinition
     public string? Name { get; set; }
 
     /// <summary>
-    /// Gets or sets the condition expression key (for conditional, while, and dowhile steps).
-    /// The value of <c>ctx.Properties[Condition]</c> is checked to be <c>true</c> or <c>"true"</c>.
+    /// Gets or sets the condition expression key.
+    /// <list type="bullet">
+    ///   <item>For <c>conditional</c>, <c>while</c>, and <c>dowhile</c> steps: the property key whose value is
+    ///   checked to be <c>true</c> or <c>"true"</c> (via <c>ctx.Properties[Condition]</c>).</item>
+    ///   <item>For <c>foreach</c> steps: the property key whose value is the items collection to iterate
+    ///   (must implement <see cref="System.Collections.IEnumerable"/>). Defaults to <c>"items"</c> when not set.</item>
+    /// </list>
     /// </summary>
     [JsonPropertyName("condition")]
     public string? Condition { get; set; }
@@ -150,6 +155,13 @@ public sealed class StepDefinition
     /// </summary>
     [JsonPropertyName("timeoutMinutes")]
     public int? TimeoutMinutes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the catch handler definitions (for <c>type: try</c> steps).
+    /// Each handler specifies the exception type and the steps to execute when that exception is thrown.
+    /// </summary>
+    [JsonPropertyName("catch")]
+    public List<CatchDefinition>? Catch { get; set; }
 }
 
 /// <summary>
@@ -192,4 +204,24 @@ public sealed class RetryDefinition
     /// </summary>
     [JsonPropertyName("baseDelayMs")]
     public int BaseDelayMs { get; set; } = 100;
+}
+
+/// <summary>
+/// Defines a catch block for a <c>type: try</c> step.
+/// </summary>
+public sealed class CatchDefinition
+{
+    /// <summary>
+    /// Gets or sets the fully-qualified or short exception type name to catch
+    /// (e.g. <c>"Exception"</c>, <c>"InvalidOperationException"</c>).
+    /// If the type cannot be resolved at runtime, <see cref="System.Exception"/> is used as the fallback.
+    /// </summary>
+    [JsonPropertyName("exception")]
+    public string Exception { get; set; } = "Exception";
+
+    /// <summary>
+    /// Gets or sets the steps to execute when the exception is caught.
+    /// </summary>
+    [JsonPropertyName("steps")]
+    public List<StepDefinition> Steps { get; set; } = new();
 }

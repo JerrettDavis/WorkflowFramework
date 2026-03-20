@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using WorkflowFramework.Builder;
 using YamlDotNet.Serialization;
@@ -372,7 +373,11 @@ public sealed class WorkflowDefinitionBuilder
         builder.Parallel(p =>
         {
             foreach (var child in childSteps)
-                p.Step(ResolveLeafStep(child));
+            {
+                // Use composite-aware grouping so nested conditionals/retries/etc. work inside parallel.
+                var branchStep = BuildStepsAsGroupStep(child.Name ?? "branch", new List<StepDefinition> { child });
+                p.Step(branchStep);
+            }
         });
     }
 
@@ -382,10 +387,16 @@ public sealed class WorkflowDefinitionBuilder
         var itemsKey = stepDef.Condition ?? "items";
 
         builder.ForEach<object>(
-            ctx => ctx.Properties.TryGetValue(itemsKey, out var col)
-                   && col is IEnumerable<object> enumerable
-                ? enumerable
-                : Array.Empty<object>(),
+            ctx =>
+            {
+                if (!ctx.Properties.TryGetValue(itemsKey, out var col)) return Array.Empty<object>();
+                // Accept typed IEnumerable<object> directly.
+                if (col is IEnumerable<object> typed) return typed;
+                // Accept any non-string IEnumerable and project to object.
+                if (col is System.Collections.IEnumerable enumerable and not string)
+                    return enumerable.Cast<object>();
+                return Array.Empty<object>();
+            },
             b => BuildSteps(b, bodySteps));
     }
 
@@ -436,16 +447,44 @@ public sealed class WorkflowDefinitionBuilder
     {
         var tryBody = stepDef.Steps ?? stepDef.ThenSteps ?? [];
         var finallyBody = stepDef.ElseSteps ?? [];
+        var catchDefs = stepDef.Catch ?? [];
+
+        var tryCatchBuilder = builder.Try(b => BuildSteps(b, tryBody));
+
+        foreach (var catchDef in catchDefs)
+        {
+            var exType = ResolveExceptionType(catchDef.Exception);
+            var catchSteps = catchDef.Steps.ToList();
+
+            Func<IWorkflowContext, Exception, Task> handler = (ctx, _) =>
+            {
+                var catchBodyBuilder = Workflow.Create("catch");
+                BuildSteps(catchBodyBuilder, catchSteps);
+                return catchBodyBuilder.Build().ExecuteAsync(ctx);
+            };
+
+            // Use reflection to call the generic Catch<TException> with the resolved exception type.
+            var catchMethod = typeof(ITryCatchBuilder)
+                .GetMethod(nameof(ITryCatchBuilder.Catch))!
+                .MakeGenericMethod(exType);
+            tryCatchBuilder = (ITryCatchBuilder)catchMethod.Invoke(tryCatchBuilder, new object[] { handler })!;
+        }
 
         if (finallyBody.Count > 0)
-        {
-            builder.Try(b => BuildSteps(b, tryBody))
-                   .Finally(b => BuildSteps(b, finallyBody));
-        }
+            tryCatchBuilder.Finally(b => BuildSteps(b, finallyBody));
         else
-        {
-            builder.Try(b => BuildSteps(b, tryBody)).EndTry();
-        }
+            tryCatchBuilder.EndTry();
+    }
+
+    /// <summary>
+    /// Resolves an exception type by name, falling back to <see cref="Exception"/> when unresolvable.
+    /// </summary>
+    private static Type ResolveExceptionType(string typeName)
+    {
+        if (string.IsNullOrEmpty(typeName)) return typeof(Exception);
+        return Type.GetType(typeName)
+            ?? Type.GetType($"System.{typeName}")
+            ?? typeof(Exception);
     }
 
     private void BuildSubWorkflowStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -538,7 +577,27 @@ public sealed class WorkflowDefinitionBuilder
             throw new InvalidOperationException($"Step group '{groupName}' is empty.");
 
         if (steps.Count == 1)
-            return ResolveLeafStep(steps[0]);
+        {
+            var singleDef = steps[0];
+            var typeCategory = singleDef.Type?.ToLowerInvariant() ?? string.Empty;
+
+            // A leaf step (explicit class, "step" category, or unrecognized type treated as class name)
+            // can be resolved directly without creating an extra inline workflow.
+            var isLeaf =
+                !string.IsNullOrEmpty(singleDef.Class) ||
+                typeCategory == "step" ||
+                (!string.IsNullOrEmpty(singleDef.Type) && !KnownCategories.Contains(typeCategory));
+
+            if (isLeaf)
+                return ResolveLeafStep(singleDef);
+
+            // Single composite step (e.g., conditional, retry, saga): wrap in an inline workflow
+            // so composite dispatch logic runs correctly.
+            var singleBuilder = Workflow.Create(groupName);
+            BuildSteps(singleBuilder, steps);
+            var singleWorkflow = singleBuilder.Build();
+            return new InlineWorkflowStep(groupName, singleWorkflow);
+        }
 
         // Multiple steps: create an inline sequential workflow
         var subBuilder = Workflow.Create(groupName);

@@ -143,6 +143,38 @@ public class YamlWorkflowFullTests
         wf.Steps.Should().HaveCount(1); // parallel group is a single step
     }
 
+    [Fact]
+    public void Yaml_ParallelType_WithCompositeChild_Builds()
+    {
+        // A conditional step nested inside a parallel block should be accepted.
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Type = "parallel",
+                    Steps =
+                    [
+                        new StepDefinition
+                        {
+                            Type = "conditional",
+                            Condition = "flag",
+                            ThenSteps = [new StepDefinition { Type = "step", Class = "ThenStep" }]
+                        },
+                        new StepDefinition { Type = "step", Class = "OtherStep" }
+                    ]
+                }
+            ]
+        };
+
+        var registry = new StepRegistry();
+        registry.Register("ThenStep", () => new TestStep("ThenStep"));
+        registry.Register("OtherStep", () => new TestStep("OtherStep"));
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        wf.Steps.Should().HaveCount(1);
+    }
+
     // ── foreach type ───────────────────────────────────────────────────────────
 
     [Fact]
@@ -169,6 +201,35 @@ public class YamlWorkflowFullTests
         registry.Register("ProcessItem", () => new TestStep("ProcessItem"));
         var wf = new WorkflowDefinitionBuilder(registry).Build(def);
         wf.Steps.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task Yaml_ForEachType_NonGenericCollection_IteratesAllItems()
+    {
+        // List<int> is IEnumerable but NOT IEnumerable<object>; the builder should still iterate.
+        var executed = new List<string>();
+        var registry = new StepRegistry();
+        registry.Register("ProcessItem", () => new TrackingStep("ProcessItem", executed));
+
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Type = "foreach",
+                    Condition = "items",
+                    Steps = [new StepDefinition { Type = "ProcessItem" }]
+                }
+            ]
+        };
+
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        var ctx = new WorkflowContext();
+        ctx.Properties["items"] = new List<int> { 1, 2, 3 };
+        await wf.ExecuteAsync(ctx);
+
+        executed.Should().HaveCount(3);
     }
 
     // ── while type ─────────────────────────────────────────────────────────────
@@ -316,6 +377,72 @@ public class YamlWorkflowFullTests
         registry.Register("CleanupStep", () => new TestStep("CleanupStep"));
         var wf = new WorkflowDefinitionBuilder(registry).Build(def);
         wf.Steps.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void Yaml_TryType_WithCatch_LoadsAndBuilds()
+    {
+        var yaml = """
+            name: TryCatchFlow
+            steps:
+              - name: TryBlock
+                type: try
+                steps:
+                  - type: step
+                    class: RiskyStep
+                catch:
+                  - exception: InvalidOperationException
+                    steps:
+                      - type: step
+                        class: HandleError
+            """;
+
+        var loader = new YamlWorkflowDefinitionLoader();
+        var def = loader.Load(yaml);
+
+        def.Steps[0].Type.Should().Be("try");
+        def.Steps[0].Catch.Should().HaveCount(1);
+        def.Steps[0].Catch![0].Exception.Should().Be("InvalidOperationException");
+        def.Steps[0].Catch![0].Steps.Should().HaveCount(1);
+
+        var registry = new StepRegistry();
+        registry.Register("RiskyStep", () => new TestStep("RiskyStep"));
+        registry.Register("HandleError", () => new TestStep("HandleError"));
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        wf.Steps.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task Yaml_TryType_CatchHandler_ExecutesOnException()
+    {
+        var executed = new List<string>();
+        var registry = new StepRegistry();
+        registry.Register("ThrowStep", () => new ThrowingStep());
+        registry.Register("HandleError", () => new TrackingStep("HandleError", executed));
+
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Type = "try",
+                    Steps = [new StepDefinition { Type = "ThrowStep" }],
+                    Catch =
+                    [
+                        new CatchDefinition
+                        {
+                            Exception = "InvalidOperationException",
+                            Steps = [new StepDefinition { Type = "HandleError" }]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        await wf.ExecuteAsync(new WorkflowContext());
+        executed.Should().ContainSingle().Which.Should().Be("HandleError");
     }
 
     // ── subworkflow type ───────────────────────────────────────────────────────
@@ -766,6 +893,15 @@ public class YamlWorkflowFullTests
         step.Message.Should().BeNull();
         step.RequiredApprovers.Should().BeNull();
         step.TimeoutMinutes.Should().BeNull();
+        step.Catch.Should().BeNull();
+    }
+
+    [Fact]
+    public void CatchDefinition_Defaults_AreCorrect()
+    {
+        var catchDef = new CatchDefinition();
+        catchDef.Exception.Should().Be("Exception");
+        catchDef.Steps.Should().BeEmpty();
     }
 
     [Fact]
@@ -791,5 +927,12 @@ public class YamlWorkflowFullTests
             log.Add(name);
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class ThrowingStep : IStep
+    {
+        public string Name => "ThrowStep";
+        public Task ExecuteAsync(IWorkflowContext context) =>
+            throw new InvalidOperationException("Simulated failure");
     }
 }
