@@ -164,4 +164,36 @@ public class WorkflowTemplateLibraryTests
             .Should().Contain("{{Draft with OpenAI.Response}}")
             .And.Contain("{{Audit with Anthropic.Response}}");
     }
+
+    [Fact]
+    public async Task GetTemplateAsync_BlogFromInterview_UsesVoiceInputs_AndPromptWiring()
+    {
+        var template = await _library.GetTemplateAsync("blog-from-interview");
+
+        template.Should().NotBeNull();
+        var steps = template!.Definition.Steps;
+
+        steps.Single(step => step.Name == "RecordTopicIntro").Config!["expression"]
+            .Should().Contain("{recordings}")
+            .And.Contain("{transcript}");
+
+        var cleanupTopic = steps.Single(step => step.Name == "CleanupTopic");
+        cleanupTopic.Type.Should().Be("LlmCallStep");
+        cleanupTopic.Config.Should().Contain(new KeyValuePair<string, string>("provider", "ollama"));
+        cleanupTopic.Config.Should().Contain(new KeyValuePair<string, string>("model", "qwen2.5"));
+        cleanupTopic.Config!["prompt"].Should().Contain("{{TranscribeTopic.Output}}");
+
+        var generateQuestions = steps.Single(step => step.Name == "GenerateQuestions");
+        generateQuestions.Type.Should().Be("AgentLoopStep");
+        generateQuestions.Config.Should().Contain(new KeyValuePair<string, string>("provider", "ollama"));
+        generateQuestions.Config.Should().Contain(new KeyValuePair<string, string>("model", "llama3.2"));
+        generateQuestions.Config!["systemPrompt"].Should().Contain("{{CleanupTopic.Response}}");
+
+        var synthesizeBlog = steps.Single(step => step.Name == "SynthesizeBlog");
+        synthesizeBlog.Type.Should().Be("LlmCallStep");
+        synthesizeBlog.Config.Should().Contain(new KeyValuePair<string, string>("provider", "openai"));
+        synthesizeBlog.Config.Should().Contain(new KeyValuePair<string, string>("model", "gpt-4o-mini"));
+        synthesizeBlog.Config!["prompt"].Should().Contain("{qaPairs}");
+        synthesizeBlog.Config["prompt"].Should().Contain("{{ParseQuestions.Output}}");
+    }
 }

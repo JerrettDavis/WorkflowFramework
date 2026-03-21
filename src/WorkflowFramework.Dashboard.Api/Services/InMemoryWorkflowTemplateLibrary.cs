@@ -671,7 +671,7 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
     {
         Id = "blog-from-interview",
         Name = "Blog from Interview",
-        Description = "5-phase agentic workflow: record topic, generate questions via agent loop, record answers, synthesize blog post, and review.",
+        Description = "5-phase voice-first workflow: capture an interview topic, let a local agent shape questions, collect answers, draft a blog post with prompt wiring, and send it to human review.",
         Category = "Voice & Audio",
         Tags = ["voice", "agent", "blog", "interview", "compaction"],
         Difficulty = TemplateDifficulty.Advanced,
@@ -682,20 +682,111 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
             Steps =
             [
                 // Phase 1
-                new StepDefinitionDto { Name = "RecordTopicIntro", Type = "Action" },
-                new StepDefinitionDto { Name = "TranscribeTopic", Type = "Action" },
-                new StepDefinitionDto { Name = "CleanupTopic", Type = "LlmCallStep" },
-                new StepDefinitionDto { Name = "ReviewTopic", Type = "HumanTaskStep" },
+                new StepDefinitionDto
+                {
+                    Name = "RecordTopicIntro",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Capture the topic briefing from {recordings} and any initial {transcript} notes."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "TranscribeTopic",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Normalize {recordings} into a clean transcript for the interview topic."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "CleanupTopic",
+                    Type = "LlmCallStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "ollama",
+                        ["model"] = "qwen2.5",
+                        ["prompt"] = "Clean up {{TranscribeTopic.Output}} into a concise topic brief with audience, angle, and must-cover themes."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "ReviewTopic",
+                    Type = "HumanTaskStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["assignee"] = "content-editor",
+                        ["description"] = "Review {{CleanupTopic.Response}} and confirm the interview direction before questions are generated.",
+                        ["priority"] = "High"
+                    }
+                },
                 // Phase 2
-                new StepDefinitionDto { Name = "GenerateQuestions", Type = "AgentLoopStep" },
-                new StepDefinitionDto { Name = "ParseQuestions", Type = "Action" },
+                new StepDefinitionDto
+                {
+                    Name = "GenerateQuestions",
+                    Type = "AgentLoopStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "ollama",
+                        ["model"] = "llama3.2",
+                        ["systemPrompt"] = "Using {{CleanupTopic.Response}} and any existing {questions}, generate a tight interview question set that will produce a publishable blog post.",
+                        ["maxIterations"] = "4"
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "ParseQuestions",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Convert {{GenerateQuestions.Iterations}} into an editor-friendly question plan and sync it with {questions}."
+                    }
+                },
                 // Phase 3
-                new StepDefinitionDto { Name = "RecordAnswers", Type = "Action" },
+                new StepDefinitionDto
+                {
+                    Name = "RecordAnswers",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Capture interview answers from {qaPairs}, {recordings}, and the active transcript."
+                    }
+                },
                 // Phase 4
-                new StepDefinitionDto { Name = "SynthesizeBlog", Type = "AgentLoopStep" },
-                new StepDefinitionDto { Name = "StoreBlogPost", Type = "Action" },
+                new StepDefinitionDto
+                {
+                    Name = "SynthesizeBlog",
+                    Type = "LlmCallStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "openai",
+                        ["model"] = "gpt-4o-mini",
+                        ["prompt"] = "Draft a blog post using {{CleanupTopic.Response}}, {qaPairs}, and {{ParseQuestions.Output}}. Keep the structure scannable and quote-ready."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "StoreBlogPost",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Persist {{SynthesizeBlog.Response}} as the working article draft."
+                    }
+                },
                 // Phase 5
-                new StepDefinitionDto { Name = "ReviewBlog", Type = "HumanTaskStep" }
+                new StepDefinitionDto
+                {
+                    Name = "ReviewBlog",
+                    Type = "HumanTaskStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["assignee"] = "editorial-review",
+                        ["description"] = "Review {{SynthesizeBlog.Response}} and approve any final changes before publishing.",
+                        ["priority"] = "High"
+                    }
+                }
             ]
         }
     };
