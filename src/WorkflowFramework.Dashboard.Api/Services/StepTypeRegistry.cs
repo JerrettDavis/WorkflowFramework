@@ -39,7 +39,7 @@ public sealed class StepTypeRegistry
             Schema("""
             {
               "properties": {
-                "expression": { "type": "string", "uiType": "textarea", "label": "Expression", "helpText": "C# expression to evaluate", "rows": 3 }
+                "expression": { "type": "string", "uiType": "textarea", "label": "Expression", "helpText": "C# expression to evaluate", "rows": 3, "supportsVariables": true, "variableSyntax": "Use {{Step Name.Output}} for upstream step outputs or {InputName} for run inputs." }
               },
               "required": []
             }
@@ -249,7 +249,7 @@ public sealed class StepTypeRegistry
               "properties": {
                 "provider":      { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use for this agent", "required": true, "options": {{aiProviderOptions}} },
                 "model":         { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier (provider-specific)", "required": true, "dependsOn": "provider", "optionGroups": {{aiModelOptionGroups}} },
-                "systemPrompt":  { "type": "string", "uiType": "textarea", "label": "System Prompt", "helpText": "Instructions that define the agent's behavior and role", "rows": 6 },
+                "systemPrompt":  { "type": "string", "uiType": "textarea", "label": "System Prompt", "helpText": "Instructions that define the agent's behavior and role", "rows": 6, "supportsVariables": true, "variableSyntax": "Use a double-brace step output token like StepName.Response or a single-brace run input token like InputName." },
                 "maxIterations": { "type": "number", "uiType": "number", "label": "Max Iterations", "helpText": "Maximum number of agent loop iterations", "min": 1, "max": 100, "default": "10" }
               },
               "required": ["provider", "model"]
@@ -262,7 +262,7 @@ public sealed class StepTypeRegistry
               "properties": {
                 "provider": { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use", "required": true, "options": {{aiProviderOptions}} },
                 "model":    { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier", "dependsOn": "provider", "optionGroups": {{aiModelOptionGroups}} },
-                "prompt":   { "type": "string", "uiType": "textarea", "label": "Decision Prompt", "helpText": "Prompt describing the decision to make and available options", "required": true, "rows": 6 },
+                "prompt":   { "type": "string", "uiType": "textarea", "label": "Decision Prompt", "helpText": "Prompt describing the decision to make and available options", "required": true, "rows": 6, "supportsVariables": true, "variableSyntax": "Use a double-brace upstream output token such as StepName.Decision or StepName.Body, or a single-brace run input token like InputName." },
                 "options":  { "type": "string", "uiType": "json", "label": "Decision Options", "helpText": "JSON array of possible decision outcomes", "rows": 4 }
               },
               "required": ["provider", "prompt"]
@@ -275,7 +275,7 @@ public sealed class StepTypeRegistry
               "properties": {
                 "provider":  { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use", "required": true, "options": {{aiProviderOptions}} },
                 "model":     { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier", "dependsOn": "provider", "optionGroups": {{aiModelOptionGroups}} },
-                "objective": { "type": "string", "uiType": "textarea", "label": "Objective", "helpText": "High-level objective for the agent to plan", "required": true, "rows": 4 }
+                "objective": { "type": "string", "uiType": "textarea", "label": "Objective", "helpText": "High-level objective for the agent to plan", "required": true, "rows": 4, "supportsVariables": true, "variableSyntax": "Use a double-brace upstream output token like StepName.Plan or a single-brace run input token like InputName." }
               },
               "required": ["provider", "objective"]
             }
@@ -287,7 +287,7 @@ public sealed class StepTypeRegistry
               "properties": {
                 "provider":    { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use", "required": true, "options": {{aiProviderOptions}} },
                 "model":       { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier", "required": true, "dependsOn": "provider", "optionGroups": {{aiModelOptionGroups}} },
-                "prompt":      { "type": "string", "uiType": "textarea", "label": "Prompt", "helpText": "The prompt to send to the language model", "required": true, "rows": 6 },
+                "prompt":      { "type": "string", "uiType": "textarea", "label": "Prompt", "helpText": "The prompt to send to the language model", "required": true, "rows": 6, "supportsVariables": true, "variableSyntax": "Use a double-brace upstream output token like StepName.Response or a single-brace run input token like InputName." },
                 "temperature": { "type": "number", "uiType": "slider", "label": "Temperature", "helpText": "Controls randomness: 0 = deterministic, 2 = very creative", "min": 0, "max": 2, "step": 0.1, "default": "0.7" },
                 "maxTokens":   { "type": "number", "uiType": "number", "label": "Max Tokens", "helpText": "Maximum number of tokens in the response", "min": 1, "max": 128000 }
               },

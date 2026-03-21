@@ -239,6 +239,49 @@
                             {
                                 <p class="text-[10px] text-gray-500 mt-0.5">@field.HelpText</p>
                             }
+
+                            @if (field.SupportsVariables)
+                            {
+                                <div class="mt-2 rounded border border-gray-700 bg-gray-900/40 p-2 text-[10px]" data-testid="properties-variables-@field.Name">
+                                    <div class="flex items-center justify-between gap-2 mb-1">
+                                        <span class="uppercase tracking-wider text-gray-500 font-semibold">Variables</span>
+                                        <span class="text-gray-500">@GetVariableSyntax(field)</span>
+                                    </div>
+
+                                    @if (AvailableVariables.Count == 0)
+                                    {
+                                        <p class="text-gray-500">Connect an upstream step to surface reusable outputs here.</p>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var group in GetVariableReferenceGroups())
+                                        {
+                                            <div class="mb-2 last:mb-0">
+                                                <p class="text-gray-400 font-semibold mb-1">@group.Key</p>
+                                                <div class="flex flex-wrap gap-1">
+                                                    @foreach (var variable in group)
+                                                    {
+                                                        <button type="button"
+                                                                @onclick="() => InsertVariableAsync(field.Name, variable.Token)"
+                                                                class="rounded border border-cyan-500/20 bg-cyan-500/10 px-1.5 py-0.5 text-cyan-200 hover:bg-cyan-500/20">
+                                                            @variable.Token
+                                                        </button>
+                                                    }
+                                                </div>
+                                                @if (group.Any(variable => !string.IsNullOrWhiteSpace(variable.Description)))
+                                                {
+                                                    <div class="mt-1 space-y-0.5 text-gray-500">
+                                                        @foreach (var variable in group.Where(variable => !string.IsNullOrWhiteSpace(variable.Description)))
+                                                        {
+                                                            <p><span class="text-cyan-200">@variable.Token</span> - @variable.Description</p>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -294,6 +337,7 @@
     [Parameter] public EventCallback<Dictionary<string, object?>> OnConfigChanged { get; set; }
     [Parameter] public NodeConnections? Connections { get; set; }
     [Parameter] public EventCallback<string> OnConnectionClicked { get; set; }
+    [Parameter] public IReadOnlyList<VariableReferenceInfo> AvailableVariables { get; set; } = [];
 
     private List<StepDefinition> _localSteps = StepCatalog.GetAll();
     private bool _loadingSchema;
@@ -315,6 +359,13 @@
         public string? EdgeLabel { get; set; }
     }
 
+    public sealed class VariableReferenceInfo
+    {
+        public string Token { get; set; } = "";
+        public string GroupLabel { get; set; } = "";
+        public string? Description { get; set; }
+    }
+
     private sealed class SchemaField
     {
         public string Name { get; set; } = "";
@@ -330,6 +381,8 @@
         public string? DependsOn { get; set; }
         public List<string>? Options { get; set; }
         public Dictionary<string, List<string>>? OptionGroups { get; set; }
+        public bool SupportsVariables { get; set; }
+        public string? VariableSyntax { get; set; }
     }
 
     private static bool IsContainerType(string? type) => type?.ToLowerInvariant() is
@@ -435,6 +488,15 @@
                             if (prop.Value.TryGetProperty("dependsOn", out var dep))
                                 field.DependsOn = dep.GetString();
 
+                            if (prop.Value.TryGetProperty("supportsVariables", out var supportsVariables)
+                                && supportsVariables.ValueKind is System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False)
+                            {
+                                field.SupportsVariables = supportsVariables.GetBoolean();
+                            }
+
+                            if (prop.Value.TryGetProperty("variableSyntax", out var variableSyntax))
+                                field.VariableSyntax = variableSyntax.GetString();
+
                             // Options (from enum or options array)
                             if (prop.Value.TryGetProperty("options", out var opts) && opts.ValueKind == System.Text.Json.JsonValueKind.Array)
                             {
@@ -500,6 +562,8 @@
             Default = prop.DefaultValue,
             DependsOn = prop.DependsOn,
             Options = prop.Options is null ? null : [.. prop.Options],
+            SupportsVariables = prop.SupportsVariables,
+            VariableSyntax = prop.VariableSyntax,
             OptionGroups = prop.OptionGroups?.ToDictionary(
                 pair => pair.Key,
                 pair => pair.Value.ToList(),
@@ -586,5 +650,23 @@
     {
         var newConfig = new Dictionary<string, object?>(NodeConfig) { [key] = value };
         await OnConfigChanged.InvokeAsync(newConfig);
+    }
+
+    private IEnumerable<IGrouping<string, VariableReferenceInfo>> GetVariableReferenceGroups()
+        => AvailableVariables
+            .Where(variable => !string.IsNullOrWhiteSpace(variable.Token))
+            .GroupBy(variable => string.IsNullOrWhiteSpace(variable.GroupLabel) ? "Available outputs" : variable.GroupLabel);
+
+    private string GetVariableSyntax(SchemaField field)
+        => field.VariableSyntax ?? "Use {{Step Name.Output}} or {InputName}";
+
+    private async Task InsertVariableAsync(string key, string token)
+    {
+        var currentValue = NodeConfig.GetValueOrDefault(key)?.ToString() ?? string.Empty;
+        var separator = currentValue.Length == 0 || char.IsWhiteSpace(currentValue[^1]) || currentValue[^1] is '\n' or '\r'
+            ? string.Empty
+            : " ";
+
+        await UpdateConfig(key, currentValue + separator + token);
     }
 }

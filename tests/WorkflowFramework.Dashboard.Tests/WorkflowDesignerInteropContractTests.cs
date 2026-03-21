@@ -286,9 +286,66 @@ public sealed class WorkflowDesignerInteropContractTests
         GetProperty(model, "DependsOn")?.ToString().Should().Be("provider");
         GetProperty(model, "OptionGroups").Should().NotBeNull();
 
+        var prompt = properties.Single(property => string.Equals(GetProperty(property, "Name")?.ToString(), "prompt", StringComparison.Ordinal));
+        GetProperty(prompt, "SupportsVariables").Should().Be(true);
+        GetProperty(prompt, "VariableSyntax")?.ToString().Should().Contain("{{Step Name.Response}}");
+
         var agentLoop = definitions.Single(d => string.Equals(GetProperty(d, "Type")?.ToString(), "AgentLoopStep", StringComparison.Ordinal));
         var loopProperties = ((GetProperty(agentLoop, "Properties") as IEnumerable) ?? Array.Empty<object>()).Cast<object>().ToList();
         loopProperties.Select(property => GetProperty(property, "Name")?.ToString()).Should().NotContain("tools");
+        var systemPrompt = loopProperties.Single(property => string.Equals(GetProperty(property, "Name")?.ToString(), "systemPrompt", StringComparison.Ordinal));
+        GetProperty(systemPrompt, "SupportsVariables").Should().Be(true);
+    }
+
+    [Fact]
+    public void BuildAvailableVariables_IncludesRunInputs_And_UpstreamStepOutputs()
+    {
+        using var document = JsonDocument.Parse("""
+            {
+              "nodes": [
+                {
+                  "id": "node_1",
+                  "type": "HttpStep",
+                  "label": "Fetch Customer",
+                  "config": {
+                    "label": "Fetch Customer"
+                  }
+                },
+                {
+                  "id": "node_2",
+                  "type": "Action",
+                  "label": "Normalize transcript",
+                  "config": {
+                    "label": "Normalize transcript"
+                  }
+                },
+                {
+                  "id": "node_3",
+                  "type": "LlmCallStep",
+                  "label": "Draft summary",
+                  "config": {
+                    "label": "Draft summary"
+                  }
+                }
+              ],
+              "edges": [
+                { "source": "node_1", "target": "node_2" },
+                { "source": "node_2", "target": "node_3" }
+              ]
+            }
+            """);
+
+        var buildAvailableVariables = WorkflowDesignerType.GetMethod("BuildAvailableVariables", BindingFlags.Static | BindingFlags.NonPublic);
+        buildAvailableVariables.Should().NotBeNull();
+
+        var variables = ((IEnumerable?)buildAvailableVariables!.Invoke(null, [document.RootElement, "node_3"]))?.Cast<object>().ToList();
+        variables.Should().NotBeNull();
+
+        variables!.Select(variable => GetProperty(variable, "Token")?.ToString()).Should().Contain([
+            "{transcript}",
+            "{{Fetch Customer.Body}}",
+            "{{Normalize transcript.Output}}"
+        ]);
     }
 
     [Fact]

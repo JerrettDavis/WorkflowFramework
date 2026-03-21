@@ -21,6 +21,8 @@ public sealed class StepProperty
     public string? DependsOn { get; init; }
     public List<string>? Options { get; init; }
     public Dictionary<string, List<string>>? OptionGroups { get; init; }
+    public bool SupportsVariables { get; init; }
+    public string? VariableSyntax { get; init; }
 }
 
 public sealed class WorkflowNode
@@ -69,7 +71,7 @@ public static class StepCatalog
     [
         // Core
         new() { Type = "Action", Name = "Action", Icon = "⬡", Category = "Core", Color = CategoryColors["Core"],
-            Properties = [new() { Name = "expression", Label = "Expression" }] },
+            Properties = [new() { Name = "expression", Label = "Expression", SupportsVariables = true, VariableSyntax = "Use {{Step Name.Output}} for upstream step outputs or {InputName} for run inputs." }] },
         new() { Type = "Conditional", Name = "Conditional", Icon = "◇", Category = "Core", Color = CategoryColors["Core"],
             Properties = [new() { Name = "expression", Label = "Expression", Required = true }] },
         new() { Type = "Parallel", Name = "Parallel", Icon = "⫘", Category = "Core", Color = CategoryColors["Core"],
@@ -115,7 +117,7 @@ public static class StepCatalog
             [
                 new() { Name = "provider", Label = "Provider", Type = "select", UiType = "providerSelect", Required = true, Options = AiProviders },
                 new() { Name = "model", Label = "Model", Type = "select", UiType = "modelSelect", Required = true, DependsOn = "provider", OptionGroups = AiModelOptionGroups },
-                new() { Name = "systemPrompt", Label = "System Prompt" },
+                new() { Name = "systemPrompt", Label = "System Prompt", SupportsVariables = true, VariableSyntax = "Use {{Step Name.Response}} for upstream step outputs or {InputName} for run inputs." },
                 new() { Name = "maxIterations", Label = "Max Iterations", Type = "number", DefaultValue = "10" }
             ] },
         new() { Type = "AgentDecisionStep", Name = "Agent Decision", Icon = "🤖", Category = "AI/Agents", Color = CategoryColors["AI/Agents"],
@@ -123,7 +125,7 @@ public static class StepCatalog
             [
                 new() { Name = "provider", Label = "Provider", Type = "select", UiType = "providerSelect", Required = true, Options = AiProviders },
                 new() { Name = "model", Label = "Model", Type = "select", UiType = "modelSelect", DependsOn = "provider", OptionGroups = AiModelOptionGroups },
-                new() { Name = "prompt", Label = "Prompt", Required = true },
+                new() { Name = "prompt", Label = "Prompt", Required = true, SupportsVariables = true, VariableSyntax = "Use {{Step Name.Decision}} or {{Step Name.Body}} for upstream outputs, or {InputName} for run inputs." },
                 new() { Name = "options", Label = "Options (comma-separated)" }
             ] },
         new() { Type = "AgentPlanStep", Name = "Agent Plan", Icon = "🤖", Category = "AI/Agents", Color = CategoryColors["AI/Agents"],
@@ -131,14 +133,14 @@ public static class StepCatalog
             [
                 new() { Name = "provider", Label = "Provider", Type = "select", UiType = "providerSelect", Required = true, Options = AiProviders },
                 new() { Name = "model", Label = "Model", Type = "select", UiType = "modelSelect", DependsOn = "provider", OptionGroups = AiModelOptionGroups },
-                new() { Name = "objective", Label = "Objective", Required = true }
+                new() { Name = "objective", Label = "Objective", Required = true, SupportsVariables = true, VariableSyntax = "Use {{Step Name.Plan}} for upstream outputs or {InputName} for run inputs." }
             ] },
         new() { Type = "LlmCallStep", Name = "LLM Call", Icon = "🤖", Category = "AI/Agents", Color = CategoryColors["AI/Agents"],
             Properties =
             [
                 new() { Name = "provider", Label = "Provider", Type = "select", UiType = "providerSelect", Required = true, Options = AiProviders },
                 new() { Name = "model", Label = "Model", Type = "select", UiType = "modelSelect", Required = true, DependsOn = "provider", OptionGroups = AiModelOptionGroups },
-                new() { Name = "prompt", Label = "Prompt", Required = true },
+                new() { Name = "prompt", Label = "Prompt", Required = true, SupportsVariables = true, VariableSyntax = "Use {{Step Name.Response}} for upstream outputs or {InputName} for run inputs." },
                 new() { Name = "temperature", Label = "Temperature", Type = "number" },
                 new() { Name = "maxTokens", Label = "Max Tokens", Type = "number" }
             ] },

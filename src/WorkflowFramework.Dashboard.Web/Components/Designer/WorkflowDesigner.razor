@@ -35,6 +35,7 @@
                          NodeConfig="_selectedNodeConfig"
                          OnConfigChanged="HandleConfigChanged"
                          Connections="_selectedNodeConnections"
+                         AvailableVariables="_selectedNodeVariables"
                          OnConnectionClicked="HandleFocusNode" />
     </div>
 
@@ -566,6 +567,7 @@
     private string? _selectedNodeType;
     private Dictionary<string, object?> _selectedNodeConfig = new();
     private PropertiesPanel.NodeConnections? _selectedNodeConnections;
+    private IReadOnlyList<PropertiesPanel.VariableReferenceInfo> _selectedNodeVariables = [];
     private bool _showTemplateBrowser;
     private bool _showOpenDialog;
     private string? _activeRunId;
@@ -731,6 +733,7 @@
         _selectedNodeId = nodeId;
         _selectedNodeType = nodeType;
         _selectedNodeConfig = config ?? new();
+        _selectedNodeVariables = [];
 
         if (nodeId is not null)
         {
@@ -762,12 +765,20 @@
                         });
                     }
                 }
+
+                var canvasData = await JS.InvokeAsync<System.Text.Json.JsonElement>("workflowEditor.getWorkflowDefinition");
+                _selectedNodeVariables = BuildAvailableVariables(canvasData, nodeId);
             }
-            catch { _selectedNodeConnections = null; }
+            catch
+            {
+                _selectedNodeConnections = null;
+                _selectedNodeVariables = [];
+            }
         }
         else
         {
             _selectedNodeConnections = null;
+            _selectedNodeVariables = [];
         }
 
         StateHasChanged();
@@ -783,7 +794,7 @@
     [JSInvokable]
     public void OnNodeRemoved(string nodeId)
     {
-        if (_selectedNodeId == nodeId) { _selectedNodeId = null; _selectedNodeType = null; _selectedNodeConnections = null; }
+        if (_selectedNodeId == nodeId) { _selectedNodeId = null; _selectedNodeType = null; _selectedNodeConnections = null; _selectedNodeVariables = []; }
         _dirty = true;
         StateHasChanged();
     }
@@ -808,6 +819,7 @@
             _selectedNodeType = null;
             _selectedNodeConfig = new Dictionary<string, object?>();
             _selectedNodeConnections = null;
+            _selectedNodeVariables = [];
             return _renderReady ? InvokeAsync(StateHasChanged) : Task.CompletedTask;
         }
 
@@ -854,6 +866,7 @@
         _selectedNodeId = null;
         _selectedNodeType = null;
         _selectedNodeConnections = null;
+        _selectedNodeVariables = [];
         _activeRunId = null;
         await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", Array.Empty<object>(), Array.Empty<object>());
     }
@@ -2047,6 +2060,7 @@
         _selectedNodeId = null;
         _selectedNodeType = null;
         _selectedNodeConnections = null;
+        _selectedNodeVariables = [];
         _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Opened workflow: {_workflowName}");
         await LoadDefinitionIntoCanvas(saved.Definition);
     }
@@ -2803,6 +2817,133 @@
         => config.TryGetValue("label", out var configuredLabel) && !string.IsNullOrWhiteSpace(configuredLabel)
             ? configuredLabel
             : rawLabel;
+
+    private static IReadOnlyList<PropertiesPanel.VariableReferenceInfo> BuildAvailableVariables(System.Text.Json.JsonElement canvasData, string? selectedNodeId)
+    {
+        if (string.IsNullOrWhiteSpace(selectedNodeId))
+            return [];
+
+        var (nodes, edges) = ParseCanvasGraph(canvasData);
+        if (nodes.Count == 0)
+            return CreateDefaultRunInputVariables();
+
+        static bool IsSynthetic(CanvasNode node)
+            => string.Equals(node.Config.GetValueOrDefault("__syntheticKind"), "container-exit", StringComparison.Ordinal);
+
+        var reverseEdges = edges.GroupBy(edge => edge.Target)
+            .ToDictionary(group => group.Key, group => group.Select(edge => edge.Source).ToList(), StringComparer.Ordinal);
+
+        var reachable = new HashSet<string>(StringComparer.Ordinal);
+        var pending = new Stack<string>();
+        pending.Push(selectedNodeId);
+
+        while (pending.Count > 0)
+        {
+            var current = pending.Pop();
+            if (!reverseEdges.TryGetValue(current, out var upstreamIds))
+                continue;
+
+            foreach (var upstreamId in upstreamIds)
+            {
+                if (!reachable.Add(upstreamId))
+                    continue;
+
+                pending.Push(upstreamId);
+            }
+        }
+
+        var variables = CreateDefaultRunInputVariables().ToList();
+        foreach (var node in nodes)
+        {
+            if (string.Equals(node.Id, selectedNodeId, StringComparison.Ordinal) || IsSynthetic(node) || !reachable.Contains(node.Id))
+                continue;
+
+            foreach (var output in GetVariableOutputs(node.Type, node.Label))
+                variables.Add(output);
+        }
+
+        return variables;
+    }
+
+    private static IReadOnlyList<PropertiesPanel.VariableReferenceInfo> CreateDefaultRunInputVariables()
+    {
+        return
+        [
+            new() { GroupLabel = "Run inputs", Token = "{transcript}", Description = "Transcript captured in the Run Assistant." },
+            new() { GroupLabel = "Run inputs", Token = "{questions}", Description = "Question list supplied from the Run Assistant." },
+            new() { GroupLabel = "Run inputs", Token = "{qaPairs}", Description = "Question-and-answer pairs supplied from the Run Assistant." },
+            new() { GroupLabel = "Run inputs", Token = "{recordings}", Description = "Audio recording payloads captured for run steps." }
+        ];
+    }
+
+    private static IReadOnlyList<PropertiesPanel.VariableReferenceInfo> GetVariableOutputs(string type, string stepName)
+    {
+        if (string.IsNullOrWhiteSpace(stepName))
+            return [];
+
+        static PropertiesPanel.VariableReferenceInfo Output(string name, string step, string description)
+            => new()
+            {
+                GroupLabel = step,
+                Token = $"{{{{{step}.{name}}}}}",
+                Description = description
+            };
+
+        return (type ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "action" =>
+            [
+                Output("Output", stepName, "Rendered output text from the action step."),
+                Output("Expression", stepName, "Final rendered expression string.")
+            ],
+            "llmcallstep" =>
+            [
+                Output("Response", stepName, "LLM response text."),
+                Output("FinishReason", stepName, "Provider finish reason."),
+                Output("TotalTokens", stepName, "Token usage reported by the provider.")
+            ],
+            "agentdecisionstep" =>
+            [
+                Output("Decision", stepName, "Decision selected by the agent.")
+            ],
+            "agentplanstep" =>
+            [
+                Output("Plan", stepName, "Generated plan content."),
+                Output("FinishReason", stepName, "Provider finish reason."),
+                Output("TotalTokens", stepName, "Token usage reported by the provider.")
+            ],
+            "agentloopstep" =>
+            [
+                Output("Response", stepName, "Final agent response."),
+                Output("Iterations", stepName, "Number of loop iterations."),
+                Output("ToolResults", stepName, "Tool call results captured during the loop.")
+            ],
+            "httpstep" =>
+            [
+                Output("StatusCode", stepName, "HTTP status code."),
+                Output("Body", stepName, "HTTP response body."),
+                Output("IsSuccess", stepName, "Whether the response status code was successful.")
+            ],
+            "toolcallstep" =>
+            [
+                Output("Result", stepName, "Tool invocation result content.")
+            ],
+            "humantaskstep" or "approvalstep" =>
+            [
+                Output("Status", stepName, "Human task completion status.")
+            ],
+            "webhooktriggerstep" =>
+            [
+                Output("CallbackId", stepName, "Generated callback identifier."),
+                Output("Received", stepName, "Whether a webhook payload was received."),
+                Output("Body", stepName, "Received webhook body.")
+            ],
+            _ =>
+            [
+                Output("Output", stepName, "Default step output value.")
+            ]
+        };
+    }
 
     private async Task HandleStepStatusChanged((string StepName, string Status) stepStatus)
     {

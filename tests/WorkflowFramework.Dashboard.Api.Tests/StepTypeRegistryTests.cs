@@ -118,6 +118,12 @@ public class StepTypeRegistryTests
 
         GetPropertyNames(registry.Get("AgentLoopStep")).Should().NotContain("tools");
         GetPropertyNames(registry.Get("AgentPlanStep")).Should().NotContain("maxSteps");
+
+        llmSchema.GetProperty("properties").GetProperty("prompt").GetProperty("supportsVariables").GetBoolean().Should().BeTrue();
+        registry.Get("AgentLoopStep")!.ConfigSchema!.Value
+            .GetProperty("properties").GetProperty("systemPrompt").GetProperty("supportsVariables").GetBoolean().Should().BeTrue();
+        registry.Get("Action")!.ConfigSchema!.Value
+            .GetProperty("properties").GetProperty("expression").GetProperty("supportsVariables").GetBoolean().Should().BeTrue();
     }
 
     private static IReadOnlyList<string> GetPropertyNames(StepTypeInfo? stepType)
