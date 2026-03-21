@@ -8,6 +8,7 @@ Feature: Templates
     When I open the template browser
     Then I should see template categories
     And I should see templates with difficulty badges
+    And I should see featured starter workflows
 
   Scenario: Create workflow from template
     Given the dashboard is running

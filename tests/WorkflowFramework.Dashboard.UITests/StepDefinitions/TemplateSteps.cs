@@ -45,6 +45,14 @@ public sealed class TemplateSteps
         count.Should().BeGreaterThanOrEqualTo(0, "Templates should be present");
     }
 
+    [Then("I should see featured starter workflows")]
+    public async Task ThenIShouldSeeFeaturedStarterWorkflows()
+    {
+        var featured = Page.Locator("[data-testid='template-featured-badge']");
+        var count = await featured.CountAsync();
+        count.Should().BeGreaterThan(0, "At least one featured starter workflow should be highlighted");
+    }
+
     [When("I select a template")]
     public async Task WhenISelectATemplate()
     {

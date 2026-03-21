@@ -131,6 +131,21 @@ public class WorkflowTemplateLibraryTests
     }
 
     [Fact]
+    public async Task GetTemplatesAsync_ExposesFeaturedStarterWorkflows()
+    {
+        var templates = await _library.GetTemplatesAsync();
+
+        templates.Where(template => template.IsFeatured)
+            .Select(template => template.Id)
+            .Should()
+            .Contain(["multimodal-local-router", "blog-from-interview"]);
+
+        templates.Where(template => template.IsFeatured)
+            .Should()
+            .OnlyContain(template => !string.IsNullOrWhiteSpace(template.FeaturedReason));
+    }
+
+    [Fact]
     public async Task GetTemplateAsync_MultimodalLocalRouter_DemonstratesLocalRoutingAndSpecialistModels()
     {
         var template = await _library.GetTemplateAsync("multimodal-local-router");
@@ -171,6 +186,8 @@ public class WorkflowTemplateLibraryTests
         var template = await _library.GetTemplateAsync("blog-from-interview");
 
         template.Should().NotBeNull();
+        template!.IsFeatured.Should().BeTrue();
+        template.FeaturedReason.Should().NotBeNullOrWhiteSpace();
         var steps = template!.Definition.Steps;
 
         steps.Single(step => step.Name == "RecordTopicIntro").Config!["expression"]

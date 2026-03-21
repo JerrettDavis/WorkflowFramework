@@ -41,12 +41,26 @@
                     {
                         <div class="space-y-4">
                             <button @onclick="() => _selectedTemplate = null" class="text-blue-400 text-sm hover:underline">&larr; Back to templates</button>
-                            <h3 class="text-xl font-bold text-white">@_selectedTemplate.Name</h3>
-                            <p class="text-gray-400">@_selectedTemplate.Description</p>
-                            <div class="flex gap-2 items-center">
-                                <span class="@DifficultyBadge(_selectedTemplate.Difficulty)">@_selectedTemplate.Difficulty</span>
-                                <span class="text-gray-500 text-xs">@_selectedTemplate.StepCount steps</span>
-                                <span class="text-gray-600 text-xs bg-gray-700 px-2 py-0.5 rounded">@_selectedTemplate.Category</span>
+                             <h3 class="text-xl font-bold text-white">@_selectedTemplate.Name</h3>
+                             <p class="text-gray-400">@_selectedTemplate.Description</p>
+                             @if (_selectedTemplate.IsFeatured)
+                             {
+                                 <div class="rounded border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100" data-testid="template-featured-callout">
+                                     <div class="font-semibold uppercase tracking-wider text-cyan-200">Featured starter workflow</div>
+                                     @if (!string.IsNullOrWhiteSpace(_selectedTemplate.FeaturedReason))
+                                     {
+                                         <div class="mt-1">@_selectedTemplate.FeaturedReason</div>
+                                     }
+                                 </div>
+                             }
+                             <div class="flex gap-2 items-center">
+                                 @if (_selectedTemplate.IsFeatured)
+                                 {
+                                     <span class="rounded bg-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-200" data-testid="template-featured-badge">Featured</span>
+                                 }
+                                 <span class="@DifficultyBadge(_selectedTemplate.Difficulty)">@_selectedTemplate.Difficulty</span>
+                                 <span class="text-gray-500 text-xs">@_selectedTemplate.StepCount steps</span>
+                                 <span class="text-gray-600 text-xs bg-gray-700 px-2 py-0.5 rounded">@_selectedTemplate.Category</span>
                             </div>
                             @if (_selectedTemplate.Tags.Count > 0)
                             {
@@ -78,8 +92,18 @@
                             <div class="grid grid-cols-3 gap-4">
                                 @foreach (var t in FilteredTemplates)
                                 {
-                                    <div @onclick="() => SelectTemplate(t)"
-                                         class="bg-gray-750 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" data-testid="template-card">
+                                     <div @onclick="() => SelectTemplate(t)"
+                                          class="bg-gray-750 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" data-testid="template-card">
+                                        @if (t.IsFeatured)
+                                        {
+                                            <div class="mb-2 flex items-center gap-2">
+                                                <span class="rounded bg-cyan-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-cyan-200" data-testid="template-featured-badge">Featured</span>
+                                                @if (!string.IsNullOrWhiteSpace(t.FeaturedReason))
+                                                {
+                                                    <span class="text-[10px] text-cyan-100/70">@t.FeaturedReason</span>
+                                                }
+                                            </div>
+                                        }
                                         <h4 class="text-white font-semibold text-sm mb-1">@t.Name</h4>
                                         <p class="text-gray-400 text-xs mb-2 line-clamp-2">@t.Description</p>
                                         <div class="flex items-center gap-2 mb-2">
@@ -132,7 +156,8 @@
             template.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
             template.Description.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
             template.Tags.Any(tag => tag.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)))
-        .OrderBy(template => template.Name, StringComparer.OrdinalIgnoreCase)
+        .OrderByDescending(template => template.IsFeatured)
+        .ThenBy(template => template.Name, StringComparer.OrdinalIgnoreCase)
         .ToList();
 
     protected override async Task OnParametersSetAsync()

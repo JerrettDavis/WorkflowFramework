@@ -34,7 +34,9 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
             Tags = t.Tags,
             Difficulty = t.Difficulty,
             StepCount = t.StepCount,
-            PreviewImageUrl = t.PreviewImageUrl
+            PreviewImageUrl = t.PreviewImageUrl,
+            IsFeatured = t.IsFeatured,
+            FeaturedReason = t.FeaturedReason
         }).ToList();
 
         return Task.FromResult<IReadOnlyList<WorkflowTemplateSummary>>(result);
@@ -518,6 +520,8 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
         Tags = ["ai", "agent", "multimodal", "local-model", "routing", "provider-selection"],
         Difficulty = TemplateDifficulty.Advanced,
         StepCount = 8,
+        IsFeatured = true,
+        FeaturedReason = "Shows local-first routing and specialist-model handoff with reusable prompt variables.",
         Definition = new WorkflowDefinitionDto
         {
             Name = "MultimodalLocalRouter",
@@ -676,6 +680,8 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
         Tags = ["voice", "agent", "blog", "interview", "compaction"],
         Difficulty = TemplateDifficulty.Advanced,
         StepCount = 10,
+        IsFeatured = true,
+        FeaturedReason = "A complete voice-to-draft sample with multimodal intake, local question generation, and downstream editorial drafting.",
         Definition = new WorkflowDefinitionDto
         {
             Name = "BlogInterview",

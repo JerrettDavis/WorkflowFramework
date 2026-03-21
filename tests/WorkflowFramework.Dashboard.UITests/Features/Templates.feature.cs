@@ -117,6 +117,7 @@ Feature: Templates
     When I open the template browser
     Then I should see template categories
     And I should see templates with difficulty badges
+    And I should see featured starter workflows
 
   Scenario: Create workflow from template
     Given the dashboard is running
@@ -136,65 +137,68 @@ Feature: Templates
         private static global::Io.Cucumber.Messages.Types.GherkinDocument GherkinDocumentFunc()
         {
             return new global::Io.Cucumber.Messages.Types.GherkinDocument("Features/Templates.feature", new global::Io.Cucumber.Messages.Types.Feature(new global::Io.Cucumber.Messages.Types.Location(2, new System.Nullable<long>(1)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "517d83d340285a519dd0decc632e8db8")}), "en", "Feature", "Templates", "  As a user I can create workflows from pre-built templates", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.FeatureChild>(new global::Io.Cucumber.Messages.Types.FeatureChild[] {
+                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "e47f15438ae81d5b9fa4d9a2e493bbf2")}), "en", "Feature", "Templates", "  As a user I can create workflows from pre-built templates", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.FeatureChild>(new global::Io.Cucumber.Messages.Types.FeatureChild[] {
                                 new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(6, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(5, new System.Nullable<long>(3)), "@screenshot:template-browser", "4baafcc521a0eb528e58c7c2aa929fcc")}), "Scenario", "Browse templates", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "4660adb4c5fe0c54b21e964b61d82455"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the template browser", null, null, "aba1ac4541ac5f599338cf1136416f2d"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see template categories", null, null, "737dff621566275d8688a5513d9b2261"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see templates with difficulty badges", null, null, "0d47542711a14e5690a97656b70d028a")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "c83c3ce895fad659b01b1412a77dcf5e")),
-                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(12, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Create workflow from template", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(13, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "ae5d018187e0ee5194e090c60ff428f0"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(14, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the template browser", null, null, "a06b8be14bff1254b3d056f3f2f434c5"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I select a template", null, null, "be3c0d060e9d0b5699707d7b69095823"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(16, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click \"Use This Template\"", null, null, "8b1b1537e688725fad446af6acd32cc3"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(17, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "a new workflow should be created with the template steps", null, null, "85cdfbc9c8bb5758954e0ae130a9a0fe")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "9ba7c365e4ec9157b56cc50a595f4690")),
-                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(19, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Filter templates by search", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(20, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "fcf683caecb8c654a6631f0783cb93ed"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(21, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the template browser", null, null, "3beb1ec7a15dbd59a595a105f68a478a"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(22, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I search templates for \"multimodal\"", null, null, "88a1e8d285c6b4529bf4082aeb377940"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(23, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should only see template results matching \"multimodal\"", null, null, "ad6dc0975732d5549b54153a6db5aed4")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "f2db130a3aafd85d8c42dbec45ea79db"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
+                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(5, new System.Nullable<long>(3)), "@screenshot:template-browser", "6429fd24d82786509896f9cc54293f5b")}), "Scenario", "Browse templates", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "c079d4c726a1b95ca33b1da579945001"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the template browser", null, null, "acf19d8cf251985098f20a18306149bb"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see template categories", null, null, "5ec61ee4c4c4415b9b47586e474f6d42"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see templates with difficulty badges", null, null, "73a64889a909fd5ea431e5938df2a0ac"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(11, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see featured starter workflows", null, null, "ff7f8d3eba1222589faf402c52c1a66b")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "0f9e89cf2453e4589631ca48eba44bb3")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(13, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Create workflow from template", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(14, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "7923f48582f3df51ad0500e77dba8802"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the template browser", null, null, "934b655752424556931976e03035862a"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(16, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I select a template", null, null, "a156ec358a452f58b019de855b30013c"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(17, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click \"Use This Template\"", null, null, "da1d319372efff5f91ddeebf1f3523b2"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(18, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "a new workflow should be created with the template steps", null, null, "1da0a59ecf34a958bcfafe9b8b02b2ef")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "73dc6c0fdb211f5b9e6fa3d751a8220d")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(20, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Filter templates by search", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(21, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "b2e3ac76c797555ca2a3b7c9c344a780"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(22, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the template browser", null, null, "409440ef6309c85babcf78785afc237a"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(23, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I search templates for \"multimodal\"", null, null, "3f0b0a4598095b56b9cfc77225be32e9"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(24, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should only see template results matching \"multimodal\"", null, null, "1c2c437c9724a95ebfc5df2b03a34f5f")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "0d359ad75fa38d578c1dfba7ea0feeba"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
         }
         
         private static global::System.Collections.Generic.IEnumerable<Io.Cucumber.Messages.Types.Pickle> PicklesFunc()
         {
             return new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Pickle>(new global::Io.Cucumber.Messages.Types.Pickle[] {
-                        new global::Io.Cucumber.Messages.Types.Pickle("0f327a3d63ac8b5ea373c16afa92f029", "Features/Templates.feature", "Browse templates", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                        new global::Io.Cucumber.Messages.Types.Pickle("727f7a518673275a8953726c3aad1c32", "Features/Templates.feature", "Browse templates", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "4660adb4c5fe0c54b21e964b61d82455"}), "202e746b01d5fb58b05b3aeba9ca71a7", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "c079d4c726a1b95ca33b1da579945001"}), "317f2dfbb650535393eed3c1794775ad", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "aba1ac4541ac5f599338cf1136416f2d"}), "ece3dff6474ad753879cc72b2d955f43", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the template browser"),
+                                                        "acf19d8cf251985098f20a18306149bb"}), "d27a50b3a6ec895c924aec7ad5538963", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the template browser"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "737dff621566275d8688a5513d9b2261"}), "2f56f42b9ec48059a94c257e7cf6c903", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see template categories"),
+                                                        "5ec61ee4c4c4415b9b47586e474f6d42"}), "1c6181d33589a652bb597816e6a55a40", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see template categories"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "0d47542711a14e5690a97656b70d028a"}), "dee829fb85b8a951ba8b66a0e0c86dd3", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see templates with difficulty badges")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "517d83d340285a519dd0decc632e8db8"),
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:template-browser", "4baafcc521a0eb528e58c7c2aa929fcc")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "c83c3ce895fad659b01b1412a77dcf5e"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("634f1055b45ecc50883f19ced98fa2b7", "Features/Templates.feature", "Create workflow from template", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "73a64889a909fd5ea431e5938df2a0ac"}), "8e3b044c2db3d259947846278f880e89", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see templates with difficulty badges"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "ae5d018187e0ee5194e090c60ff428f0"}), "ca6884fd3ddc6651b4c08bc22ae51b1f", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "ff7f8d3eba1222589faf402c52c1a66b"}), "09af8538417de459bebf0797b8cb2788", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see featured starter workflows")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "e47f15438ae81d5b9fa4d9a2e493bbf2"),
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:template-browser", "6429fd24d82786509896f9cc54293f5b")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "0f9e89cf2453e4589631ca48eba44bb3"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("bb358c895d862c5693eb5569a0731bf6", "Features/Templates.feature", "Create workflow from template", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "a06b8be14bff1254b3d056f3f2f434c5"}), "baa4fd600ad7f5548d918df4d6c9bec9", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the template browser"),
+                                                        "7923f48582f3df51ad0500e77dba8802"}), "ea6cfd01e9259c5e940346cfeca542ef", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "be3c0d060e9d0b5699707d7b69095823"}), "d0b8b87aaeebb258bb8116f9b2c615c4", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select a template"),
+                                                        "934b655752424556931976e03035862a"}), "3ccee05fa18a6e5085c9b8f2261e9b36", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the template browser"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "8b1b1537e688725fad446af6acd32cc3"}), "afcf35487d50c052b701f1be0063e33f", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click \"Use This Template\""),
+                                                        "a156ec358a452f58b019de855b30013c"}), "7df147a5bd11c95ea627fc9701977758", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select a template"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "85cdfbc9c8bb5758954e0ae130a9a0fe"}), "f6b11714315b0851b0f2ced9493f3d7d", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "a new workflow should be created with the template steps")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "517d83d340285a519dd0decc632e8db8")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "9ba7c365e4ec9157b56cc50a595f4690"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("ab142abe2e72bd54b36637d1c2312713", "Features/Templates.feature", "Filter templates by search", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "da1d319372efff5f91ddeebf1f3523b2"}), "fabf67d1decb915b96df27402856e1cf", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click \"Use This Template\""),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "fcf683caecb8c654a6631f0783cb93ed"}), "a393aa8c4ccafc538486d4297bbe5bfa", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "1da0a59ecf34a958bcfafe9b8b02b2ef"}), "2203dbda3592d0519f0cf61108be5b25", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "a new workflow should be created with the template steps")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "e47f15438ae81d5b9fa4d9a2e493bbf2")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "73dc6c0fdb211f5b9e6fa3d751a8220d"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("3f78740b5d2bbd5ebea390937ffa54ad", "Features/Templates.feature", "Filter templates by search", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "3beb1ec7a15dbd59a595a105f68a478a"}), "88876fb5725bc052a28d180f8fd57f37", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the template browser"),
+                                                        "b2e3ac76c797555ca2a3b7c9c344a780"}), "7f8b49d430c2215489a82f9358b43d4e", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "88a1e8d285c6b4529bf4082aeb377940"}), "5daa9c8fe7a2715082689ac3aeca650a", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I search templates for \"multimodal\""),
+                                                        "409440ef6309c85babcf78785afc237a"}), "49a0d8b2c40da6588df0dd859bde7c24", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the template browser"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "ad6dc0975732d5549b54153a6db5aed4"}), "009826fef0c1ee5d939fa97a1f1b6fba", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should only see template results matching \"multimodal\"")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "517d83d340285a519dd0decc632e8db8")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "f2db130a3aafd85d8c42dbec45ea79db"}))});
+                                                        "3f0b0a4598095b56b9cfc77225be32e9"}), "5a0ec3bfe353fe5b96fbef5515d0247e", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I search templates for \"multimodal\""),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "1c2c437c9724a95ebfc5df2b03a34f5f"}), "cea9b2eb922e69568fd4bf3160ed69d8", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should only see template results matching \"multimodal\"")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "e47f15438ae81d5b9fa4d9a2e493bbf2")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "0d359ad75fa38d578c1dfba7ea0feeba"}))});
         }
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
@@ -262,6 +266,9 @@ Feature: Templates
 #line 10
     await testRunner.AndAsync("I should see templates with difficulty badges", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
+#line 11
+    await testRunner.AndAsync("I should see featured starter workflows", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
             }
             await this.ScenarioCleanupAsync();
         }
@@ -277,7 +284,7 @@ Feature: Templates
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Create workflow from template", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 12
+#line 13
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -287,19 +294,19 @@ Feature: Templates
             else
             {
                 await this.ScenarioStartAsync();
-#line 13
+#line 14
     await testRunner.GivenAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 14
+#line 15
     await testRunner.WhenAsync("I open the template browser", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 15
+#line 16
     await testRunner.AndAsync("I select a template", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 16
+#line 17
     await testRunner.AndAsync("I click \"Use This Template\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 17
+#line 18
     await testRunner.ThenAsync("a new workflow should be created with the template steps", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }
@@ -317,7 +324,7 @@ Feature: Templates
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Filter templates by search", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 19
+#line 20
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -327,16 +334,16 @@ Feature: Templates
             else
             {
                 await this.ScenarioStartAsync();
-#line 20
+#line 21
     await testRunner.GivenAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 21
+#line 22
     await testRunner.WhenAsync("I open the template browser", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 22
+#line 23
     await testRunner.AndAsync("I search templates for \"multimodal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 23
+#line 24
     await testRunner.ThenAsync("I should only see template results matching \"multimodal\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

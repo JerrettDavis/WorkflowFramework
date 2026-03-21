@@ -205,6 +205,8 @@ public sealed class WorkflowTemplateSummary
     public TemplateDifficulty Difficulty { get; set; }
     public int StepCount { get; set; }
     public string? PreviewImageUrl { get; set; }
+    public bool IsFeatured { get; set; }
+    public string? FeaturedReason { get; set; }
 }
 
 public sealed class ValidationErrorDto
@@ -299,6 +301,8 @@ public sealed class WorkflowTemplate
     public TemplateDifficulty Difficulty { get; set; }
     public int StepCount { get; set; }
     public string? PreviewImageUrl { get; set; }
+    public bool IsFeatured { get; set; }
+    public string? FeaturedReason { get; set; }
     public WorkflowDefinitionDto Definition { get; set; } = new();
 }
 
