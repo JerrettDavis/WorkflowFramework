@@ -51,8 +51,14 @@ public sealed class StepDefinition
     public string Type { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the step class name used when <see cref="Type"/> is a composite step category (e.g. "step").
-    /// When present, this value is resolved via the step registry instead of <see cref="Type"/>.
+    /// Gets or sets the optional step class name. Interpretation depends on <see cref="Type"/>:
+    /// <list type="bullet">
+    ///   <item>When <c>type</c> is <c>"step"</c> or omitted, this value is resolved via the step registry.</item>
+    ///   <item>When <c>type</c> is <c>"subworkflow"</c>, this value identifies the named sub-workflow.</item>
+    ///   <item>When <c>type</c> is <c>"approval"</c>, this value is the registry key for a custom approval step
+    ///   (falls back to the built-in approval recording step when not found).</item>
+    ///   <item>For other composite categories this field may be unused or have category-specific semantics.</item>
+    /// </list>
     /// </summary>
     [JsonPropertyName("class")]
     public string? Class { get; set; }

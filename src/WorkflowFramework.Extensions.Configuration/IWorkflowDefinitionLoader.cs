@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Text.Json;
 using WorkflowFramework.Builder;
 using YamlDotNet.Serialization;
@@ -152,6 +151,9 @@ public sealed class WorkflowDefinitionBuilder
         "retry", "try", "subworkflow", "approval", "saga"
     };
 
+    /// <summary>Cache of exception type name → <see cref="Type"/> to avoid repeated assembly scans.</summary>
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Type> ExceptionTypeCache = new();
+
     private readonly IStepRegistry _stepRegistry;
     private readonly IReadOnlyDictionary<string, IWorkflow>? _subWorkflows;
 
@@ -257,7 +259,7 @@ public sealed class WorkflowDefinitionBuilder
                     p.Step(_stepRegistry.Resolve(parallelType));
             });
         }
-        else if (stepDef.Condition != null && (stepDef.Then != null || stepDef.ThenSteps != null))
+        else if (stepDef.Condition != null && (stepDef.Then != null || stepDef.ThenSteps?.Count > 0))
         {
             // Legacy conditional format
             Func<IWorkflowContext, bool> predicate = ctx =>
@@ -266,12 +268,14 @@ public sealed class WorkflowDefinitionBuilder
                 return val is true or "true";
             };
 
-            if (stepDef.ThenSteps != null)
+            var stepName = stepDef.Name ?? "conditional";
+
+            if (stepDef.ThenSteps?.Count > 0)
             {
-                var thenStep = BuildStepsAsGroupStep("then", stepDef.ThenSteps);
-                if (stepDef.ElseSteps != null)
+                var thenStep = BuildStepsAsGroupStep($"{stepName}_then", stepDef.ThenSteps);
+                if (stepDef.ElseSteps?.Count > 0)
                 {
-                    var elseStep = BuildStepsAsGroupStep("else", stepDef.ElseSteps);
+                    var elseStep = BuildStepsAsGroupStep($"{stepName}_else", stepDef.ElseSteps);
                     builder.If(predicate).Then(thenStep).Else(elseStep);
                 }
                 else
@@ -331,11 +335,12 @@ public sealed class WorkflowDefinitionBuilder
         // Prefer nested step definitions; fall back to legacy class-name strings
         var thenSteps = stepDef.ThenSteps;
         var elseSteps = stepDef.ElseSteps;
+        var stepName = stepDef.Name ?? "conditional";
 
         IStep thenStep;
         if (thenSteps != null && thenSteps.Count > 0)
         {
-            thenStep = BuildStepsAsGroupStep("then", thenSteps);
+            thenStep = BuildStepsAsGroupStep($"{stepName}_then", thenSteps);
         }
         else if (stepDef.Then != null)
         {
@@ -349,7 +354,7 @@ public sealed class WorkflowDefinitionBuilder
 
         if (elseSteps != null && elseSteps.Count > 0)
         {
-            var elseStep = BuildStepsAsGroupStep("else", elseSteps);
+            var elseStep = BuildStepsAsGroupStep($"{stepName}_else", elseSteps);
             builder.If(predicate).Then(thenStep).Else(elseStep);
         }
         else if (stepDef.Else != null)
@@ -481,14 +486,40 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// Resolves an exception type by name, falling back to <see cref="Exception"/> when unresolvable.
+    /// Resolves an exception type by name. Tries assembly-qualified lookup, the <c>System.</c> prefix,
+    /// and then scans all loaded assemblies by <c>FullName</c> and short <c>Name</c>. Falls back to
+    /// <see cref="Exception"/> if the type cannot be resolved. Results are cached to avoid repeated scans.
     /// </summary>
     private static Type ResolveExceptionType(string typeName)
     {
         if (string.IsNullOrEmpty(typeName)) return typeof(Exception);
-        return Type.GetType(typeName)
-            ?? Type.GetType($"System.{typeName}")
-            ?? typeof(Exception);
+
+        return ExceptionTypeCache.GetOrAdd(typeName, static name =>
+        {
+            // Try assembly-qualified or fully-qualified name first.
+            var resolved = Type.GetType(name)
+                ?? Type.GetType($"System.{name}");
+
+            if (resolved != null) return resolved;
+
+            // Scan all loaded assemblies to find the type by full or short name.
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                // Fast path: try GetType before iterating all types.
+                var candidate = assembly.GetType(name);
+                if (candidate != null && typeof(Exception).IsAssignableFrom(candidate))
+                    return candidate;
+
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (!typeof(Exception).IsAssignableFrom(type)) continue;
+                    if (type.FullName == name || type.Name == name)
+                        return type;
+                }
+            }
+
+            return typeof(Exception);
+        });
     }
 
     private void BuildSubWorkflowStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -510,10 +541,11 @@ public sealed class WorkflowDefinitionBuilder
 
     private void BuildApprovalStep(IWorkflowBuilder builder, StepDefinition stepDef)
     {
-        // Try to resolve a registered "approval" step; otherwise create a simple recording step.
+        // Try to resolve a registered approval step (using 'class' when provided); otherwise create a simple recording step.
+        var stepKey = string.IsNullOrWhiteSpace(stepDef.Class) ? "approval" : stepDef.Class;
         try
         {
-            var approvalStep = _stepRegistry.Resolve("approval");
+            var approvalStep = _stepRegistry.Resolve(stepKey);
             builder.Step(approvalStep);
         }
         catch (KeyNotFoundException)
