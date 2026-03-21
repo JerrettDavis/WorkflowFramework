@@ -105,4 +105,19 @@ public class McpToolProviderTests
         var tools = await provider.ListToolsAsync();
         tools.Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task InvokeToolAsync_WhenClientThrows_PropagatesException()
+    {
+        var transport = Substitute.For<IMcpTransport>();
+        transport.ReceiveAsync(Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromException<McpJsonRpcMessage>(new InvalidOperationException("mcp failed")));
+        var client = new McpClient(transport, "srv");
+        var provider = new McpToolProvider(client);
+
+        var act = async () => await provider.InvokeToolAsync("t1", "{}");
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("mcp failed");
+    }
 }

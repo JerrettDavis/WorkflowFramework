@@ -150,7 +150,7 @@ public class CheckpointingTests
         var result = await engine.ResumeAsync("no-checkpoint", workflow);
 
         result.IsSuccess.Should().BeTrue();
-        executed.Should().BeEquivalentTo(["Step1", "Step2"]);
+        executed.Should().Equal("Step1", "Step2");
     }
 
     [Fact]
@@ -288,6 +288,28 @@ public class CheckpointingTests
 
         var checkpoint = await store.LoadAsync("wf-1");
         checkpoint!.ContextSnapshot["key"].Should().Be("original");
+    }
+
+    [Fact]
+    public void ResumableWorkflowContext_InitializesAndAllowsStateMutation()
+    {
+        using var cts = new CancellationTokenSource();
+        var context = new ResumableWorkflowContext("resume-1", cts.Token);
+
+        context.WorkflowId.Should().Be("resume-1");
+        context.CancellationToken.Should().Be(cts.Token);
+        context.CorrelationId.Should().NotBeNullOrWhiteSpace();
+        context.Properties["step"] = "resume";
+        context.CurrentStepName = "Checkpoint";
+        context.CurrentStepIndex = 2;
+        context.IsAborted = true;
+        context.Errors.Add(new WorkflowError("resume", new InvalidOperationException("boom"), DateTimeOffset.UtcNow));
+
+        context.Properties["step"].Should().Be("resume");
+        context.CurrentStepName.Should().Be("Checkpoint");
+        context.CurrentStepIndex.Should().Be(2);
+        context.IsAborted.Should().BeTrue();
+        context.Errors.Should().ContainSingle();
     }
 
     [Fact]
