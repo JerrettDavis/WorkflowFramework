@@ -801,7 +801,7 @@
     }
 
     [JSInvokable]
-    public void OnEdgeCreated(string sourceId, string targetId) { _dirty = true; StateHasChanged(); }
+    public void OnEdgeCreated(string sourceId, string targetId, string? sourceHandle) { _dirty = true; StateHasChanged(); }
 
     [JSInvokable]
     public void OnEdgeRemoved(string edgeId) { _dirty = true; StateHasChanged(); }
@@ -910,7 +910,9 @@
         {
             var canvasData = await JS.InvokeAsync<System.Text.Json.JsonElement>("workflowEditor.getWorkflowDefinition");
             var definition = CanvasToDefinition(canvasData);
-            var result = await Api.ValidateDefinitionAsync(definition);
+            var result = _currentWorkflowId is not null
+                ? await Api.ValidateWorkflowDraftAsync(_currentWorkflowId, definition)
+                : await Api.ValidateDefinitionAsync(definition);
             _validationErrors = result?.Errors ?? [];
 
             if (_validationErrors.Count == 0)

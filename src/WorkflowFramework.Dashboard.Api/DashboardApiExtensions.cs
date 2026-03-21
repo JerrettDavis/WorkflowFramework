@@ -388,9 +388,19 @@ public static class DashboardApiExtensions
         {
             var workflow = await store.GetByIdAsync(id, ct);
             if (workflow is null) return Results.NotFound();
-            var result = validator.Validate(workflow.Definition);
+            var knownWorkflows = await store.GetAllAsync(ct);
+            var result = validator.Validate(workflow.Definition, knownWorkflows, id);
             return Results.Ok(result);
         }).WithTags("Validation").WithName("ValidateWorkflowById");
+
+        endpoints.MapPost("/api/workflows/{id}/validate-draft", async (string id, WorkflowDefinitionDto definition, WorkflowValidator validator, IWorkflowDefinitionStore store, CancellationToken ct) =>
+        {
+            var workflow = await store.GetByIdAsync(id, ct);
+            if (workflow is null) return Results.NotFound();
+            var knownWorkflows = await store.GetAllAsync(ct);
+            var result = validator.Validate(definition, knownWorkflows, id);
+            return Results.Ok(result);
+        }).WithTags("Validation").WithName("ValidateWorkflowDraft");
 
         // Validate a workflow definition without saving
         endpoints.MapPost("/api/workflows/validate", (WorkflowDefinitionDto definition, WorkflowValidator validator) =>

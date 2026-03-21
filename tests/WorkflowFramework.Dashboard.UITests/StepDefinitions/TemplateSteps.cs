@@ -53,6 +53,14 @@ public sealed class TemplateSteps
         count.Should().BeGreaterThan(0, "At least one featured starter workflow should be highlighted");
     }
 
+    [Then("I should see starter preview images")]
+    public async Task ThenIShouldSeeStarterPreviewImages()
+    {
+        var previews = Page.Locator("[data-testid='template-preview-image']");
+        var count = await previews.CountAsync();
+        count.Should().BeGreaterThan(0, "Starter templates with preview metadata should render preview images");
+    }
+
     [When("I select a template")]
     public async Task WhenISelectATemplate()
     {

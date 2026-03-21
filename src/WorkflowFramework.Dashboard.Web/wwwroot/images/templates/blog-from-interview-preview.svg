@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Blog from Interview preview</title>
+  <desc id="desc">A voice-first workflow that turns an interview into a drafted blog post with human review.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1027" />
+      <stop offset="55%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#172554" />
+    </linearGradient>
+    <linearGradient id="node" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937" />
+      <stop offset="100%" stop-color="#0b1120" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#020617" flood-opacity="0.45" />
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#64748b" />
+    </marker>
+  </defs>
+
+  <rect width="1280" height="720" rx="32" fill="url(#bg)" />
+  <circle cx="112" cy="128" r="170" fill="#ec4899" opacity="0.18" />
+  <circle cx="1110" cy="600" r="210" fill="#38bdf8" opacity="0.12" />
+
+  <text x="72" y="96" fill="#f8fafc" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Blog from Interview</text>
+  <text x="72" y="136" fill="#f5d0fe" font-size="20" font-family="Segoe UI, Arial, sans-serif">Voice-first capture, local question shaping, downstream editorial drafting.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="74" y="218" width="214" height="104" rx="20" fill="url(#node)" stroke="#ec4899" stroke-width="2" />
+    <text x="102" y="254" fill="#fbcfe8" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Record Topic Intro</text>
+    <text x="102" y="282" fill="#cbd5e1" font-size="14" font-family="Segoe UI, Arial, sans-serif">capture interview framing</text>
+    <text x="102" y="306" fill="#64748b" font-size="13" font-family="Segoe UI, Arial, sans-serif">{recordings} + {transcript}</text>
+
+    <rect x="340" y="218" width="214" height="104" rx="20" fill="url(#node)" stroke="#38bdf8" stroke-width="2" />
+    <text x="368" y="254" fill="#bae6fd" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Cleanup Topic</text>
+    <text x="368" y="282" fill="#cbd5e1" font-size="14" font-family="Segoe UI, Arial, sans-serif">Ollama qwen2.5</text>
+    <text x="368" y="306" fill="#64748b" font-size="13" font-family="Segoe UI, Arial, sans-serif">normalize transcript into outline</text>
+
+    <rect x="606" y="218" width="232" height="104" rx="20" fill="url(#node)" stroke="#22c55e" stroke-width="2" />
+    <text x="634" y="254" fill="#bbf7d0" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Generate Questions</text>
+    <text x="634" y="282" fill="#cbd5e1" font-size="14" font-family="Segoe UI, Arial, sans-serif">AgentLoopStep with local model</text>
+    <text x="634" y="306" fill="#64748b" font-size="13" font-family="Segoe UI, Arial, sans-serif">turn topic into interview prompts</text>
+
+    <rect x="894" y="168" width="244" height="104" rx="20" fill="url(#node)" stroke="#f59e0b" stroke-width="2" />
+    <text x="922" y="204" fill="#fde68a" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Conduct Interview</text>
+    <text x="922" y="232" fill="#cbd5e1" font-size="14" font-family="Segoe UI, Arial, sans-serif">collect Q&amp;A responses</text>
+    <text x="922" y="256" fill="#64748b" font-size="13" font-family="Segoe UI, Arial, sans-serif">voice-first human interaction</text>
+
+    <rect x="894" y="344" width="244" height="104" rx="20" fill="url(#node)" stroke="#a855f7" stroke-width="2" />
+    <text x="922" y="380" fill="#e9d5ff" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Synthesize Blog</text>
+    <text x="922" y="408" fill="#cbd5e1" font-size="14" font-family="Segoe UI, Arial, sans-serif">OpenAI gpt-4o-mini</text>
+    <text x="922" y="432" fill="#64748b" font-size="13" font-family="Segoe UI, Arial, sans-serif">uses {qaPairs} and upstream outputs</text>
+
+    <rect x="768" y="534" width="296" height="110" rx="20" fill="url(#node)" stroke="#14b8a6" stroke-width="2" />
+    <text x="796" y="572" fill="#99f6e4" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Review Draft</text>
+    <text x="796" y="600" fill="#cbd5e1" font-size="14" font-family="Segoe UI, Arial, sans-serif">human editorial approval and polish</text>
+    <text x="796" y="624" fill="#64748b" font-size="13" font-family="Segoe UI, Arial, sans-serif">finish with publish-ready handoff</text>
+  </g>
+
+  <g stroke="#64748b" stroke-width="4" fill="none" marker-end="url(#arrow)" opacity="0.95">
+    <path d="M288 270 H340" />
+    <path d="M554 270 H606" />
+    <path d="M838 244 C872 244, 870 220, 894 220" />
+    <path d="M1016 272 V314 C1016 328, 1016 332, 1016 344" />
+    <path d="M1016 448 V500 C1016 516, 994 520, 964 534" />
+  </g>
+
+  <g>
+    <rect x="72" y="564" width="344" height="92" rx="18" fill="#0f172a" stroke="#334155" stroke-width="2" />
+    <text x="100" y="602" fill="#f8fafc" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Why it is featured</text>
+    <text x="100" y="628" fill="#94a3b8" font-size="14" font-family="Segoe UI, Arial, sans-serif">Demonstrates a complete voice-to-draft flow</text>
+    <text x="100" y="648" fill="#94a3b8" font-size="14" font-family="Segoe UI, Arial, sans-serif">with local prep, structured Q&amp;A capture, and review.</text>
+  </g>
+</svg>

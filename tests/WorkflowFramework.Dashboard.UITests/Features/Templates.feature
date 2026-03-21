@@ -9,6 +9,7 @@ Feature: Templates
     Then I should see template categories
     And I should see templates with difficulty badges
     And I should see featured starter workflows
+    And I should see starter preview images
 
   Scenario: Create workflow from template
     Given the dashboard is running

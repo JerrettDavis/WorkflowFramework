@@ -146,11 +146,30 @@ public class WorkflowTemplateLibraryTests
     }
 
     [Fact]
+    public async Task GetTemplatesAsync_ExposesPreviewImages_ForFeaturedStarters()
+    {
+        var templates = await _library.GetTemplatesAsync();
+
+        templates.Where(template => template.IsFeatured)
+            .Should()
+            .OnlyContain(template => !string.IsNullOrWhiteSpace(template.PreviewImageUrl));
+
+        templates.Where(template => template.IsFeatured)
+            .Select(template => template.PreviewImageUrl)
+            .Should()
+            .Contain([
+                "/images/templates/multimodal-local-router-preview.svg",
+                "/images/templates/blog-from-interview-preview.svg"
+            ]);
+    }
+
+    [Fact]
     public async Task GetTemplateAsync_MultimodalLocalRouter_DemonstratesLocalRoutingAndSpecialistModels()
     {
         var template = await _library.GetTemplateAsync("multimodal-local-router");
 
         template.Should().NotBeNull();
+        template!.PreviewImageUrl.Should().Be("/images/templates/multimodal-local-router-preview.svg");
         var steps = template!.Definition.Steps;
 
         var routeBrief = steps.Single(step => step.Name == "Route Brief");
@@ -188,6 +207,7 @@ public class WorkflowTemplateLibraryTests
         template.Should().NotBeNull();
         template!.IsFeatured.Should().BeTrue();
         template.FeaturedReason.Should().NotBeNullOrWhiteSpace();
+        template.PreviewImageUrl.Should().Be("/images/templates/blog-from-interview-preview.svg");
         var steps = template!.Definition.Steps;
 
         steps.Single(step => step.Name == "RecordTopicIntro").Config!["expression"]

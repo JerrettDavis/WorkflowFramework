@@ -135,6 +135,42 @@
         return nodeType === 'parallel' && typeof handleId === 'string' && handleId.startsWith('output-');
     }
 
+    function normalizeNodeType(nodeType) {
+        return (nodeType || '').trim().toLowerCase();
+    }
+
+    function normalizeHandleId(handleId) {
+        return handleId && String(handleId).trim() ? String(handleId).trim() : 'output';
+    }
+
+    function isParallelBranchHandle(handleId) {
+        return /^output-\d+$/i.test(handleId || '');
+    }
+
+    function isSupportedSourceHandle(nodeData, handleId) {
+        const normalizedType = normalizeNodeType(nodeData?.type);
+        const normalizedHandle = normalizeHandleId(handleId).toLowerCase();
+
+        switch (normalizedType) {
+            case 'conditional':
+                return normalizedHandle === 'then' || normalizedHandle === 'else' || normalizedHandle === 'continue';
+            case 'trycatch':
+                return normalizedHandle === 'try' || normalizedHandle === 'finally' || normalizedHandle === 'continue';
+            case 'timeout':
+                return normalizedHandle === 'inner' || normalizedHandle === 'continue';
+            case 'retry':
+            case 'foreach':
+            case 'while':
+            case 'dowhile':
+            case 'saga':
+                return normalizedHandle === 'body' || normalizedHandle === 'continue';
+            case 'parallel':
+                return normalizedHandle === 'continue' || isParallelBranchHandle(normalizedHandle);
+            default:
+                return normalizedHandle === 'output';
+        }
+    }
+
     // ─── Dagre Layout ─────────────────────────────────────────────
     function autoLayoutNodes(nodes, edges) {
         if (typeof dagre === 'undefined' || nodes.length === 0) return nodes;
@@ -535,10 +571,21 @@
 
         // Connection validation
         const isValidConnection = useCallback((connection) => {
-            // Prevent self-connections
             if (connection.source === connection.target) return false;
+
+            const sourceNode = nodes.find(n => n.id === connection.source);
+            const targetNode = nodes.find(n => n.id === connection.target);
+            if (!sourceNode || !targetNode) return false;
+            if (isSyntheticNodeData(sourceNode.data) || isSyntheticNodeData(targetNode.data)) return false;
+
+            const handleId = normalizeHandleId(connection.sourceHandle);
+            if (!isSupportedSourceHandle(sourceNode.data, handleId)) return false;
+
+            const targetAlreadyConnected = edges.some(e => e.target === connection.target);
+            if (targetAlreadyConnected) return false;
+
             return true;
-        }, []);
+        }, [edges, nodes]);
 
         const defaultEdgeOptions = useMemo(() => ({
             type: 'workflowEdge',

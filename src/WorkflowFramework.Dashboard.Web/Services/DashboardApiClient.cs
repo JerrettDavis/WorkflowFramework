@@ -165,6 +165,13 @@ public sealed class DashboardApiClient(HttpClient http)
         return await ReadValidationResultAsync(resp, ct);
     }
 
+    public async Task<ValidationResultDto?> ValidateWorkflowDraftAsync(string id, WorkflowDefinitionDto definition, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsJsonAsync($"/api/workflows/{id}/validate-draft", definition, ct);
+        resp.EnsureSuccessStatusCode();
+        return await ReadValidationResultAsync(resp, ct);
+    }
+
     public async Task<ValidationResultDto?> ValidateDefinitionAsync(WorkflowDefinitionDto definition, CancellationToken ct = default)
     {
         var resp = await http.PostAsJsonAsync("/api/workflows/validate", definition, ct);

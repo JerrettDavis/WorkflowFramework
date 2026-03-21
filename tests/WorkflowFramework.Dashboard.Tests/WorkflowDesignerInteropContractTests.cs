@@ -27,6 +27,21 @@ public sealed class WorkflowDesignerInteropContractTests
     }
 
     [Fact]
+    public void WorkflowDesigner_Exposes_OnEdgeCreated_WithSourceHandle_AsJsInvokable()
+    {
+        var method = WorkflowDesignerType.GetMethod("OnEdgeCreated", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+
+        method.Should().NotBeNull();
+        method!.GetParameters().Select(parameter => parameter.ParameterType)
+            .Should()
+            .ContainInOrder(typeof(string), typeof(string), typeof(string));
+        method.GetCustomAttributes(inherit: true)
+            .Select(a => a.GetType().Name)
+            .Should()
+            .Contain("JSInvokableAttribute");
+    }
+
+    [Fact]
     public void BuildRunAssistantTasks_FindsRecordTask_ForBlogInterviewTemplate()
     {
         var workflowDefinition = CreateWorkflowDefinition(

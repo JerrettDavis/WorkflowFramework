@@ -43,6 +43,16 @@
                             <button @onclick="() => _selectedTemplate = null" class="text-blue-400 text-sm hover:underline">&larr; Back to templates</button>
                              <h3 class="text-xl font-bold text-white">@_selectedTemplate.Name</h3>
                              <p class="text-gray-400">@_selectedTemplate.Description</p>
+                             @if (!string.IsNullOrWhiteSpace(_selectedTemplate.PreviewImageUrl))
+                             {
+                                 <div class="overflow-hidden rounded-lg border border-gray-700 bg-gray-900/70 shadow-inner" data-testid="template-preview-detail">
+                                     <img src="@_selectedTemplate.PreviewImageUrl"
+                                          alt="@($"{_selectedTemplate.Name} preview")"
+                                          class="h-56 w-full object-cover"
+                                          loading="lazy"
+                                          data-testid="template-preview-image" />
+                                 </div>
+                             }
                              @if (_selectedTemplate.IsFeatured)
                              {
                                  <div class="rounded border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-100" data-testid="template-featured-callout">
@@ -92,8 +102,18 @@
                             <div class="grid grid-cols-3 gap-4">
                                 @foreach (var t in FilteredTemplates)
                                 {
-                                     <div @onclick="() => SelectTemplate(t)"
-                                          class="bg-gray-750 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" data-testid="template-card">
+                                      <div @onclick="() => SelectTemplate(t)"
+                                           class="bg-gray-750 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" data-testid="template-card">
+                                        @if (!string.IsNullOrWhiteSpace(t.PreviewImageUrl))
+                                        {
+                                            <div class="mb-3 overflow-hidden rounded-md border border-gray-700 bg-gray-900/70" data-testid="template-preview-card">
+                                                <img src="@t.PreviewImageUrl"
+                                                     alt="@($"{t.Name} preview")"
+                                                     class="h-28 w-full object-cover transition-transform duration-200 hover:scale-[1.02]"
+                                                     loading="lazy"
+                                                     data-testid="template-preview-image" />
+                                            </div>
+                                        }
                                         @if (t.IsFeatured)
                                         {
                                             <div class="mb-2 flex items-center gap-2">
