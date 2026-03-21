@@ -127,10 +127,10 @@
         "resolved": "3.1.0",
         "contentHash": "K9O9TOzugqOo4LJ87uuq1VG8RAqGp20Ng85Wx932oT5LNBkIgeeGYubVW5UMnOOTanFNbGavmbuYrJr4INzSwg=="
       },
-      "Aspire.Dashboard.Sdk.win-x64": {
+      "Aspire.Dashboard.Sdk.linux-x64": {
         "type": "Transitive",
         "resolved": "9.2.1",
-        "contentHash": "Ps8SfLO0BfNfKhthJ8o+3Rd6ritF2eCafCcWW9vfdT9wcMvn9pujPWPMJo6XVjk1C3zHrPyva9UMTbOT48HKTg=="
+        "contentHash": "Lvl58zxyk/Id2uGrgOW3b7czkaZYa/Psje8Cen9zpgdrLZaMwJIh3g/EajqXeis0AVcLB7Hvq9eHc+t/eQ0aFA=="
       },
       "Aspire.Hosting": {
         "type": "Transitive",
@@ -161,10 +161,10 @@
           "System.IO.Hashing": "9.0.3"
         }
       },
-      "Aspire.Hosting.Orchestration.win-x64": {
+      "Aspire.Hosting.Orchestration.linux-x64": {
         "type": "Transitive",
         "resolved": "9.2.1",
-        "contentHash": "zql5k3nKMwCBfpODLt/sy/nKsZM272+LV67e3ehv9Ec2+0mUuPRs2DGx9mzvh7sBYBq53pF7A7pn9E3V6FkOXw=="
+        "contentHash": "T27Rae/gvbWGmJN+RbO7Abhdp3WQUei+rCThyCxL3rZQ1eaMZzFFqb53XAiBsvvJ4vIRjNIh0RHDD4EXiOySQg=="
       },
       "AspNetCore.HealthChecks.Uris": {
         "type": "Transitive",
@@ -908,9 +908,9 @@
       "workflowframework.dashboard.apphost": {
         "type": "Project",
         "dependencies": {
-          "Aspire.Dashboard.Sdk.win-x64": "[9.2.1, )",
+          "Aspire.Dashboard.Sdk.linux-x64": "[9.2.1, )",
           "Aspire.Hosting.AppHost": "[9.2.1, )",
-          "Aspire.Hosting.Orchestration.win-x64": "[9.2.1, )"
+          "Aspire.Hosting.Orchestration.linux-x64": "[9.2.1, )"
         }
       },
       "Aspire.Hosting.AppHost": {
