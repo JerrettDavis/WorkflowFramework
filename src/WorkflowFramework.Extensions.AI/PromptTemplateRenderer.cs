@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace WorkflowFramework.Extensions.AI;
@@ -47,7 +48,11 @@ public static class PromptTemplateRenderer
         if (!key.Contains('.'))
             return null;
 
-        var segments = key.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var segments = key
+            .Split(new[] { '.' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(segment => segment.Trim())
+            .Where(segment => segment.Length > 0)
+            .ToArray();
         if (segments.Length == 0)
             return null;
 
