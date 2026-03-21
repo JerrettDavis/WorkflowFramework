@@ -155,10 +155,10 @@
                                     </select>
                                     break;
 
-                                case "select":
-                                    <select value="@GetConfigValue(field)"
-                                            @onchange='e => UpdateConfig(field.Name, e.Value)'
-                                            class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                 case "select":
+                                     <select value="@GetConfigValue(field)"
+                                             @onchange='e => UpdateConfig(field.Name, e.Value)'
+                                             class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
                                         <option value="">— Select —</option>
                                         @if (field.Options is not null)
                                         {
@@ -167,12 +167,28 @@
                                                 <option value="@opt">@opt</option>
                                             }
                                         }
-                                    </select>
-                                    break;
+                                     </select>
+                                     break;
 
-                                case "textarea":
-                                    <textarea rows="@(field.Rows > 0 ? field.Rows : 3)"
-                                              placeholder="@(field.Default ?? "")"
+                                 case "workflowSelect":
+                                     <input type="text"
+                                            list="@GetWorkflowReferenceListId(field)"
+                                            value="@GetConfigValue(field)"
+                                            placeholder="Start typing or pick a saved workflow"
+                                            data-testid="properties-workflow-reference-input-@field.Name"
+                                            @oninput='e => UpdateConfig(field.Name, e.Value)'
+                                            class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                     <datalist id="@GetWorkflowReferenceListId(field)">
+                                         @foreach (var workflow in GetWorkflowReferenceSuggestions(field))
+                                         {
+                                             <option value="@workflow.Name">@GetWorkflowReferenceOptionLabel(workflow)</option>
+                                         }
+                                     </datalist>
+                                     break;
+
+                                 case "textarea":
+                                     <textarea rows="@(field.Rows > 0 ? field.Rows : 3)"
+                                               placeholder="@(field.Default ?? "")"
                                               @oninput='e => UpdateConfig(field.Name, e.Value)'
                                               class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 resize-y">@(NodeConfig.GetValueOrDefault(field.Name)?.ToString() ?? string.Empty)</textarea>
                                     break;
@@ -235,15 +251,80 @@
                                     break;
                             }
 
-                            @if (field.HelpText is not null)
-                            {
-                                <p class="text-[10px] text-gray-500 mt-0.5">@field.HelpText</p>
-                            }
+                             @if (field.HelpText is not null)
+                             {
+                                 <p class="text-[10px] text-gray-500 mt-0.5">@field.HelpText</p>
+                             }
 
-                            @if (field.SupportsVariables)
-                            {
-                                <div class="mt-2 rounded border border-gray-700 bg-gray-900/40 p-2 text-[10px]" data-testid="properties-variables-@field.Name">
-                                    <div class="flex items-center justify-between gap-2 mb-1">
+                             @if (IsWorkflowReferenceField(field))
+                             {
+                                 <div class="mt-2 rounded border border-violet-500/20 bg-violet-500/10 p-2 text-[10px]" data-testid="properties-workflow-reference-@field.Name">
+                                     <div class="mb-1 flex items-center justify-between gap-2">
+                                         <span class="font-semibold uppercase tracking-wider text-violet-200">Saved workflows</span>
+                                         @if (_availableWorkflowReferences.Count > 0)
+                                         {
+                                             <span class="text-violet-200/70">@_availableWorkflowReferences.Count available</span>
+                                         }
+                                     </div>
+
+                                     @if (_loadingWorkflowReferences)
+                                     {
+                                         <p class="text-violet-100/70">Loading reusable workflow references...</p>
+                                     }
+                                     else if (_workflowReferenceError is not null)
+                                     {
+                                         <p class="text-red-200">@_workflowReferenceError</p>
+                                     }
+                                     else if (_availableWorkflowReferences.Count == 0)
+                                     {
+                                         <p class="text-violet-100/70">Save another workflow to reuse it here as a child flow.</p>
+                                     }
+                                     else if (GetWorkflowReferenceSuggestions(field).Count == 0)
+                                     {
+                                         <p class="text-violet-100/70">No saved workflows match the current name yet.</p>
+                                     }
+                                     else
+                                     {
+                                         <div class="flex flex-wrap gap-1.5">
+                                             @foreach (var workflow in GetWorkflowReferenceSuggestions(field))
+                                             {
+                                                 <button type="button"
+                                                         @onclick="() => SelectWorkflowReferenceAsync(field.Name, workflow.Name)"
+                                                         data-testid="properties-workflow-reference-option-@field.Name"
+                                                         class="rounded border border-violet-400/30 bg-violet-500/10 px-2 py-1 text-left text-violet-100 hover:bg-violet-500/20">
+                                                     <span class="font-medium">@workflow.Name</span>
+                                                     <span class="ml-1 text-violet-100/60">@GetWorkflowReferenceOptionLabel(workflow)</span>
+                                                 </button>
+                                             }
+                                         </div>
+                                     }
+                                 </div>
+                             }
+
+                             @if (IsWorkflowReferenceField(field) && GetSelectedWorkflowReference(field) is { } selectedWorkflowReference)
+                             {
+                                 <div class="mt-2 rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-[10px] text-emerald-100" data-testid="properties-workflow-reference-match-@field.Name">
+                                     <p class="font-semibold uppercase tracking-wider text-emerald-200 mb-1">Selected child workflow</p>
+                                     <p>@selectedWorkflowReference.Name · @GetWorkflowReferenceOptionLabel(selectedWorkflowReference)</p>
+                                     @if (!string.IsNullOrWhiteSpace(selectedWorkflowReference.Description))
+                                     {
+                                         <p class="mt-1 text-emerald-100/80">@selectedWorkflowReference.Description</p>
+                                     }
+                                 </div>
+                             }
+
+                             @if (IsWorkflowReferenceField(field) && GetWorkflowReferenceWarning(field) is string workflowReferenceWarning)
+                             {
+                                 <div class="mt-2 rounded border border-amber-500/30 bg-amber-500/10 p-2 text-[10px] text-amber-100" data-testid="properties-workflow-reference-warnings-@field.Name">
+                                     <p class="font-semibold uppercase tracking-wider text-amber-200 mb-1">Reference warning</p>
+                                     <p>@workflowReferenceWarning</p>
+                                 </div>
+                             }
+
+                             @if (field.SupportsVariables)
+                             {
+                                 <div class="mt-2 rounded border border-gray-700 bg-gray-900/40 p-2 text-[10px]" data-testid="properties-variables-@field.Name">
+                                     <div class="flex items-center justify-between gap-2 mb-1">
                                         <span class="uppercase tracking-wider text-gray-500 font-semibold">Variables</span>
                                         <span class="text-gray-500">@GetVariableSyntax(field)</span>
                                     </div>
@@ -347,6 +428,7 @@
 
     [Parameter] public string? SelectedNodeId { get; set; }
     [Parameter] public string? SelectedNodeType { get; set; }
+    [Parameter] public string? WorkflowName { get; set; }
     [Parameter] public Dictionary<string, object?> NodeConfig { get; set; } = new();
     [Parameter] public EventCallback<Dictionary<string, object?>> OnConfigChanged { get; set; }
     [Parameter] public NodeConnections? Connections { get; set; }
@@ -355,10 +437,13 @@
 
     private List<StepDefinition> _localSteps = StepCatalog.GetAll();
     private bool _loadingSchema;
+    private bool _loadingWorkflowReferences;
     private List<SchemaField> _schemaFields = [];
     private string? _lastLoadedType;
     private string? _lastLoadedNodeId;
     private string? _stepTypeDescription;
+    private string? _workflowReferenceError;
+    private List<WorkflowReferenceInfo> _availableWorkflowReferences = [];
 
     public sealed class NodeConnections
     {
@@ -378,6 +463,13 @@
         public string Token { get; set; } = "";
         public string GroupLabel { get; set; } = "";
         public string? Description { get; set; }
+    }
+
+    private sealed class WorkflowReferenceInfo
+    {
+        public string Name { get; set; } = "";
+        public string? Description { get; set; }
+        public int StepCount { get; set; }
     }
 
     private sealed class SchemaField
@@ -427,6 +519,8 @@
             _lastLoadedNodeId = null;
             _schemaFields = [];
             _stepTypeDescription = null;
+            _availableWorkflowReferences = [];
+            _workflowReferenceError = null;
         }
     }
 
@@ -559,6 +653,17 @@
 
             _loadingSchema = false;
         }
+
+        if (_schemaFields.Any(IsWorkflowReferenceField))
+        {
+            await LoadWorkflowReferencesAsync();
+        }
+        else
+        {
+            _availableWorkflowReferences = [];
+            _workflowReferenceError = null;
+            _loadingWorkflowReferences = false;
+        }
     }
 
     private List<SchemaField> BuildLocalSchemaFields(string type)
@@ -665,6 +770,112 @@
         var newConfig = new Dictionary<string, object?>(NodeConfig) { [key] = value };
         await OnConfigChanged.InvokeAsync(newConfig);
     }
+
+    private static bool IsWorkflowReferenceField(SchemaField field)
+        => string.Equals(field.UiType, "workflowSelect", StringComparison.OrdinalIgnoreCase);
+
+    private async Task LoadWorkflowReferencesAsync()
+    {
+        _loadingWorkflowReferences = true;
+        _workflowReferenceError = null;
+
+        try
+        {
+            var workflows = await Api.GetWorkflowsAsync();
+            _availableWorkflowReferences = workflows
+                .Where(workflow => !string.IsNullOrWhiteSpace(workflow.Name))
+                .GroupBy(workflow => workflow.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.OrderByDescending(workflow => workflow.LastModified).First())
+                .Select(workflow => new WorkflowReferenceInfo
+                {
+                    Name = workflow.Name.Trim(),
+                    Description = workflow.Description,
+                    StepCount = workflow.StepCount
+                })
+                .OrderBy(workflow => workflow.Name, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            _availableWorkflowReferences = [];
+            _workflowReferenceError = $"Failed to load workflows: {ex.Message}";
+        }
+        finally
+        {
+            _loadingWorkflowReferences = false;
+        }
+    }
+
+    private string GetWorkflowReferenceListId(SchemaField field)
+        => $"workflow-reference-{field.Name}-{SelectedNodeId ?? "node"}";
+
+    private IReadOnlyList<WorkflowReferenceInfo> GetWorkflowReferenceSuggestions(SchemaField field)
+    {
+        var currentValue = NodeConfig.GetValueOrDefault(field.Name)?.ToString()?.Trim();
+        IEnumerable<WorkflowReferenceInfo> query = _availableWorkflowReferences
+            .Where(workflow => !string.Equals(workflow.Name, WorkflowName?.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (!string.IsNullOrWhiteSpace(currentValue))
+        {
+            query = query.Where(workflow =>
+                workflow.Name.Contains(currentValue, StringComparison.OrdinalIgnoreCase) ||
+                (workflow.Description?.Contains(currentValue, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        return query
+            .OrderByDescending(workflow => !string.IsNullOrWhiteSpace(currentValue) && workflow.Name.StartsWith(currentValue, StringComparison.OrdinalIgnoreCase))
+            .ThenBy(workflow => workflow.Name, StringComparer.OrdinalIgnoreCase)
+            .Take(8)
+            .ToList();
+    }
+
+    private WorkflowReferenceInfo? GetSelectedWorkflowReference(SchemaField field)
+    {
+        var selectedWorkflowName = NodeConfig.GetValueOrDefault(field.Name)?.ToString()?.Trim();
+        if (string.IsNullOrWhiteSpace(selectedWorkflowName))
+            return null;
+
+        return _availableWorkflowReferences.FirstOrDefault(workflow =>
+            !string.Equals(workflow.Name, WorkflowName?.Trim(), StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(workflow.Name, selectedWorkflowName, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private string? GetWorkflowReferenceWarning(SchemaField field)
+        => GetWorkflowReferenceWarning(
+            NodeConfig.GetValueOrDefault(field.Name)?.ToString(),
+            WorkflowName,
+            _availableWorkflowReferences.Select(workflow => workflow.Name).ToList(),
+            !_loadingWorkflowReferences && _workflowReferenceError is null);
+
+    private static string? GetWorkflowReferenceWarning(
+        string? selectedWorkflowName,
+        string? currentWorkflowName,
+        IReadOnlyList<string> availableWorkflowNames,
+        bool hasReferenceCatalog)
+    {
+        if (string.IsNullOrWhiteSpace(selectedWorkflowName))
+            return null;
+
+        var trimmedSelectedWorkflowName = selectedWorkflowName.Trim();
+        if (!string.IsNullOrWhiteSpace(currentWorkflowName)
+            && string.Equals(trimmedSelectedWorkflowName, currentWorkflowName.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            return "Sub-workflow cannot reference the current workflow.";
+        }
+
+        if (!hasReferenceCatalog || availableWorkflowNames.Count == 0)
+            return null;
+
+        return availableWorkflowNames.Any(workflowName => string.Equals(workflowName, trimmedSelectedWorkflowName, StringComparison.OrdinalIgnoreCase))
+            ? null
+            : "No saved workflow matches this name yet. You can keep typing if the child workflow will be created later.";
+    }
+
+    private static string GetWorkflowReferenceOptionLabel(WorkflowReferenceInfo workflow)
+        => workflow.StepCount == 1 ? "1 step" : $"{workflow.StepCount} steps";
+
+    private Task SelectWorkflowReferenceAsync(string key, string workflowName)
+        => UpdateConfig(key, workflowName);
 
     private IEnumerable<IGrouping<string, VariableReferenceInfo>> GetVariableReferenceGroups()
         => AvailableVariables

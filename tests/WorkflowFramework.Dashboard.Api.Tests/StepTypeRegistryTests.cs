@@ -100,6 +100,18 @@ public class StepTypeRegistryTests
     }
 
     [Fact]
+    public void CreateDefault_SubWorkflowSchema_UsesWorkflowReferencePicker()
+    {
+        var registry = StepTypeRegistry.CreateDefault();
+        var subWorkflowProperty = registry.Get("SubWorkflow")!.ConfigSchema!.Value
+            .GetProperty("properties")
+            .GetProperty("subWorkflowName");
+
+        subWorkflowProperty.GetProperty("uiType").GetString().Should().Be("workflowSelect");
+        subWorkflowProperty.GetProperty("helpText").GetString().Should().Contain("saved workflow");
+    }
+
+    [Fact]
     public void CreateDefault_UsesSharedAiProviderMetadata_ForAiStepSchemas()
     {
         var registry = StepTypeRegistry.CreateDefault();

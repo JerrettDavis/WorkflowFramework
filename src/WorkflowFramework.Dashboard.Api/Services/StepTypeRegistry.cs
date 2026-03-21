@@ -140,7 +140,7 @@ public sealed class StepTypeRegistry
             Schema("""
             {
               "properties": {
-                "subWorkflowName": { "type": "string", "label": "Workflow Name", "helpText": "Name of the workflow to invoke", "required": true }
+                "subWorkflowName": { "type": "string", "uiType": "workflowSelect", "label": "Workflow Name", "helpText": "Choose a saved workflow to invoke, or type a workflow name for a child flow you plan to create.", "required": true }
               },
               "required": ["subWorkflowName"]
             }

@@ -19,5 +19,5 @@ Feature: Templates
   Scenario: Filter templates by search
     Given the dashboard is running
     When I open the template browser
-    And I search templates for "agent"
-    Then I should only see template results matching "agent"
+    And I search templates for "multimodal"
+    Then I should only see template results matching "multimodal"

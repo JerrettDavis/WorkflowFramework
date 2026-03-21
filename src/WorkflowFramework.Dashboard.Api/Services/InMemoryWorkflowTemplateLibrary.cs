@@ -78,6 +78,7 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
         // === AI & Agents ===
         templates.Add(TaskExtractionPipeline());
         templates.Add(AgentTriageWorkflow());
+        templates.Add(MultimodalLocalRouter());
 
         // === Voice & Audio ===
         templates.Add(QuickTranscript());
@@ -504,6 +505,114 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
                     ]
                 },
                 new StepDefinitionDto { Name = "AggregateResults", Type = "Action" }
+            ]
+        }
+    };
+
+    private static WorkflowTemplate MultimodalLocalRouter() => new()
+    {
+        Id = "multimodal-local-router",
+        Name = "Multimodal Local Router",
+        Description = "Capture a multimodal brief, let a cheap local model route and plan the work, then hand specialist passes to downstream OpenAI and Anthropic models before human review.",
+        Category = "AI & Agents",
+        Tags = ["ai", "agent", "multimodal", "local-model", "routing", "provider-selection"],
+        Difficulty = TemplateDifficulty.Advanced,
+        StepCount = 8,
+        Definition = new WorkflowDefinitionDto
+        {
+            Name = "MultimodalLocalRouter",
+            Steps =
+            [
+                new StepDefinitionDto
+                {
+                    Name = "Capture Brief",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Capture multimodal inputs from {recordings}, {transcript}, and any uploaded notes."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Transcribe Brief",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Normalize {recordings} and {transcript} into a single working brief."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Route Brief",
+                    Type = "AgentDecisionStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "ollama",
+                        ["model"] = "phi4-mini",
+                        ["prompt"] = "Review {{Transcribe Brief.Output}} and decide which downstream specialist models should draft, verify, or escalate the task.",
+                        ["options"] = "openai-draft,anthropic-audit,dual-specialists,escalate-to-human"
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Plan Specialist Passes",
+                    Type = "AgentPlanStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "ollama",
+                        ["model"] = "llama3.2",
+                        ["objective"] = "Use {{Route Brief.Decision}} and {{Transcribe Brief.Output}} to produce an execution plan for the downstream specialist passes."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Specialist Passes",
+                    Type = "Parallel",
+                    Steps =
+                    [
+                        new StepDefinitionDto
+                        {
+                            Name = "Draft with OpenAI",
+                            Type = "LlmCallStep",
+                            Config = new Dictionary<string, string>
+                            {
+                                ["provider"] = "openai",
+                                ["model"] = "gpt-4o-mini",
+                                ["prompt"] = "Using {{Plan Specialist Passes.Plan}} and {{Transcribe Brief.Output}}, draft the primary deliverable."
+                            }
+                        },
+                        new StepDefinitionDto
+                        {
+                            Name = "Audit with Anthropic",
+                            Type = "LlmCallStep",
+                            Config = new Dictionary<string, string>
+                            {
+                                ["provider"] = "anthropic",
+                                ["model"] = "claude-sonnet-4-20250514",
+                                ["prompt"] = "Using {{Plan Specialist Passes.Plan}} and {{Transcribe Brief.Output}}, identify risks, missing context, and follow-up questions."
+                            }
+                        }
+                    ]
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Merge Specialist Outputs",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Combine {{Draft with OpenAI.Response}} with {{Audit with Anthropic.Response}} into a final package for approval."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Review Package",
+                    Type = "HumanTaskStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["title"] = "Review specialist output package",
+                        ["instructions"] = "Review the merged draft, audit notes, and routing recommendation before publishing."
+                    }
+                }
             ]
         }
     };

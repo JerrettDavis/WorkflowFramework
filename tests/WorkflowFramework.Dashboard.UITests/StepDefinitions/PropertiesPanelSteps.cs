@@ -76,6 +76,27 @@ public sealed class PropertiesPanelSteps
         await Page.WaitForTimeoutAsync(1000);
     }
 
+    private async Task CreateSavedWorkflow(string workflowName)
+    {
+        using var client = AspireHooks.Fixture.CreateApiClient();
+        var payload = new
+        {
+            description = $"Reusable workflow {workflowName}",
+            tags = new[] { "test", "subworkflow" },
+            definition = new
+            {
+                name = workflowName,
+                steps = new[]
+                {
+                    new { id = "child-step-1", type = "Action", name = "ChildAction", config = new Dictionary<string, object>() }
+                }
+            }
+        };
+
+        var response = await client.PostAsJsonAsync("/api/workflows", payload);
+        response.EnsureSuccessStatusCode();
+    }
+
     private async Task SelectFirstNode()
     {
         var node = Page.Locator(".react-flow__node").First;
@@ -94,6 +115,19 @@ public sealed class PropertiesPanelSteps
 
     [When("I select the Action step")]
     public async Task WhenISelectTheActionStep()
+    {
+        await SelectFirstNode();
+    }
+
+    [Given("I have a workflow with a SubWorkflow step")]
+    public async Task GivenIHaveAWorkflowWithASubWorkflowStep()
+    {
+        await CreateSavedWorkflow("Child Flow");
+        await CreateAndOpenWorkflow("SubWorkflow", "Invoke Child Workflow");
+    }
+
+    [When("I select the SubWorkflow step")]
+    public async Task WhenISelectTheSubWorkflowStep()
     {
         await SelectFirstNode();
     }
@@ -206,6 +240,36 @@ public sealed class PropertiesPanelSteps
         var inputs = panel.Locator("input[type='text']");
         var count = await inputs.CountAsync();
         count.Should().BeGreaterThan(0, "Should have text input for URL");
+    }
+
+    [Then("the properties panel should show saved workflow suggestions including {string}")]
+    public async Task ThenThePropertiesPanelShouldShowSavedWorkflowSuggestionsIncluding(string workflowName)
+    {
+        var helper = Page.Locator("[data-testid='properties-workflow-reference-subWorkflowName']");
+        await helper.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
+
+        var option = helper.Locator("[data-testid='properties-workflow-reference-option-subWorkflowName']",
+            new LocatorLocatorOptions { HasText = workflowName }).First;
+        await option.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+    }
+
+    [When("I choose saved workflow {string}")]
+    public async Task WhenIChooseSavedWorkflow(string workflowName)
+    {
+        var helper = Page.Locator("[data-testid='properties-workflow-reference-subWorkflowName']");
+        var option = helper.Locator("[data-testid='properties-workflow-reference-option-subWorkflowName']",
+            new LocatorLocatorOptions { HasText = workflowName }).First;
+        await option.ClickAsync();
+        await Page.WaitForTimeoutAsync(500);
+    }
+
+    [Then("the SubWorkflow reference should be {string}")]
+    public async Task ThenTheSubWorkflowReferenceShouldBe(string workflowName)
+    {
+        var input = Page.Locator("[data-testid='properties-workflow-reference-input-subWorkflowName']");
+        await input.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        var value = await input.InputValueAsync();
+        value.Should().Be(workflowName);
     }
 
     [Then("the properties panel should show a headers JSON editor")]

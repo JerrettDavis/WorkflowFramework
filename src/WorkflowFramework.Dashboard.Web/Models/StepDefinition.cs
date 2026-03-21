@@ -92,7 +92,7 @@ public static class StepCatalog
         new() { Type = "TryCatch", Name = "TryCatch", Icon = "🛡", Category = "Core", Color = CategoryColors["Core"],
             Properties = [new() { Name = "catchTypes", Label = "Catch Types (comma-separated)" }] },
         new() { Type = "SubWorkflow", Name = "SubWorkflow", Icon = "📦", Category = "Core", Color = CategoryColors["Core"],
-            Properties = [new() { Name = "subWorkflowName", Label = "Workflow Name", Required = true }] },
+            Properties = [new() { Name = "subWorkflowName", Label = "Workflow Name", Required = true, UiType = "workflowSelect" }] },
         new() { Type = "Saga", Name = "Saga", Icon = "📜", Category = "Core", Color = CategoryColors["Core"],
             Properties = [new() { Name = "compensateOnFailure", Label = "Compensate On Failure", Type = "bool", DefaultValue = "true" }] },
         // Integration

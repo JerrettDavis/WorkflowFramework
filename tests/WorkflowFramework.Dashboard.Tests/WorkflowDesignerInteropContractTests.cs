@@ -260,6 +260,23 @@ public sealed class WorkflowDesignerInteropContractTests
     }
 
     [Fact]
+    public void StepCatalog_FallbackSubWorkflow_UsesWorkflowReferencePicker()
+    {
+        var stepCatalogType = FindTypeByName("StepCatalog");
+        var getAll = stepCatalogType.GetMethod("GetAll", BindingFlags.Static | BindingFlags.Public);
+        getAll.Should().NotBeNull();
+
+        var definitions = ((IEnumerable?)getAll!.Invoke(null, null))?.Cast<object>().ToList();
+        definitions.Should().NotBeNull();
+
+        var subWorkflow = definitions!.Single(d => string.Equals(GetProperty(d, "Type")?.ToString(), "SubWorkflow", StringComparison.Ordinal));
+        var properties = ((GetProperty(subWorkflow, "Properties") as IEnumerable) ?? Array.Empty<object>()).Cast<object>().ToList();
+        var workflowNameProperty = properties.Single(property => string.Equals(GetProperty(property, "Name")?.ToString(), "subWorkflowName", StringComparison.Ordinal));
+
+        GetProperty(workflowNameProperty, "UiType")?.ToString().Should().Be("workflowSelect");
+    }
+
+    [Fact]
     public void StepCatalog_FallbackAiSteps_ExposeProviderSelectOptions()
     {
         var stepCatalogType = FindTypeByName("StepCatalog");
@@ -368,6 +385,27 @@ public sealed class WorkflowDesignerInteropContractTests
             .ToList();
 
         unresolved.Should().BeEquivalentTo(["{{Missing.Response}}"]);
+    }
+
+    [Fact]
+    public void PropertiesPanel_GetWorkflowReferenceWarning_FlagsSelfReference_AndMissingSavedWorkflow()
+    {
+        var method = PropertiesPanelType.GetMethod(
+            "GetWorkflowReferenceWarning",
+            BindingFlags.Static | BindingFlags.NonPublic,
+            null,
+            [typeof(string), typeof(string), typeof(IReadOnlyList<string>), typeof(bool)],
+            null);
+        method.Should().NotBeNull();
+
+        var selfReferenceWarning = method!.Invoke(null, ["Parent Flow", "Parent Flow", new List<string> { "Child Flow" }, true]);
+        selfReferenceWarning.Should().Be("Sub-workflow cannot reference the current workflow.");
+
+        var missingWorkflowWarning = method.Invoke(null, ["Missing Flow", "Parent Flow", new List<string> { "Child Flow" }, true]);
+        missingWorkflowWarning.Should().Be("No saved workflow matches this name yet. You can keep typing if the child workflow will be created later.");
+
+        var knownWorkflowWarning = method.Invoke(null, ["Child Flow", "Parent Flow", new List<string> { "Child Flow" }, true]);
+        knownWorkflowWarning.Should().BeNull();
     }
 
     [Fact]
