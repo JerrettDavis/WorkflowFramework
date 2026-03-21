@@ -41,6 +41,18 @@ Feature: Properties Panel
     And I change the step name to "RenamedStep"
     Then the step name should update on the canvas
 
+  Scenario: Action node inline editor syncs with sidebar
+    Given the dashboard is running
+    And I have a workflow with an Action step named "InlineAction"
+    When I select the Action step
+    Then the action node quick editor should be visible
+    When I update the inline action step name to "InlineRenamed"
+    And I update the inline action expression to "return transcript.trim();"
+    And I save and reopen the current workflow
+    Then the properties panel step name should be "InlineRenamed"
+    And the properties panel expression should be "return transcript.trim();"
+    And the action node summary should contain "return transcript.trim();"
+
   Scenario: Edit notes persists
     Given the dashboard is running
     And I have a workflow with an Action step

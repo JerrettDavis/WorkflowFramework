@@ -147,6 +147,21 @@
         return /^output-\d+$/i.test(handleId || '');
     }
 
+    function getNodeDisplayLabel(data) {
+        return data?.config?.label || data?.label || data?.type || 'Step';
+    }
+
+    function getNodeConfigValue(data, key) {
+        const value = data?.config?.[key];
+        return typeof value === 'string' ? value : value == null ? '' : String(value);
+    }
+
+    function summarizeInlineText(value, fallbackText, maxLength = 120) {
+        const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+        if (!normalized) return fallbackText;
+        return normalized.length <= maxLength ? normalized : `${normalized.slice(0, maxLength - 1)}…`;
+    }
+
     function isSupportedSourceHandle(nodeData, handleId) {
         const normalizedType = normalizeNodeType(nodeData?.type);
         const normalizedHandle = normalizeHandleId(handleId).toLowerCase();
@@ -217,13 +232,25 @@
         const icon = data.icon || CATEGORY_ICONS[data.category] || '📦';
         const type = (data.type || '').toLowerCase();
         const isSynthetic = isSyntheticNodeData(data);
+        const displayLabel = getNodeDisplayLabel(data);
+        const actionExpression = getNodeConfigValue(data, 'expression');
+        const [quickName, setQuickName] = useState(displayLabel);
+        const [quickExpression, setQuickExpression] = useState(actionExpression);
+
+        useEffect(() => {
+            setQuickName(displayLabel);
+        }, [displayLabel, id]);
+
+        useEffect(() => {
+            setQuickExpression(actionExpression);
+        }, [actionExpression, id]);
 
         const nodeStyle = {
             background: colors.bg,
             border: `2px solid ${selected ? '#fff' : colors.border}`,
             borderRadius: '10px',
             padding: '10px 14px',
-            minWidth: '180px',
+            minWidth: type === 'action' && selected ? '240px' : '180px',
             color: '#f3f4f6',
             fontFamily: 'Inter, system-ui, sans-serif',
             position: 'relative',
@@ -274,17 +301,154 @@
 
         const header = h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' } },
             h('span', { style: { fontSize: '16px' } }, icon),
-            h('div', { style: { fontSize: '12px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '130px' } },
-                data.config?.label || data.label || data.type),
+            h('div', { style: { fontSize: '12px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' } },
+                displayLabel),
         );
 
         const subtitle = h('div', {
             style: { fontSize: '10px', color: '#9ca3af', marginLeft: '26px' }
         }, data.type);
 
-        const configSummary = data.config && Object.keys(data.config).length > 0
+        const configSummary = type !== 'action' && data.config && Object.keys(data.config).length > 0
             ? h('div', { style: { fontSize: '9px', color: '#6b7280', marginLeft: '26px', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' } },
                 Object.entries(data.config).filter(([k]) => k !== 'label').map(([k, v]) => `${k}: ${v}`).join(', ').substring(0, 40))
+            : null;
+
+        const commitInlineConfig = useCallback((partialConfig) => {
+            if (!partialConfig || !window.workflowEditor || typeof window.workflowEditor.commitNodeConfig !== 'function') return;
+            window.workflowEditor.commitNodeConfig(id, partialConfig);
+        }, [id]);
+
+        const inlineNameChanged = quickName !== displayLabel;
+        const inlineExpressionChanged = quickExpression !== actionExpression;
+
+        const actionSummary = !isSynthetic && type === 'action'
+            ? h('div', {
+                style: {
+                    marginLeft: '26px',
+                    marginTop: '6px',
+                    padding: '6px 8px',
+                    borderRadius: '8px',
+                    background: selected ? 'rgba(15, 23, 42, 0.85)' : 'rgba(15, 23, 42, 0.55)',
+                    border: '1px solid rgba(59, 130, 246, 0.18)',
+                },
+                'data-testid': 'node-action-summary'
+            },
+            h('div', {
+                style: {
+                    fontSize: '9px',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: '#93c5fd',
+                    marginBottom: '3px',
+                }
+            }, 'Expression'),
+            h('div', {
+                style: {
+                    fontSize: '10px',
+                    color: actionExpression ? '#e5e7eb' : '#94a3b8',
+                    lineHeight: '1.35',
+                    display: '-webkit-box',
+                    WebkitLineClamp: selected ? 3 : 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    wordBreak: 'break-word',
+                }
+            }, summarizeInlineText(actionExpression, 'Add an expression to describe what this action does.')))
+            : null;
+
+        const stopInlineEvent = (event) => {
+            event.stopPropagation();
+        };
+
+        const actionQuickEditor = !isSynthetic && type === 'action' && selected
+            ? h('div', {
+                style: {
+                    marginLeft: '26px',
+                    marginTop: '8px',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    background: 'rgba(2, 6, 23, 0.78)',
+                    border: '1px solid rgba(96, 165, 250, 0.25)',
+                },
+                className: 'nodrag nowheel',
+                onMouseDown: stopInlineEvent,
+                onClick: stopInlineEvent,
+                'data-testid': 'node-action-inline-editor'
+            },
+            h('div', {
+                style: {
+                    fontSize: '9px',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: '#93c5fd',
+                    marginBottom: '6px',
+                }
+            }, 'Quick edit'),
+            h('label', { style: { display: 'block', fontSize: '9px', color: '#94a3b8', marginBottom: '4px' } }, 'Step Name'),
+            h('input', {
+                type: 'text',
+                value: quickName,
+                className: 'nodrag nowheel',
+                'data-testid': 'node-inline-name',
+                style: {
+                    width: '100%',
+                    borderRadius: '6px',
+                    border: inlineNameChanged ? '1px solid rgba(96, 165, 250, 0.9)' : '1px solid rgba(71, 85, 105, 0.9)',
+                    background: '#111827',
+                    color: '#f9fafb',
+                    fontSize: '11px',
+                    padding: '6px 8px',
+                    marginBottom: '8px',
+                },
+                onMouseDown: stopInlineEvent,
+                onClick: stopInlineEvent,
+                onChange: (event) => setQuickName(event.target.value),
+                onBlur: () => {
+                    if (inlineNameChanged) commitInlineConfig({ label: quickName });
+                },
+                onKeyDown: (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        event.currentTarget.blur();
+                    }
+                }
+            }),
+            h('label', { style: { display: 'block', fontSize: '9px', color: '#94a3b8', marginBottom: '4px' } }, 'Expression'),
+            h('textarea', {
+                rows: 3,
+                value: quickExpression,
+                className: 'nodrag nowheel',
+                'data-testid': 'node-inline-expression',
+                placeholder: 'Describe the action logic or expression...',
+                style: {
+                    width: '100%',
+                    borderRadius: '6px',
+                    border: inlineExpressionChanged ? '1px solid rgba(96, 165, 250, 0.9)' : '1px solid rgba(71, 85, 105, 0.9)',
+                    background: '#111827',
+                    color: '#f9fafb',
+                    fontSize: '11px',
+                    lineHeight: '1.35',
+                    padding: '6px 8px',
+                    resize: 'vertical',
+                    minHeight: '64px',
+                },
+                onMouseDown: stopInlineEvent,
+                onClick: stopInlineEvent,
+                onChange: (event) => setQuickExpression(event.target.value),
+                onBlur: () => {
+                    if (inlineExpressionChanged) commitInlineConfig({ expression: quickExpression });
+                }
+            }),
+            h('div', {
+                style: {
+                    marginTop: '6px',
+                    fontSize: '9px',
+                    color: '#64748b',
+                }
+            }, 'Use the sidebar for full properties and notes.'))
             : null;
 
         // Handles
@@ -338,7 +502,7 @@
         }
 
         return h('div', { style: nodeStyle, 'data-node-id': id, 'data-node-type': data.type, 'data-node-synthetic': isSynthetic ? 'true' : 'false' },
-            accentBar, statusIndicator, successBadge, header, subtitle, configSummary, ...handles
+            accentBar, statusIndicator, successBadge, header, subtitle, configSummary, actionSummary, actionQuickEditor, ...handles
         );
     }
 
@@ -414,6 +578,7 @@
                 clipboardRef,
                 nextIdRef,
                 dotNetRefRef,
+                commitNodeConfig,
             };
             return () => { _editorInstance = null; };
         });
@@ -440,6 +605,41 @@
             historyRef.current.push({ nodes: n, edges: e });
             notifyCanvasChanged();
         }, [notifyCanvasChanged]);
+
+        const commitNodeConfig = useCallback((nodeId, partialConfig) => {
+            if (!nodeId || !partialConfig) return;
+
+            setNodes(nds => {
+                let updatedNode = null;
+                const updated = nds.map(n => {
+                    if (n.id !== nodeId) return n;
+
+                    updatedNode = {
+                        ...n,
+                        data: {
+                            ...n.data,
+                            label: partialConfig?.label || n.data.label,
+                            config: {
+                                ...n.data.config,
+                                ...partialConfig,
+                            },
+                        },
+                    };
+
+                    return updatedNode;
+                });
+
+                if (updatedNode) {
+                    setTimeout(() => {
+                        invokeDotNet('OnCanvasChanged');
+                        pushHistory(updated, edges);
+                        invokeDotNet('OnNodeSelected', updatedNode.id, updatedNode.data?.type || null, updatedNode.data?.config || null);
+                    }, 0);
+                }
+
+                return updated;
+            });
+        }, [edges, invokeDotNet, pushHistory, setNodes]);
 
         const onConnect = useCallback((connection) => {
             // Connection validation: prevent connecting output to output or input to input
@@ -553,6 +753,11 @@
         // Keyboard shortcuts
         useEffect(() => {
             const handler = (e) => {
+                const tagName = e.target?.tagName;
+                if (tagName === 'INPUT' || tagName === 'TEXTAREA' || e.target?.isContentEditable) {
+                    return;
+                }
+
                 if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
                     e.preventDefault();
                     window.workflowEditor.undo();
@@ -715,8 +920,22 @@
         updateNode(nodeId, config) {
             if (!_editorInstance) return;
             _editorInstance.setNodes(nds => nds.map(n =>
-                n.id === nodeId ? { ...n, data: { ...n.data, config: { ...n.data.config, ...config } } } : n
+                n.id === nodeId
+                    ? {
+                        ...n,
+                        data: {
+                            ...n.data,
+                            label: config?.label || n.data.label,
+                            config: { ...n.data.config, ...config }
+                        }
+                    }
+                    : n
             ));
+        },
+
+        commitNodeConfig(nodeId, config) {
+            if (!_editorInstance || typeof _editorInstance.commitNodeConfig !== 'function') return;
+            _editorInstance.commitNodeConfig(nodeId, config);
         },
 
         getWorkflowDefinition() {
@@ -725,7 +944,7 @@
             const nodes = inst.getNodes().map(n => ({
                 id: n.id,
                 type: n.data.type,
-                label: n.data.label,
+                label: n.data?.config?.label || n.data.label,
                 icon: n.data.icon,
                 category: n.data.category,
                 color: n.data.color,

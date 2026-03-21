@@ -22,22 +22,28 @@ public sealed class ScreenshotHooks
     {
         if (_scenarioContext.TestError is null) return;
         if (!_scenarioContext.TryGetValue<IPage>(out var page)) return;
+        if (IsSensitiveScenario()) return;
 
         var safeName = _scenarioContext.ScenarioInfo.Title
             .Replace(" ", "_").Replace("/", "_").Replace("\\", "_");
-        var dir = Path.Combine(Directory.GetCurrentDirectory(), "test-failures");
-        Directory.CreateDirectory(dir);
+        var screenshotPath = ArtifactPaths.GetScenarioArtifactPath(_scenarioContext, "failure", $"{safeName}.png");
+        var htmlPath = ArtifactPaths.GetScenarioArtifactPath(_scenarioContext, "failure", $"{safeName}.html");
 
         try
         {
             await page.ScreenshotAsync(new PageScreenshotOptions
             {
-                Path = Path.Combine(dir, $"{safeName}.png"),
+                Path = screenshotPath,
                 FullPage = true
             });
             var html = await page.ContentAsync();
-            await File.WriteAllTextAsync(Path.Combine(dir, $"{safeName}.html"), html);
-            Console.WriteLine($"[DIAG] Failure artifacts saved to {dir}/{safeName}.*");
+            await File.WriteAllTextAsync(htmlPath, html);
+            if (_scenarioContext.TryGetValue<ScenarioArtifacts>(out var artifacts))
+            {
+                artifacts.Add("failure-screenshot", screenshotPath);
+                artifacts.Add("failure-html", htmlPath);
+            }
+            Console.WriteLine($"[DIAG] Failure artifacts saved to {Path.GetDirectoryName(screenshotPath)}");
             Console.WriteLine($"[DIAG] Page URL: {page.Url}");
             Console.WriteLine($"[DIAG] Page title: {await page.TitleAsync()}");
 
@@ -127,20 +133,21 @@ public sealed class ScreenshotHooks
                     await CaptureElementOrFallback(page, "[data-testid='workflow-list']", filename);
                     break;
                 default:
-                    await ScreenshotHelper.CaptureFullPageAsync(page, filename);
+                    await CaptureAndTrackFullPage(page, filename);
                     break;
             }
         }
     }
 
-    private static async Task CaptureElementOrFallback(IPage page, string selector, string filename)
+    private async Task CaptureElementOrFallback(IPage page, string selector, string filename)
     {
         try
         {
             var loc = page.Locator(selector).First;
             if (await loc.IsVisibleAsync())
             {
-                await ScreenshotHelper.CaptureElementAsync(page, selector, filename);
+                var promotedPath = await ScreenshotHelper.CaptureElementAsync(page, _scenarioContext, selector, filename, promoteForDocs: true);
+                TrackScreenshot(filename, promotedPath);
                 return;
             }
         }
@@ -148,6 +155,25 @@ public sealed class ScreenshotHooks
         {
             // Fallback to full page
         }
-        await ScreenshotHelper.CaptureFullPageAsync(page, filename);
+        await CaptureAndTrackFullPage(page, filename);
     }
+
+    private async Task CaptureAndTrackFullPage(IPage page, string filename)
+    {
+        var promotedPath = await ScreenshotHelper.CaptureFullPageAsync(page, _scenarioContext, filename, promoteForDocs: true);
+        TrackScreenshot(filename, promotedPath);
+    }
+
+    private void TrackScreenshot(string filename, string promotedPath)
+    {
+        if (!_scenarioContext.TryGetValue<ScenarioArtifacts>(out var artifacts))
+            return;
+
+        var artifactPath = ArtifactPaths.GetScenarioArtifactPath(_scenarioContext, "screenshots", filename);
+        artifacts.Add("screenshot", artifactPath, promotedPath);
+    }
+
+    private bool IsSensitiveScenario()
+        => _scenarioContext.ScenarioInfo.Tags.Contains("sensitive", StringComparer.OrdinalIgnoreCase)
+           || _scenarioContext.ScenarioInfo.Tags.Contains("no-artifacts", StringComparer.OrdinalIgnoreCase);
 }

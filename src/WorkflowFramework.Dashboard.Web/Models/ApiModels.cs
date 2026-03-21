@@ -258,6 +258,19 @@ public sealed class ValidationSeverityStringConverter : JsonConverter<string>
 public sealed class DashboardSettingsDto
 {
     public string OllamaUrl { get; set; } = "http://localhost:11434";
+    public string? OpenAiBaseUrl { get; set; }
+    public string? DefaultProvider { get; set; }
+    public string? DefaultModel { get; set; }
+    public int DefaultTimeoutSeconds { get; set; } = 300;
+    public int MaxConcurrentRuns { get; set; } = 5;
+    public bool OpenAiConfigured { get; set; }
+    public bool AnthropicConfigured { get; set; }
+    public bool HuggingFaceConfigured { get; set; }
+}
+
+public sealed class UpdateDashboardSettingsRequest
+{
+    public string OllamaUrl { get; set; } = "http://localhost:11434";
     public string? OpenAiApiKey { get; set; }
     public string? AnthropicApiKey { get; set; }
     public string? HuggingFaceApiKey { get; set; }
@@ -266,6 +279,11 @@ public sealed class DashboardSettingsDto
     public string? DefaultModel { get; set; }
     public int DefaultTimeoutSeconds { get; set; } = 300;
     public int MaxConcurrentRuns { get; set; } = 5;
+}
+
+public sealed class TestOllamaConnectionRequest
+{
+    public string? OllamaUrl { get; set; }
 }
 
 public sealed class OllamaTestResult

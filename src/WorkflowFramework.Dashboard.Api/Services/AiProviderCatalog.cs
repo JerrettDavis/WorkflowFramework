@@ -53,7 +53,14 @@ internal static class AiProviderCatalog
     public static IReadOnlyList<string> Providers => ProvidersInternal;
 
     public static IReadOnlyList<string> GetDefaultModels(string provider)
-        => DefaultModelsInternal.TryGetValue(provider, out var models) ? models : [];
+        => DefaultModelsInternal.TryGetValue(provider, out var models) ? OrderModels(provider, models) : [];
+
+    public static IReadOnlyList<string> OrderModels(string provider, IEnumerable<string> models)
+        => models
+            .Where(static model => !string.IsNullOrWhiteSpace(model))
+            .OrderByDescending(model => GetModelScore(provider, model))
+            .ThenBy(model => model, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
     public static string SerializeProviderOptions()
         => JsonSerializer.Serialize(ProvidersInternal);
@@ -61,6 +68,35 @@ internal static class AiProviderCatalog
     public static string SerializeModelOptionGroups()
         => JsonSerializer.Serialize(DefaultModelsInternal.ToDictionary(
             entry => entry.Key,
-            entry => entry.Value,
+            entry => OrderModels(entry.Key, entry.Value),
             StringComparer.OrdinalIgnoreCase));
+
+    private static int GetModelScore(string provider, string model)
+    {
+        if (!provider.Equals("ollama", StringComparison.OrdinalIgnoreCase))
+            return 0;
+
+        var normalized = model.ToLowerInvariant();
+        var score = 0;
+
+        if (normalized.Contains("instruct", StringComparison.Ordinal))
+            score += 50;
+        if (normalized.Contains("chat", StringComparison.Ordinal))
+            score += 40;
+        if (normalized.Contains("assistant", StringComparison.Ordinal))
+            score += 20;
+
+        if (normalized.Contains("vision", StringComparison.Ordinal))
+            score -= 20;
+
+        if (normalized.Contains("embed", StringComparison.Ordinal)
+            || normalized.Contains("embedding", StringComparison.Ordinal)
+            || normalized.Contains("rerank", StringComparison.Ordinal)
+            || normalized.Contains("whisper", StringComparison.Ordinal))
+        {
+            score -= 100;
+        }
+
+        return score;
+    }
 }

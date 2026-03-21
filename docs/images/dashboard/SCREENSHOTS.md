@@ -15,6 +15,7 @@ Capture these screenshots and save them as PNG files in this directory.
 | `open-workflow-dialog.png` | 800×500 | Workflow browser modal with search bar, tag filters, and workflow list |
 | `template-browser.png` | 900×600 | Template browser modal showing categories, difficulty badges, and template cards |
 | `execution-panel.png` | 1200×300 | Bottom execution panel with log entries, timestamps, and connection status indicator |
+| `ollama-local-run.png` | 1400×900 | Local Ollama smoke workflow running end to end with the execution panel visible |
 | `run-history.png` | 800×400 | Run history list showing multiple past executions with status and duration |
 | `validation-badge.png` | 300×60 | Close-up of toolbar with red validation error badge showing a count |
 | `validation-panel.png` | 1200×250 | Validation panel with a mix of errors and warnings with severity icons |

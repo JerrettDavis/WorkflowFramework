@@ -1,0 +1,64 @@
+name: Dashboard UI Artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario_filter:
+        description: Reqnroll/xUnit filter for the dashboard UI slice to publish
+        required: false
+        default: DisplayName~Cloud providers can be configured without stored credentials|DisplayName~Saved provider keys are not echoed back to the browser|DisplayName~Sample workflows appear in workflow list
+
+permissions:
+  contents: read
+
+jobs:
+  publish-dashboard-ui-artifacts:
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    env:
+      DOTNET_NOLOGO: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: |
+            9.0.x
+            10.0.x
+          cache: true
+          cache-dependency-path: |
+            **/packages.lock.json
+            global.json
+
+      - name: Restore
+        run: dotnet restore --use-lock-file
+
+      - name: Build dashboard UI tests
+        run: dotnet build tests\WorkflowFramework.Dashboard.UITests\WorkflowFramework.Dashboard.UITests.csproj --configuration Release --no-restore
+
+      - name: Install Playwright browsers
+        shell: pwsh
+        run: tests\WorkflowFramework.Dashboard.UITests\bin\Release\net10.0\playwright.ps1 install chromium
+
+      - name: Run targeted dashboard UI scenarios
+        shell: pwsh
+        run: >
+          dotnet test tests\WorkflowFramework.Dashboard.UITests\WorkflowFramework.Dashboard.UITests.csproj
+          --configuration Release
+          --no-build
+          --filter "${{ inputs.scenario_filter }}"
+
+      - name: Generate dashboard UI livingdoc
+        shell: pwsh
+        run: .\eng\generate-dashboard-ui-report.ps1
+
+      - name: Upload dashboard UI artifact bundle
+        uses: actions/upload-artifact@v6
+        with:
+          name: dashboard-ui-artifacts
+          path: TestResults\dashboard-ui\latest
+

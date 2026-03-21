@@ -85,19 +85,14 @@ public sealed class ExecutionSteps
     [Then("the execution panel should appear")]
     public async Task ThenTheExecutionPanelShouldAppear()
     {
-        // Execution output is in the Output tab
-        var tab = Page.Locator("[data-testid='tab-output']");
-        await tab.ClickAsync();
-        await Page.WaitForTimeoutAsync(500);
-        var content = Page.Locator("[data-testid='output-content']");
-        await content.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        await OpenOutputPanelAsync();
     }
 
     [Then("the execution panel should show {string}")]
     public async Task ThenTheExecutionPanelShouldShow(string expectedText)
     {
+        await OpenOutputPanelAsync();
         var panel = Page.Locator("[data-testid='output-content']");
-        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
 
         var statusBadge = Page.Locator("[data-testid='run-status-badge']");
         var matched = false;
@@ -129,10 +124,8 @@ public sealed class ExecutionSteps
     [Then("I should see step progress updates")]
     public async Task ThenIShouldSeeStepStatusUpdates()
     {
-        var tab = Page.Locator("[data-testid='tab-output']");
-        await tab.ClickAsync();
+        await OpenOutputPanelAsync();
         var panel = Page.Locator("[data-testid='output-content']");
-        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
 
         int knownSteps = 0;
         for (var i = 0; i < 20; i++)
@@ -156,17 +149,17 @@ public sealed class ExecutionSteps
     [Then("the run should complete with status {string}")]
     public async Task ThenTheRunShouldCompleteWithStatus(string expectedStatus)
     {
-        // Wait for run to complete (up to 30 seconds)
-        var panel = Page.Locator("[data-testid='output-content']");
-        for (var i = 0; i < 30; i++)
+        await OpenOutputPanelAsync();
+        var statusBadge = Page.Locator("[data-testid='run-status-badge']");
+        for (var i = 0; i < 120; i++)
         {
-            var text = await panel.TextContentAsync() ?? "";
+            var text = await statusBadge.TextContentAsync() ?? "";
             if (text.Contains(expectedStatus, StringComparison.OrdinalIgnoreCase))
                 return;
             await Page.WaitForTimeoutAsync(1000);
         }
-        // Final check
-        var finalText = await panel.TextContentAsync() ?? "";
+
+        var finalText = await statusBadge.TextContentAsync() ?? "";
         finalText.Should().Contain(expectedStatus,
             $"Run should complete with status '{expectedStatus}'");
     }
@@ -174,6 +167,7 @@ public sealed class ExecutionSteps
     [Then("I should see step {string} complete")]
     public async Task ThenIShouldSeeStepComplete(string stepName)
     {
+        await OpenOutputPanelAsync();
         var panel = Page.Locator("[data-testid='output-content']");
         // Wait for step completion in output (up to 30 seconds)
         for (var i = 0; i < 30; i++)
@@ -317,6 +311,7 @@ public sealed class ExecutionSteps
     [Then("I should see a step failure in the output panel")]
     public async Task ThenIShouldSeeAStepFailureInTheOutputPanel()
     {
+        await OpenOutputPanelAsync();
         var panel = Page.Locator("[data-testid='output-content']");
         // Wait for failure output
         for (var i = 0; i < 15; i++)
@@ -336,11 +331,11 @@ public sealed class ExecutionSteps
     [Then("the run completes")]
     public async Task WhenTheRunCompletes()
     {
-        // Wait for run to finish
-        var panel = Page.Locator("[data-testid='output-content']");
-        for (var i = 0; i < 30; i++)
+        await OpenOutputPanelAsync();
+        var statusBadge = Page.Locator("[data-testid='run-status-badge']");
+        for (var i = 0; i < 120; i++)
         {
-            var text = await panel.TextContentAsync() ?? "";
+            var text = await statusBadge.TextContentAsync() ?? "";
             if (text.Contains("Completed", StringComparison.OrdinalIgnoreCase) ||
                 text.Contains("Failed", StringComparison.OrdinalIgnoreCase))
                 return;
@@ -357,6 +352,45 @@ public sealed class ExecutionSteps
         var runs = await response.Content.ReadFromJsonAsync<List<Dictionary<string, object>>>();
         runs.Should().NotBeNull();
         runs!.Count.Should().BeGreaterThan(0, "Should have at least one run in history");
+    }
+
+    [Then("the latest run for the current workflow should include an AI response from step {string}")]
+    public async Task ThenTheLatestRunForTheCurrentWorkflowShouldIncludeAnAiResponseFromStep(string stepName)
+    {
+        var workflowName = _context.Get<string>("WorkflowName");
+
+        using var client = AspireHooks.Fixture.CreateApiClient();
+        RunDetail? detail = null;
+
+        for (var i = 0; i < 10; i++)
+        {
+            var runs = await client.GetFromJsonAsync<List<RunListItem>>("/api/runs?limit=20");
+            runs.Should().NotBeNull();
+
+            var run = runs!
+                .FirstOrDefault(item => string.Equals(item.WorkflowName, workflowName, StringComparison.OrdinalIgnoreCase));
+
+            if (run is not null)
+            {
+                detail = await client.GetFromJsonAsync<RunDetail>($"/api/runs/{run.RunId}");
+                if (detail is not null &&
+                    string.Equals(detail.Status, "Completed", StringComparison.OrdinalIgnoreCase) &&
+                    detail.StepResults is not null &&
+                    detail.StepResults.TryGetValue($"{stepName}.Response", out var response) &&
+                    !string.IsNullOrWhiteSpace(response))
+                {
+                    return;
+                }
+            }
+
+            await Task.Delay(500);
+        }
+
+        detail.Should().NotBeNull($"a completed run for workflow '{workflowName}' should be available");
+        detail!.Status.Should().Be("Completed");
+        detail.StepResults.Should().NotBeNull();
+        detail.StepResults!.Should().ContainKey($"{stepName}.Response");
+        detail.StepResults[$"{stepName}.Response"].Should().NotBeNullOrWhiteSpace();
     }
 
     [Given("I have completed workflow runs")]
@@ -389,6 +423,20 @@ public sealed class ExecutionSteps
     public async Task ThenIShouldSeePastRunsWithStatusAndDuration()
     {
         // Execution panel on main page shows run output
+        await OpenOutputPanelAsync();
+        var panel = Page.Locator("[data-testid='output-content']");
+        await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+    }
+
+    private sealed record RunListItem(string RunId, string WorkflowName, string Status);
+
+    private sealed record RunDetail(string RunId, string WorkflowName, string Status, Dictionary<string, string>? StepResults);
+
+    private async Task OpenOutputPanelAsync()
+    {
+        var tab = Page.Locator("[data-testid='tab-output']");
+        await tab.ClickAsync();
+
         var panel = Page.Locator("[data-testid='output-content']");
         await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }

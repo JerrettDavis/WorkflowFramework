@@ -118,7 +118,34 @@ public static class SampleWorkflowSeeder
                 }
             },
 
-            // e) Quick Transcript
+            // e) Local Ollama Smoke Test
+            new SavedWorkflowDefinition
+            {
+                Id = "sample-local-ollama-smoke",
+                Description = "Deterministic local-model smoke test that exercises dashboard execution with the configured Ollama provider and model.",
+                Tags = ["sample", "ai", "ollama", "local-first", "smoke"],
+                LastModified = now,
+                Definition = new WorkflowDefinitionDto
+                {
+                    Name = "Local Ollama Smoke Test",
+                    Version = 1,
+                    Steps =
+                    [
+                        Step("PrepareContext", "Action", Cfg("expression", "Confirm the local dashboard workflow is healthy")),
+                        Step("GenerateLocalReply", "LlmCallStep", new Dictionary<string, string>
+                        {
+                            ["provider"] = "ollama",
+                            ["model"] = "qwen3:30b-instruct",
+                            ["prompt"] = "You are validating a local WorkflowFramework dashboard smoke test. Context: {{PrepareContext.Expression}}. Reply with one short sentence confirming the local pipeline is working.",
+                            ["temperature"] = "0.1",
+                            ["maxTokens"] = "48"
+                        }),
+                        Step("PersistResult", "Action", Cfg("expression", "Persist {{GenerateLocalReply.Response}}"))
+                    ]
+                }
+            },
+
+            // f) Quick Transcript
             new SavedWorkflowDefinition
             {
                 Id = "sample-quick-transcript",
@@ -148,7 +175,7 @@ public static class SampleWorkflowSeeder
                 }
             },
 
-            // f) Meeting Notes
+            // g) Meeting Notes
             new SavedWorkflowDefinition
             {
                 Id = "sample-meeting-notes",
@@ -185,7 +212,7 @@ public static class SampleWorkflowSeeder
                 }
             },
 
-            // g) Blog Interview
+            // h) Blog Interview
             new SavedWorkflowDefinition
             {
                 Id = "sample-blog-interview",
@@ -232,7 +259,7 @@ public static class SampleWorkflowSeeder
                 }
             },
 
-            // h) Brain Dump Synthesis
+            // i) Brain Dump Synthesis
             new SavedWorkflowDefinition
             {
                 Id = "sample-brain-dump",

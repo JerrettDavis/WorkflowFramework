@@ -22,13 +22,14 @@ public sealed class PropertiesPanelSteps
     private async Task CreateAndOpenWorkflow(string stepType, string stepName = "TestStep")
     {
         using var client = AspireHooks.Fixture.CreateApiClient();
+        var workflowName = $"{stepType} Test Workflow";
         var payload = new
         {
             description = $"Test workflow with {stepType}",
             tags = new[] { "test" },
             definition = new
             {
-                name = $"{stepType} Test Workflow",
+                name = workflowName,
                 steps = new[]
                 {
                     new { id = "step1", type = stepType, name = stepName, config = new Dictionary<string, object>() }
@@ -40,6 +41,7 @@ public sealed class PropertiesPanelSteps
         var result = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>();
         var id = result!["id"].ToString()!;
         _context.Set(id, "WorkflowId");
+        _context.Set(workflowName, "WorkflowName");
 
         // Open via dialog
         await Page.WaitForSelectorAsync("[data-testid='btn-open']",
@@ -47,7 +49,6 @@ public sealed class PropertiesPanelSteps
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { Timeout = 15_000 });
-        var workflowName = $"{stepType} Test Workflow";
         var item = Page.Locator("[data-testid='workflow-list-item']",
             new PageLocatorOptions { HasText = workflowName }).First;
         try
@@ -105,6 +106,27 @@ public sealed class PropertiesPanelSteps
             await node.ClickAsync();
             await Page.WaitForTimeoutAsync(500);
         }
+    }
+
+    private ILocator GetPropertiesFieldInput(string label)
+        => Page.Locator("[data-testid='properties-panel'] label", new PageLocatorOptions { HasText = label })
+            .Locator("xpath=following-sibling::*[1]");
+
+    private async Task OpenWorkflowByName(string workflowName)
+    {
+        await Page.WaitForSelectorAsync("[data-testid='btn-open']",
+            new PageWaitForSelectorOptions { Timeout = 10_000 });
+        await Page.Locator("[data-testid='btn-open']").ClickAsync();
+        await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
+            new PageWaitForSelectorOptions { Timeout = 15_000 });
+
+        var item = Page.Locator("[data-testid='workflow-list-item']",
+            new PageLocatorOptions { HasText = workflowName }).First;
+        await item.WaitForAsync(new LocatorWaitForOptions { Timeout = 15_000 });
+        await item.ScrollIntoViewIfNeededAsync();
+        await item.ClickAsync();
+        await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
+            new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 10_000 });
     }
 
     [Given("I have a workflow with an Action step")]
@@ -347,6 +369,89 @@ public sealed class PropertiesPanelSteps
 
         var nodeTexts = await nodes.AllTextContentsAsync();
         nodeTexts.Should().Contain(text => text.Contains(expectedName, StringComparison.Ordinal), "canvas node label should update reactively");
+    }
+
+    [Then("the action node quick editor should be visible")]
+    public async Task ThenTheActionNodeQuickEditorShouldBeVisible()
+    {
+        var editor = Page.Locator("[data-testid='node-action-inline-editor']");
+        await editor.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        (await editor.IsVisibleAsync()).Should().BeTrue();
+    }
+
+    [When("I update the inline action step name to {string}")]
+    public async Task WhenIUpdateTheInlineActionStepNameTo(string stepName)
+    {
+        var input = Page.Locator("[data-testid='node-inline-name']");
+        await input.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        await input.FillAsync(stepName);
+        await input.PressAsync("Tab");
+        await Page.WaitForFunctionAsync(
+            @"([selector, expected]) => {
+                const element = document.querySelector(selector);
+                return element && element.value === expected;
+            }",
+            new[] { "[data-testid='properties-step-name']", stepName });
+    }
+
+    [When("I update the inline action expression to {string}")]
+    public async Task WhenIUpdateTheInlineActionExpressionTo(string expression)
+    {
+        var input = Page.Locator("[data-testid='node-inline-expression']");
+        await input.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        await input.FillAsync(expression);
+        await input.PressAsync("Tab");
+        await Page.WaitForFunctionAsync(
+            @"([selector, expected]) => {
+                const element = document.querySelector(selector);
+                return element && element.value === expected;
+            }",
+            new[] { "[data-testid='node-inline-expression']", expression });
+    }
+
+    [When("I save and reopen the current workflow")]
+    public async Task WhenISaveAndReopenTheCurrentWorkflow()
+    {
+        var saveButton = Page.Locator("[data-testid='btn-save']");
+        await saveButton.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        await saveButton.ClickAsync();
+
+        var workflowName = _context.Get<string>("WorkflowName");
+        await OpenWorkflowByName(workflowName);
+        await SelectFirstNode();
+    }
+
+    [Then("the properties panel step name should be {string}")]
+    public async Task ThenThePropertiesPanelStepNameShouldBe(string expectedName)
+    {
+        var input = Page.Locator("[data-testid='properties-step-name']");
+        await input.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        (await input.InputValueAsync()).Should().Be(expectedName);
+    }
+
+    [Then("the properties panel expression should be {string}")]
+    public async Task ThenThePropertiesPanelExpressionShouldBe(string expectedExpression)
+    {
+        var input = GetPropertiesFieldInput("Expression");
+        await input.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+
+        var tagName = await input.EvaluateAsync<string>("el => el.tagName.toLowerCase()");
+        var actualValue = tagName switch
+        {
+            "textarea" => await input.InputValueAsync(),
+            "input" => await input.InputValueAsync(),
+            _ => await input.TextContentAsync() ?? string.Empty
+        };
+
+        actualValue.Should().Be(expectedExpression);
+    }
+
+    [Then("the action node summary should contain {string}")]
+    public async Task ThenTheActionNodeSummaryShouldContain(string expectedText)
+    {
+        var summary = Page.Locator("[data-testid='node-action-summary']").First;
+        await summary.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        (await summary.TextContentAsync()).Should().Contain(expectedText);
     }
 
     [When("I type {string} in the notes field")]

@@ -107,129 +107,282 @@ namespace WorkflowFramework.Dashboard.UITests.Features
         
         private static global::Io.Cucumber.Messages.Types.Source SourceFunc()
         {
-            return new global::Io.Cucumber.Messages.Types.Source("Features/Settings.feature", @"@UI
-Feature: Settings Management
-  As a user I can configure AI providers and execution settings
-
-  Scenario: Navigate to settings page
-    Given the dashboard is running
-    When I click the Settings nav link
-    Then I should see the settings page
-    And I should see the AI Providers section
-    And I should see the Execution section
-
-  Scenario: Configure Ollama provider
-    Given the dashboard is running
-    And I am on the settings page
-    When I set the Ollama URL to ""http://localhost:11434""
-    And I click Save Settings
-    Then I should see a success toast
-
-  Scenario: Select default provider and model
-    Given the dashboard is running
-    And I am on the settings page
-    When I select ""ollama"" as the default provider
-    Then the model dropdown should be populated
-    When I select a model
-    And I click Save Settings
-    Then the settings should persist
-
-  Scenario: Test Ollama connection
-    Given the dashboard is running
-    And I am on the settings page
-    When I click Test Connection
-    Then I should see a connection test result
-", global::Io.Cucumber.Messages.Types.SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN);
+            return new global::Io.Cucumber.Messages.Types.Source("Features/Settings.feature", "@UI\r\nFeature: Settings Management\r\n  As a user I can configure AI providers and e" +
+                    "xecution settings\r\n\r\n  Scenario: Navigate to settings page\r\n    Given the dashbo" +
+                    "ard is running\r\n    When I click the Settings nav link\r\n    Then I should see th" +
+                    "e settings page\r\n    And I should see the AI Providers section\r\n    And I should" +
+                    " see the Execution section\r\n\r\n  Scenario: Configure Ollama provider\r\n    Given t" +
+                    "he dashboard is running\r\n    And I am on the settings page\r\n    When I set the O" +
+                    "llama URL to \"http://localhost:11434\"\r\n    And I click Save Settings\r\n    Then I" +
+                    " should see a success toast\r\n\r\n  Scenario: Select default provider and model\r\n  " +
+                    "  Given the dashboard is running\r\n    And I am on the settings page\r\n    When I " +
+                    "select \"ollama\" as the default provider\r\n    Then the model dropdown should be p" +
+                    "opulated\r\n    When I select a model\r\n    And I click Save Settings\r\n    Then the" +
+                    " settings should persist\r\n\r\n  Scenario: Test Ollama connection\r\n    Given the da" +
+                    "shboard is running\r\n    And I am on the settings page\r\n    When I click Test Con" +
+                    "nection\r\n    Then I should see a connection test result\r\n\r\n  Scenario Outline: C" +
+                    "loud providers can be configured without stored credentials\r\n    Given the dashb" +
+                    "oard is running\r\n    And I am on the settings page\r\n    When I select \"<provider" +
+                    ">\" as the default provider\r\n    Then the model dropdown should be populated\r\n   " +
+                    " When I select a model\r\n    And I click Save Settings\r\n    Then I should see a s" +
+                    "uccess toast\r\n    When I reload the settings page\r\n    Then \"<provider>\" should " +
+                    "be selected as the default provider\r\n    And the \"<provider>\" provider should sh" +
+                    "ow as not configured\r\n    And the \"<provider>\" API key field should be empty\r\n\r\n" +
+                    "    Examples:\r\n      | provider    |\r\n      | openai      |\r\n      | anthropic  " +
+                    " |\r\n      | huggingface |\r\n\r\n  @sensitive\r\n  Scenario: Saved provider keys are n" +
+                    "ot echoed back to the browser\r\n    Given the dashboard is running\r\n    And I am " +
+                    "on the settings page\r\n    When I enter \"test-openai-key\" as the OpenAI API key\r\n" +
+                    "    And I click Save Settings\r\n    And I reload the settings page\r\n    Then the " +
+                    "OpenAI provider should show as configured\r\n    And the OpenAI API key field shou" +
+                    "ld be empty\r\n", global::Io.Cucumber.Messages.Types.SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN);
         }
         
         private static global::Io.Cucumber.Messages.Types.GherkinDocument GherkinDocumentFunc()
         {
             return new global::Io.Cucumber.Messages.Types.GherkinDocument("Features/Settings.feature", new global::Io.Cucumber.Messages.Types.Feature(new global::Io.Cucumber.Messages.Types.Location(2, new System.Nullable<long>(1)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "73d4c27fe5c4015696924b712d3579a5")}), "en", "Feature", "Settings Management", "  As a user I can configure AI providers and execution settings", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.FeatureChild>(new global::Io.Cucumber.Messages.Types.FeatureChild[] {
+                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "3ec55fbb8d6e3e579c7fc094e584dbc2")}), "en", "Feature", "Settings Management", "  As a user I can configure AI providers and execution settings", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.FeatureChild>(new global::Io.Cucumber.Messages.Types.FeatureChild[] {
                                 new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(5, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Navigate to settings page", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(6, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "d41dabda5fbd925db9a92b6e64866e9f"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I click the Settings nav link", null, null, "fdfd9f0ce1931651ba95e25d1f286966"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see the settings page", null, null, "98c0fb411257f257ac164ee9d5866d85"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see the AI Providers section", null, null, "bcc7eb6649374755a52efd9e5daaf0dd"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see the Execution section", null, null, "1ec72505412af25eb9b29f5d479b270c")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "93c64c01e0d9b8508486e2f82484fc68")),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(6, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "b74c4c232b7a1d53903c45a232e6bb1d"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I click the Settings nav link", null, null, "2ebd76fbbc7ef35ca144deb6cc86d1a1"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see the settings page", null, null, "cea550915bb8fa559ec9c6a3d1321b66"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see the AI Providers section", null, null, "32be8956d7e94a598bb773129eba4adc"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see the Execution section", null, null, "8f73f4872d17935e9718b4232597edc7")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "413483d0e2d98e5cb8b7fd7fc34450e8")),
                                 new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(12, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Configure Ollama provider", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(13, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "7abf8d1530682152a69aace51d9bb188"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(14, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I am on the settings page", null, null, "d4f3a29b69ba7b5fa7e05693e57ffe5a"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I set the Ollama URL to \"http://localhost:11434\"", null, null, "0b1531db25b49c5eacc5dd44dd556716"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(16, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click Save Settings", null, null, "e76d584b038d1e5a95322423c0b4572f"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(17, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see a success toast", null, null, "88b40e6ff9044a50a4edf6912c658182")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "6f76dfd0ecf65156b0718bc75029c0c8")),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(13, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "2465e7ebe8174c52a35803fa20175460"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(14, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I am on the settings page", null, null, "02bfc243c58e6059a2eff11381047475"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I set the Ollama URL to \"http://localhost:11434\"", null, null, "130e31bdf575d151910d9fdb117c3ff4"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(16, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click Save Settings", null, null, "cf64b91fb2eeac5facc5ec966e890162"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(17, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see a success toast", null, null, "a161dd5d059aae52846327d465cf9b62")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "1beed4dbf7f06d5c9add99bf7401c783")),
                                 new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(19, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Select default provider and model", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(20, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "c2797eefaeb9db5d94afd5ed9d2cabd2"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(21, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I am on the settings page", null, null, "924e3ba6b69ed7559154b94707eb895c"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(22, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I select \"ollama\" as the default provider", null, null, "d766395813819759834577cee6b9322d"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(23, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the model dropdown should be populated", null, null, "170b7200d6a5b25e9b7316e938ce50ed"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(24, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I select a model", null, null, "8d77fef630b0d75e8263e566d4cb0f28"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(25, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click Save Settings", null, null, "4c909ac7e745e258add345b1e131f12f"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(26, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the settings should persist", null, null, "d935604359f00f5c8b0e16c5490325a8")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "e3e41cfaa7f7945c849b5247200e6016")),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(20, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "4e6558196d0dee548595fd55801d9085"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(21, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I am on the settings page", null, null, "61d09f1c724ab15db810dad2e7de23d5"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(22, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I select \"ollama\" as the default provider", null, null, "03edba6a7010f955a32855a56c1785ad"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(23, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the model dropdown should be populated", null, null, "096ebec0265c4f5b8efcca8cff82608f"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(24, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I select a model", null, null, "32ea1bc5fc0dce5695f9c93dcc07e28a"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(25, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click Save Settings", null, null, "f9ac7ca59e0efa5ab9bb8575968f038d"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(26, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the settings should persist", null, null, "0d1055db8c22e95ab1d236e71c7b0a58")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "dcd1e9b9d0411f5ca1214589a70b4c21")),
                                 new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(28, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Test Ollama connection", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(29, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "25e1f9932d73a25396fd9afe5c84bf3d"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(30, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I am on the settings page", null, null, "9e978d375ef000519e363d7d73457fdd"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(31, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I click Test Connection", null, null, "6ead0d63412f655d85349b374e463796"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(32, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see a connection test result", null, null, "8a3f95138a7c3758bb3de017bb66001c")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "276320f95c8c8f52b43ec8a73e363b70"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(29, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "7822276873a18d5ea226dfcde01701d2"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(30, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I am on the settings page", null, null, "983c6d5174f2e858bc7894f0281c74f6"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(31, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I click Test Connection", null, null, "a36a5bf97c5c045c8619be0b6ca4631e"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(32, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see a connection test result", null, null, "758fad55be644855b48fc987d7fff21d")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "14524b26320cb75d9413302fec2f593a")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(34, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario Outline", "Cloud providers can be configured without stored credentials", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(35, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "46c69d9d4a6cd95ab1233f9906741bbf"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(36, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I am on the settings page", null, null, "f28d247220d3d75792c1e857110e1009"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(37, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I select \"<provider>\" as the default provider", null, null, "3becd9defc6fe15398f14bf9d75e46ac"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(38, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the model dropdown should be populated", null, null, "f431b767e44c1359876467a46b42df89"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(39, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I select a model", null, null, "30dc41f75e13a259a1cfb7c3326fba0f"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(40, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click Save Settings", null, null, "2e5fe4df1efbce54a7285a33dcb2b417"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(41, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see a success toast", null, null, "916f7ba42410eb55aeb78249a4e7141a"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(42, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I reload the settings page", null, null, "2c0db704b0abd35596ad1316e1ebe0ea"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(43, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "\"<provider>\" should be selected as the default provider", null, null, "e98ae53abc3f5f53901c5b2b632e2712"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(44, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the \"<provider>\" provider should show as not configured", null, null, "e64bcfbff2bdea5791f9ca85ee930677"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(45, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the \"<provider>\" API key field should be empty", null, null, "eaa9bc68e7c2d3569c2dc43b5ffae9d3")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[] {
+                                                    new global::Io.Cucumber.Messages.Types.Examples(new global::Io.Cucumber.Messages.Types.Location(47, new System.Nullable<long>(5)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Examples", "", "", new global::Io.Cucumber.Messages.Types.TableRow(new global::Io.Cucumber.Messages.Types.Location(48, new System.Nullable<long>(7)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.TableCell>(new global::Io.Cucumber.Messages.Types.TableCell[] {
+                                                                        new global::Io.Cucumber.Messages.Types.TableCell(new global::Io.Cucumber.Messages.Types.Location(48, new System.Nullable<long>(9)), "provider")}), "4af40b81ebd1dd5bb4e9b3b28e11d061"), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.TableRow>(new global::Io.Cucumber.Messages.Types.TableRow[] {
+                                                                    new global::Io.Cucumber.Messages.Types.TableRow(new global::Io.Cucumber.Messages.Types.Location(49, new System.Nullable<long>(7)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.TableCell>(new global::Io.Cucumber.Messages.Types.TableCell[] {
+                                                                                    new global::Io.Cucumber.Messages.Types.TableCell(new global::Io.Cucumber.Messages.Types.Location(49, new System.Nullable<long>(9)), "openai")}), "69b8a1b29d20d950830716da4e623889"),
+                                                                    new global::Io.Cucumber.Messages.Types.TableRow(new global::Io.Cucumber.Messages.Types.Location(50, new System.Nullable<long>(7)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.TableCell>(new global::Io.Cucumber.Messages.Types.TableCell[] {
+                                                                                    new global::Io.Cucumber.Messages.Types.TableCell(new global::Io.Cucumber.Messages.Types.Location(50, new System.Nullable<long>(9)), "anthropic")}), "b9d2e35c87d9515a80faed2da2bcc3a4"),
+                                                                    new global::Io.Cucumber.Messages.Types.TableRow(new global::Io.Cucumber.Messages.Types.Location(51, new System.Nullable<long>(7)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.TableCell>(new global::Io.Cucumber.Messages.Types.TableCell[] {
+                                                                                    new global::Io.Cucumber.Messages.Types.TableCell(new global::Io.Cucumber.Messages.Types.Location(51, new System.Nullable<long>(9)), "huggingface")}), "7e8d584d3c31d35688353a4d94984b88")}), "7d80958ee1c75f52afe3f637cab6b16f")}), "c37defe9045504518ae1187dc13102e8")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(54, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
+                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(53, new System.Nullable<long>(3)), "@sensitive", "a785d55c9b7c09579c07baaaca57a95c")}), "Scenario", "Saved provider keys are not echoed back to the browser", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(55, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "ea5e6caddb71cf519249f7154e9946b9"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(56, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I am on the settings page", null, null, "f8175a066c26cc5bab3ad05ffd8f8837"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(57, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I enter \"test-openai-key\" as the OpenAI API key", null, null, "cc12ac1dd9575d5eb0cdfc91210c2f7b"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(58, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click Save Settings", null, null, "235e4643a5d3b75fb1a1e6f43f80d3e5"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(59, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I reload the settings page", null, null, "213429c60b5e6c58a5abda4821762f39"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(60, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the OpenAI provider should show as configured", null, null, "a674ffc572b42d59baeab89ff98cfe2c"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(61, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the OpenAI API key field should be empty", null, null, "8905e1060aed4c51a5dcd53f6b2d8d12")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "0b1b12a491d4b25e8d1dde76e534f480"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
         }
         
         private static global::System.Collections.Generic.IEnumerable<Io.Cucumber.Messages.Types.Pickle> PicklesFunc()
         {
             return new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Pickle>(new global::Io.Cucumber.Messages.Types.Pickle[] {
-                        new global::Io.Cucumber.Messages.Types.Pickle("de69323c069432569c53f3cf890044bd", "Features/Settings.feature", "Navigate to settings page", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                        new global::Io.Cucumber.Messages.Types.Pickle("f548a187d9dffc5b8699203723fe1b46", "Features/Settings.feature", "Navigate to settings page", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "d41dabda5fbd925db9a92b6e64866e9f"}), "385873cc66ce99589c406dc1b018c255", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "b74c4c232b7a1d53903c45a232e6bb1d"}), "dc0f1494a40f4057a494572c3f72f4f5", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "fdfd9f0ce1931651ba95e25d1f286966"}), "63862a70dc8da75f980fe2968b8accd9", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click the Settings nav link"),
+                                                        "2ebd76fbbc7ef35ca144deb6cc86d1a1"}), "c3ecd5b02e66d45098b70e1bd080cc93", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click the Settings nav link"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "98c0fb411257f257ac164ee9d5866d85"}), "1390a13d5634db51857ab4e3d6a3b12f", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the settings page"),
+                                                        "cea550915bb8fa559ec9c6a3d1321b66"}), "7dc9d26a2de68d5fa69ad93944303ce2", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the settings page"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "bcc7eb6649374755a52efd9e5daaf0dd"}), "b6a9dd0970b3f251868e4b68055d1725", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the AI Providers section"),
+                                                        "32be8956d7e94a598bb773129eba4adc"}), "daecd941da7f0b5d9d43a48cd9dd2231", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the AI Providers section"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "1ec72505412af25eb9b29f5d479b270c"}), "217926313ff31454bd422201428003be", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the Execution section")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "73d4c27fe5c4015696924b712d3579a5")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "93c64c01e0d9b8508486e2f82484fc68"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("c3753802738f6c5c9cdbb162733d475f", "Features/Settings.feature", "Configure Ollama provider", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "8f73f4872d17935e9718b4232597edc7"}), "8c98dc0543de77508579944458dbd4e2", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the Execution section")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "3ec55fbb8d6e3e579c7fc094e584dbc2")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "413483d0e2d98e5cb8b7fd7fc34450e8"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("164bda7bc7c75c5d8ad9a62baf9009ad", "Features/Settings.feature", "Configure Ollama provider", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "7abf8d1530682152a69aace51d9bb188"}), "22c931c708a1f85faabcb25cb2216d99", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "2465e7ebe8174c52a35803fa20175460"}), "07295988db190252a43c54147aa137f4", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "d4f3a29b69ba7b5fa7e05693e57ffe5a"}), "efa50da7ec23895a8ea686741acd34fd", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
+                                                        "02bfc243c58e6059a2eff11381047475"}), "bb5b1b4a43f483599071ba7d617d69a4", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "0b1531db25b49c5eacc5dd44dd556716"}), "ad2f00286d7fe2598a4b3a04dee7d324", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I set the Ollama URL to \"http://localhost:11434\""),
+                                                        "130e31bdf575d151910d9fdb117c3ff4"}), "b3c543463bb2f653a17e2c3b3467d398", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I set the Ollama URL to \"http://localhost:11434\""),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "e76d584b038d1e5a95322423c0b4572f"}), "893bb7f408db175883d93110d15f4c6f", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Save Settings"),
+                                                        "cf64b91fb2eeac5facc5ec966e890162"}), "fec1e48775a60c57a85066e89e0bcd96", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Save Settings"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "88b40e6ff9044a50a4edf6912c658182"}), "6031fe21f043f25e8818613ae0420594", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see a success toast")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "73d4c27fe5c4015696924b712d3579a5")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "6f76dfd0ecf65156b0718bc75029c0c8"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("d34da05f62efa856b0b6fd42a254004c", "Features/Settings.feature", "Select default provider and model", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "a161dd5d059aae52846327d465cf9b62"}), "efab5d6720337b5e858cfa427e55c833", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see a success toast")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "3ec55fbb8d6e3e579c7fc094e584dbc2")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "1beed4dbf7f06d5c9add99bf7401c783"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("c7dcb08cfd093f53960804814085a8ba", "Features/Settings.feature", "Select default provider and model", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "c2797eefaeb9db5d94afd5ed9d2cabd2"}), "7607e32a3ad0af588ee06985bf41a3f4", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "4e6558196d0dee548595fd55801d9085"}), "a5d384d90ecec85f86f89580b4fde332", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "924e3ba6b69ed7559154b94707eb895c"}), "f59c64e0b92d0a59b2d96f6bcd6874b7", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
+                                                        "61d09f1c724ab15db810dad2e7de23d5"}), "3c1b28f206520c58ababcdd791b50279", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "d766395813819759834577cee6b9322d"}), "f5f31e14c7f65b5bb19f0b2ac138f948", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select \"ollama\" as the default provider"),
+                                                        "03edba6a7010f955a32855a56c1785ad"}), "17e04f5e0be6455e8f89de422b4a5fc4", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select \"ollama\" as the default provider"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "170b7200d6a5b25e9b7316e938ce50ed"}), "3470ef30a40d995d95e9459f4c6ec798", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the model dropdown should be populated"),
+                                                        "096ebec0265c4f5b8efcca8cff82608f"}), "ac199e57f149395ea3f2ff624174c1a2", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the model dropdown should be populated"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "8d77fef630b0d75e8263e566d4cb0f28"}), "73913b105802e855af21184aa0668b5a", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select a model"),
+                                                        "32ea1bc5fc0dce5695f9c93dcc07e28a"}), "463f46a58ca6df5fbfcb2b194c8d62b1", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select a model"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "4c909ac7e745e258add345b1e131f12f"}), "bb94de2f3544d4598f3ae5aed63ac588", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Save Settings"),
+                                                        "f9ac7ca59e0efa5ab9bb8575968f038d"}), "c69ec75f8c15625cac6305f57eafb757", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Save Settings"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "d935604359f00f5c8b0e16c5490325a8"}), "0d164b31efc6f55998c06f194388f5af", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the settings should persist")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "73d4c27fe5c4015696924b712d3579a5")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "e3e41cfaa7f7945c849b5247200e6016"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("96a001cfef844c5e8607cb22c75c95ae", "Features/Settings.feature", "Test Ollama connection", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "0d1055db8c22e95ab1d236e71c7b0a58"}), "00c178aebe5dfb549fd73cec8fe9ed31", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the settings should persist")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "3ec55fbb8d6e3e579c7fc094e584dbc2")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "dcd1e9b9d0411f5ca1214589a70b4c21"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("7c7da1a29c280358be162c083f27d932", "Features/Settings.feature", "Test Ollama connection", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "25e1f9932d73a25396fd9afe5c84bf3d"}), "eafad1913c8e6a53b007ccaf78cc0022", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "7822276873a18d5ea226dfcde01701d2"}), "9cdfb6fe10b0db59916488343337a32e", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "9e978d375ef000519e363d7d73457fdd"}), "2d4079cd5d31be55b682d797aef81837", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
+                                                        "983c6d5174f2e858bc7894f0281c74f6"}), "8e49f3bb6338565585c735b963504c12", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "6ead0d63412f655d85349b374e463796"}), "2e5adcdd0b588c5d82d1dba9769a1083", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Test Connection"),
+                                                        "a36a5bf97c5c045c8619be0b6ca4631e"}), "b3fb6d9069110551bd541ddc9b312353", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Test Connection"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "8a3f95138a7c3758bb3de017bb66001c"}), "faaeb8ae5a38d95ebb65a0eacec802ec", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see a connection test result")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "73d4c27fe5c4015696924b712d3579a5")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "276320f95c8c8f52b43ec8a73e363b70"}))});
+                                                        "758fad55be644855b48fc987d7fff21d"}), "7933ed57157f97508efa89843aa5f02a", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see a connection test result")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "3ec55fbb8d6e3e579c7fc094e584dbc2")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "14524b26320cb75d9413302fec2f593a"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("668a6c95dbeb40599f41d5710f3b45a3", "Features/Settings.feature", "Cloud providers can be configured without stored credentials", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "46c69d9d4a6cd95ab1233f9906741bbf",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "f7bd70a37af21550be4285cf68c956ce", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "f28d247220d3d75792c1e857110e1009",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "3fb6611a5f64655f8420acfa8bef9a47", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "3becd9defc6fe15398f14bf9d75e46ac",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "5c0b29a6a078e157a321bb1d94105169", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select \"openai\" as the default provider"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "f431b767e44c1359876467a46b42df89",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "9c7b79dba774c0539f10a0847ca194ef", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the model dropdown should be populated"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "30dc41f75e13a259a1cfb7c3326fba0f",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "44ecfba265cd9659a600da9b0068419a", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select a model"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "2e5fe4df1efbce54a7285a33dcb2b417",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "06d44a2e79ef3d5e9e6b569e270ddb31", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Save Settings"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "916f7ba42410eb55aeb78249a4e7141a",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "78129158164c2d54ad3425d8e2ef38b6", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see a success toast"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "2c0db704b0abd35596ad1316e1ebe0ea",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "cde71b53cb84d752b8937d7333e60f2a", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I reload the settings page"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "e98ae53abc3f5f53901c5b2b632e2712",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "59d10fafc7ba735dba9e6e2daadc636d", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "\"openai\" should be selected as the default provider"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "e64bcfbff2bdea5791f9ca85ee930677",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "8ae67f71206e915d95a60e8987ea5648", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the \"openai\" provider should show as not configured"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "eaa9bc68e7c2d3569c2dc43b5ffae9d3",
+                                                        "69b8a1b29d20d950830716da4e623889"}), "5082dd0f9bd03053927865acf48019b8", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the \"openai\" API key field should be empty")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "3ec55fbb8d6e3e579c7fc094e584dbc2")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "c37defe9045504518ae1187dc13102e8",
+                                        "69b8a1b29d20d950830716da4e623889"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("93b6137f0774d155ae413f09516f9e11", "Features/Settings.feature", "Cloud providers can be configured without stored credentials", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "46c69d9d4a6cd95ab1233f9906741bbf",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "0d24f04c510aed5488da0b55ddc15aed", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "f28d247220d3d75792c1e857110e1009",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "c74eb9621d0a5052b019ce1bc4ff741e", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "3becd9defc6fe15398f14bf9d75e46ac",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "db1bf95203e3a75e8dc5c01acc2578cb", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select \"anthropic\" as the default provider"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "f431b767e44c1359876467a46b42df89",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "745d906f871a1052bc42a36a5d3971d1", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the model dropdown should be populated"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "30dc41f75e13a259a1cfb7c3326fba0f",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "8c86b58c09c7e15f891a4ce11039dae1", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select a model"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "2e5fe4df1efbce54a7285a33dcb2b417",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "c2341a5f4e666e57b83308d3f53b20cb", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Save Settings"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "916f7ba42410eb55aeb78249a4e7141a",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "938983fc998dcf5ba0bcd81385751707", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see a success toast"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "2c0db704b0abd35596ad1316e1ebe0ea",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "1b54c4c4f7b35358b94e1cfd3fcb6ce2", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I reload the settings page"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "e98ae53abc3f5f53901c5b2b632e2712",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "804f93e28de4a7589672385bcb2fe8d8", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "\"anthropic\" should be selected as the default provider"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "e64bcfbff2bdea5791f9ca85ee930677",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "d39f4fffc8ec3e55aae664a4913330d1", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the \"anthropic\" provider should show as not configured"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "eaa9bc68e7c2d3569c2dc43b5ffae9d3",
+                                                        "b9d2e35c87d9515a80faed2da2bcc3a4"}), "9c06b622d727e455a78cc77570ccd196", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the \"anthropic\" API key field should be empty")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "3ec55fbb8d6e3e579c7fc094e584dbc2")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "c37defe9045504518ae1187dc13102e8",
+                                        "b9d2e35c87d9515a80faed2da2bcc3a4"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("a7f0916c0c989956a8e3a25396833ef7", "Features/Settings.feature", "Cloud providers can be configured without stored credentials", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "46c69d9d4a6cd95ab1233f9906741bbf",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "346f25c3d048e856ae8d2f002e328c9d", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "f28d247220d3d75792c1e857110e1009",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "b196d40b58806b5d936a9b2845e1c678", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "3becd9defc6fe15398f14bf9d75e46ac",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "3bc15515debdf459b8707f482a87649b", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select \"huggingface\" as the default provider"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "f431b767e44c1359876467a46b42df89",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "ea206fa86c7cd158b14783c0e7cebb0f", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the model dropdown should be populated"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "30dc41f75e13a259a1cfb7c3326fba0f",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "adf0960a23a8d15cb311d53972483594", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select a model"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "2e5fe4df1efbce54a7285a33dcb2b417",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "7abede722dfbe15c99b6b1f295d13680", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Save Settings"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "916f7ba42410eb55aeb78249a4e7141a",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "23e783c8dd44bf5bbe8a21a0c07fa6dc", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see a success toast"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "2c0db704b0abd35596ad1316e1ebe0ea",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "4699cbbf94c68c50b31c18cae70d4be6", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I reload the settings page"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "e98ae53abc3f5f53901c5b2b632e2712",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "e6b52c988fd9b7549ee1e6873617a66d", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "\"huggingface\" should be selected as the default provider"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "e64bcfbff2bdea5791f9ca85ee930677",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "3e01d4bc2abe4b5a9309e061f4ef124d", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the \"huggingface\" provider should show as not configured"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "eaa9bc68e7c2d3569c2dc43b5ffae9d3",
+                                                        "7e8d584d3c31d35688353a4d94984b88"}), "cead35a66791e15985b49c35b367479f", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the \"huggingface\" API key field should be empty")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "3ec55fbb8d6e3e579c7fc094e584dbc2")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "c37defe9045504518ae1187dc13102e8",
+                                        "7e8d584d3c31d35688353a4d94984b88"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("4e4a81c9977cdd5fa9f1fbd4cc1225e5", "Features/Settings.feature", "Saved provider keys are not echoed back to the browser", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "ea5e6caddb71cf519249f7154e9946b9"}), "08261be74d6155548fe8873ab614902c", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "f8175a066c26cc5bab3ad05ffd8f8837"}), "708c318d13d44158a2d8096fc0ba598e", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I am on the settings page"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "cc12ac1dd9575d5eb0cdfc91210c2f7b"}), "cae5d1eff1fa01598bbd9c8941bfe3cb", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I enter \"test-openai-key\" as the OpenAI API key"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "235e4643a5d3b75fb1a1e6f43f80d3e5"}), "661b17e18866415787fa66efc894ba21", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click Save Settings"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "213429c60b5e6c58a5abda4821762f39"}), "b43c99b4d5ff1058a345f26b0f3db06d", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I reload the settings page"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "a674ffc572b42d59baeab89ff98cfe2c"}), "e5c64cf508f9ce5a9e27e9660902607b", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the OpenAI provider should show as configured"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "8905e1060aed4c51a5dcd53f6b2d8d12"}), "b53ec3373a6dda5fbef9a8430368c46d", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the OpenAI API key field should be empty")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "3ec55fbb8d6e3e579c7fc094e584dbc2"),
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@sensitive", "a785d55c9b7c09579c07baaaca57a95c")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "0b1b12a491d4b25e8d1dde76e534f480"}))});
         }
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
@@ -420,6 +573,116 @@ Feature: Settings Management
 #line hidden
 #line 32
     await testRunner.ThenAsync("I should see a connection test result", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableTheoryAttribute(DisplayName="Cloud providers can be configured without stored credentials")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Settings Management")]
+        [global::Xunit.TraitAttribute("Description", "Cloud providers can be configured without stored credentials")]
+        [global::Xunit.InlineDataAttribute("openai", "4", new string[0])]
+        [global::Xunit.InlineDataAttribute("anthropic", "5", new string[0])]
+        [global::Xunit.InlineDataAttribute("huggingface", "6", new string[0])]
+        public async global::System.Threading.Tasks.Task CloudProvidersCanBeConfiguredWithoutStoredCredentials(string provider, string @__pickleIndex, string[] exampleTags)
+        {
+            string[] tagsOfScenario = exampleTags;
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            argumentsOfScenario.Add("provider", provider);
+            string pickleIndex = @__pickleIndex;
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Cloud providers can be configured without stored credentials", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 34
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 35
+    await testRunner.GivenAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 36
+    await testRunner.AndAsync("I am on the settings page", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 37
+    await testRunner.WhenAsync(string.Format("I select \"{0}\" as the default provider", provider), ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 38
+    await testRunner.ThenAsync("the model dropdown should be populated", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 39
+    await testRunner.WhenAsync("I select a model", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 40
+    await testRunner.AndAsync("I click Save Settings", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 41
+    await testRunner.ThenAsync("I should see a success toast", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 42
+    await testRunner.WhenAsync("I reload the settings page", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 43
+    await testRunner.ThenAsync(string.Format("\"{0}\" should be selected as the default provider", provider), ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 44
+    await testRunner.AndAsync(string.Format("the \"{0}\" provider should show as not configured", provider), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 45
+    await testRunner.AndAsync(string.Format("the \"{0}\" API key field should be empty", provider), ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="Saved provider keys are not echoed back to the browser")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Settings Management")]
+        [global::Xunit.TraitAttribute("Description", "Saved provider keys are not echoed back to the browser")]
+        [global::Xunit.TraitAttribute("Category", "sensitive")]
+        public async global::System.Threading.Tasks.Task SavedProviderKeysAreNotEchoedBackToTheBrowser()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "sensitive"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "7";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Saved provider keys are not echoed back to the browser", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 54
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 55
+    await testRunner.GivenAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 56
+    await testRunner.AndAsync("I am on the settings page", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 57
+    await testRunner.WhenAsync("I enter \"test-openai-key\" as the OpenAI API key", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 58
+    await testRunner.AndAsync("I click Save Settings", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 59
+    await testRunner.AndAsync("I reload the settings page", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 60
+    await testRunner.ThenAsync("the OpenAI provider should show as configured", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 61
+    await testRunner.AndAsync("the OpenAI API key field should be empty", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
             await this.ScenarioCleanupAsync();

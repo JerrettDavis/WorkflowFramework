@@ -48,8 +48,12 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">OpenAI API Key</label>
-                        <input type="password" @bind="_settings.OpenAiApiKey" placeholder="sk-..." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-sm text-gray-400">OpenAI API Key</label>
+                            <span class="@GetProviderStatusClass(_settings.OpenAiConfigured)" data-testid="settings-openai-status">@GetProviderStatusText(_settings.OpenAiConfigured)</span>
+                        </div>
+                        <input type="password" @bind="_openAiApiKey" data-testid="settings-openai-api-key" placeholder="@GetOpenAiPlaceholder()" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                        <p class="mt-1 text-xs text-gray-500">Saved keys are never returned to the browser. Enter a value only when you want to replace the stored key.</p>
                     </div>
 
                     <div>
@@ -58,18 +62,24 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Anthropic API Key</label>
-                        <input type="password" @bind="_settings.AnthropicApiKey" placeholder="sk-ant-..." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-sm text-gray-400">Anthropic API Key</label>
+                            <span class="@GetProviderStatusClass(_settings.AnthropicConfigured)" data-testid="settings-anthropic-status">@GetProviderStatusText(_settings.AnthropicConfigured)</span>
+                        </div>
+                        <input type="password" @bind="_anthropicApiKey" data-testid="settings-anthropic-api-key" placeholder="@GetAnthropicPlaceholder()" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
                     </div>
 
                     <div>
-                        <label class="block text-sm text-gray-400 mb-1">Hugging Face API Key</label>
-                        <input type="password" @bind="_settings.HuggingFaceApiKey" placeholder="hf_..." class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-sm text-gray-400">Hugging Face API Key</label>
+                            <span class="@GetProviderStatusClass(_settings.HuggingFaceConfigured)" data-testid="settings-huggingface-status">@GetProviderStatusText(_settings.HuggingFaceConfigured)</span>
+                        </div>
+                        <input type="password" @bind="_huggingFaceApiKey" data-testid="settings-huggingface-api-key" placeholder="@GetHuggingFacePlaceholder()" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
                     </div>
 
                     <div>
                         <label class="block text-sm text-gray-400 mb-1">Default Provider</label>
-                        <select @bind="_settings.DefaultProvider" @bind:after="OnProviderChanged" data-testid="settings-default-provider" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none">
+                        <select value="@_settings.DefaultProvider" @onchange="OnProviderChanged" data-testid="settings-default-provider" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none">
                             <option value="">— Select —</option>
                             <option value="ollama">Ollama</option>
                             <option value="openai">OpenAI</option>
@@ -80,7 +90,7 @@
 
                     <div>
                         <label class="block text-sm text-gray-400 mb-1">Default Model</label>
-                        <select @bind="_settings.DefaultModel" disabled="@(_loadingModels || _models.Count == 0)" data-testid="settings-default-model" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none disabled:opacity-50">
+                        <select value="@_settings.DefaultModel" @onchange="OnModelChanged" disabled="@(_loadingModels || _models.Count == 0)" data-testid="settings-default-model" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none disabled:opacity-50">
                             <option value="">@(_loadingModels ? "Loading models..." : "— Select provider first —")</option>
                             @foreach (var m in _models)
                             {
@@ -130,12 +140,16 @@
     private OllamaTestResult? _ollamaTestResult;
     private string? _toast;
     private bool _toastSuccess;
+    private string _openAiApiKey = "";
+    private string _anthropicApiKey = "";
+    private string _huggingFaceApiKey = "";
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             _settings = await Api.GetSettingsAsync();
+            ClearSecretInputs();
             if (!string.IsNullOrEmpty(_settings?.DefaultProvider))
                 await LoadModels(_settings.DefaultProvider);
         }
@@ -146,12 +160,27 @@
         finally { _loading = false; }
     }
 
-    private async Task OnProviderChanged()
+    private async Task OnProviderChanged(ChangeEventArgs args)
     {
-        if (!string.IsNullOrEmpty(_settings?.DefaultProvider))
+        if (_settings is null)
+            return;
+
+        _settings.DefaultProvider = args.Value?.ToString();
+        _settings.DefaultModel = null;
+        _models = [];
+        StateHasChanged();
+
+        if (!string.IsNullOrEmpty(_settings.DefaultProvider))
             await LoadModels(_settings.DefaultProvider);
-        else
-            _models = [];
+    }
+
+    private Task OnModelChanged(ChangeEventArgs args)
+    {
+        if (_settings is null)
+            return Task.CompletedTask;
+
+        _settings.DefaultModel = args.Value?.ToString();
+        return Task.CompletedTask;
     }
 
     private async Task LoadModels(string provider)
@@ -168,7 +197,8 @@
         _saving = true;
         try
         {
-            _settings = await Api.UpdateSettingsAsync(_settings);
+            _settings = await Api.UpdateSettingsAsync(CreateUpdateRequest());
+            ClearSecretInputs();
             ShowToast("Settings saved successfully!", true);
         }
         catch (Exception ex) { ShowToast($"Failed to save: {ex.Message}", false); }
@@ -181,13 +211,54 @@
         _ollamaTestResult = null;
         try
         {
-            // Save current URL first so server uses it
-            if (_settings is not null) await Api.UpdateSettingsAsync(_settings);
-            _ollamaTestResult = await Api.TestOllamaConnectionAsync();
+            _ollamaTestResult = await Api.TestOllamaConnectionAsync(_settings?.OllamaUrl);
         }
         catch (Exception ex) { _ollamaTestResult = new() { Success = false, Message = ex.Message }; }
         finally { _testingOllama = false; }
     }
+
+    private UpdateDashboardSettingsRequest CreateUpdateRequest()
+    {
+        if (_settings is null)
+            return new UpdateDashboardSettingsRequest();
+
+        return new UpdateDashboardSettingsRequest
+        {
+            OllamaUrl = _settings.OllamaUrl,
+            OpenAiApiKey = _openAiApiKey,
+            AnthropicApiKey = _anthropicApiKey,
+            HuggingFaceApiKey = _huggingFaceApiKey,
+            OpenAiBaseUrl = _settings.OpenAiBaseUrl,
+            DefaultProvider = _settings.DefaultProvider,
+            DefaultModel = _settings.DefaultModel,
+            DefaultTimeoutSeconds = _settings.DefaultTimeoutSeconds,
+            MaxConcurrentRuns = _settings.MaxConcurrentRuns
+        };
+    }
+
+    private void ClearSecretInputs()
+    {
+        _openAiApiKey = "";
+        _anthropicApiKey = "";
+        _huggingFaceApiKey = "";
+    }
+
+    private static string GetProviderStatusText(bool configured)
+        => configured ? "Saved" : "Not configured";
+
+    private static string GetProviderStatusClass(bool configured)
+        => configured
+            ? "text-xs font-medium text-green-400"
+            : "text-xs font-medium text-gray-500";
+
+    private static string GetProviderPlaceholder(bool configured, string defaultPlaceholder)
+        => configured ? "Stored securely - enter to replace" : defaultPlaceholder;
+
+    private string GetOpenAiPlaceholder() => GetProviderPlaceholder(_settings?.OpenAiConfigured == true, "sk-...");
+
+    private string GetAnthropicPlaceholder() => GetProviderPlaceholder(_settings?.AnthropicConfigured == true, "sk-ant-...");
+
+    private string GetHuggingFacePlaceholder() => GetProviderPlaceholder(_settings?.HuggingFaceConfigured == true, "hf_...");
 
     private async void ShowToast(string message, bool success)
     {

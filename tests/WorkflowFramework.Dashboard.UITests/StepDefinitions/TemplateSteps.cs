@@ -31,23 +31,34 @@ public sealed class TemplateSteps
     [Then("I should see template categories")]
     public async Task ThenIShouldSeeTemplateCategories()
     {
-        // Categories may or may not be loaded depending on API availability
+        await Page.WaitForFunctionAsync(
+            "() => document.querySelectorAll(\"[data-testid='template-category']\").length > 0",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
         var categories = Page.Locator("[data-testid='template-category']");
         var count = await categories.CountAsync();
-        count.Should().BeGreaterThanOrEqualTo(0, "Template categories should be present");
+        count.Should().BeGreaterThan(0, "Template categories should be present");
     }
 
     [Then("I should see templates with difficulty badges")]
     public async Task ThenIShouldSeeTemplatesWithDifficultyBadges()
     {
+        await Page.WaitForFunctionAsync(
+            "() => document.querySelectorAll(\"[data-testid='template-card']\").length > 0",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
         var templates = Page.Locator("[data-testid='template-card']");
         var count = await templates.CountAsync();
-        count.Should().BeGreaterThanOrEqualTo(0, "Templates should be present");
+        count.Should().BeGreaterThan(0, "Templates should be present");
     }
 
     [Then("I should see featured starter workflows")]
     public async Task ThenIShouldSeeFeaturedStarterWorkflows()
     {
+        await Page.WaitForFunctionAsync(
+            "() => document.querySelectorAll(\"[data-testid='template-featured-badge']\").length > 0",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
         var featured = Page.Locator("[data-testid='template-featured-badge']");
         var count = await featured.CountAsync();
         count.Should().BeGreaterThan(0, "At least one featured starter workflow should be highlighted");
@@ -56,6 +67,10 @@ public sealed class TemplateSteps
     [Then("I should see starter preview images")]
     public async Task ThenIShouldSeeStarterPreviewImages()
     {
+        await Page.WaitForFunctionAsync(
+            "() => document.querySelectorAll(\"[data-testid='template-preview-image']\").length > 0",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
         var previews = Page.Locator("[data-testid='template-preview-image']");
         var count = await previews.CountAsync();
         count.Should().BeGreaterThan(0, "Starter templates with preview metadata should render preview images");

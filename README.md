@@ -8,6 +8,26 @@
 
 A fluent, extensible workflow/pipeline engine for .NET with async-first design, middleware, branching, parallel execution, saga/compensation, and rich extensibility.
 
+## Dashboard authoring and validation
+
+WorkflowFramework includes a Flowise-style dashboard authoring surface with reusable templates, inline node editing, validation, execution history, and agentic workflow samples.
+
+![Local Ollama dashboard run](docs/images/dashboard/ollama-local-run.png)
+
+The dashboard now has a curated Reqnroll + Playwright artifact pipeline:
+
+- local Ollama smoke workflows can run end to end and emit promotable screenshots
+- config-only cloud-provider scenarios prove provider/model setup without storing or echoing credentials back to the browser
+- `eng\generate-dashboard-ui-report.ps1` turns scenario manifests into a LivingDoc-style HTML summary plus `allure-results\dashboard-summary.json`
+- `.github\workflows\dashboard-ui-artifacts.yml` provides a manual publication path for dashboard UI artifact bundles without slowing default CI
+
+To regenerate the current dashboard artifact bundle locally:
+
+```powershell
+dotnet test tests\WorkflowFramework.Dashboard.UITests\WorkflowFramework.Dashboard.UITests.csproj --no-restore --filter "DisplayName~Run local Ollama workflow end-to-end|DisplayName~Cloud providers can be configured without stored credentials|DisplayName~Saved provider keys are not echoed back to the browser|DisplayName~Sample workflows appear in workflow list"
+.\eng\generate-dashboard-ui-report.ps1
+```
+
 ## Features
 
 - **Fluent Builder API** — chain steps naturally with a clean DSL

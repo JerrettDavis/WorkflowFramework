@@ -414,23 +414,34 @@ public static class DashboardApiExtensions
     {
         var group = endpoints.MapGroup("/api/settings").WithTags("Settings");
 
-        group.MapGet("/", (IDashboardSettingsService svc) => Results.Ok(svc.Get()))
+        group.MapGet("/", (IDashboardSettingsService svc) => Results.Ok(DashboardSettingsHttpMapper.ToResponse(svc.Get())))
             .WithName("GetSettings");
 
-        group.MapPut("/", (DashboardSettings settings, IDashboardSettingsService svc) =>
+        group.MapPut("/", (UpdateDashboardSettingsRequest request, IDashboardSettingsService svc) =>
         {
-            svc.Update(settings);
-            return Results.Ok(svc.Get());
+            if (!DashboardSettingsHttpMapper.TryValidateUpdate(request, out var error))
+                return Results.BadRequest(error);
+
+            var merged = DashboardSettingsHttpMapper.ApplyUpdate(svc.Get(), request);
+            svc.Update(merged);
+            return Results.Ok(DashboardSettingsHttpMapper.ToResponse(svc.Get()));
         }).WithName("UpdateSettings");
 
-        group.MapPost("/test-ollama", async (IDashboardSettingsService svc, IHttpClientFactory factory) =>
+        group.MapPost("/test-ollama", async (TestOllamaConnectionRequest? request, IDashboardSettingsService svc, IHttpClientFactory factory) =>
         {
             var settings = svc.Get();
+            var candidateUrl = string.IsNullOrWhiteSpace(request?.OllamaUrl)
+                ? settings.OllamaUrl
+                : request!.OllamaUrl;
+
+            if (!DashboardSettingsHttpMapper.TryCreateValidatedOllamaUri(candidateUrl, out var ollamaUri, out var validationError))
+                return Results.Ok(new { success = false, message = validationError });
+
             try
             {
                 var client = factory.CreateClient("OllamaClient");
                 client.Timeout = TimeSpan.FromSeconds(5);
-                var resp = await client.GetAsync($"{settings.OllamaUrl.TrimEnd('/')}/api/tags");
+                var resp = await client.GetAsync(new Uri(ollamaUri!, "/api/tags"));
                 return resp.IsSuccessStatusCode
                     ? Results.Ok(new { success = true, message = "Connected to Ollama" })
                     : Results.Ok(new { success = false, message = $"Ollama returned {resp.StatusCode}" });
@@ -447,11 +458,14 @@ public static class DashboardApiExtensions
             switch (provider.ToLowerInvariant())
             {
                 case "ollama":
+                    if (!DashboardSettingsHttpMapper.TryCreateValidatedOllamaUri(settings.OllamaUrl, out var ollamaUri, out _))
+                        return Results.Ok(AiProviderCatalog.GetDefaultModels(provider));
+
                     try
                     {
                         var client = factory.CreateClient("OllamaClient");
                         client.Timeout = TimeSpan.FromSeconds(10);
-                        var resp = await client.GetAsync($"{settings.OllamaUrl.TrimEnd('/')}/api/tags");
+                        var resp = await client.GetAsync(new Uri(ollamaUri!, "/api/tags"));
                         if (resp.IsSuccessStatusCode)
                         {
                             var json = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
@@ -464,7 +478,7 @@ public static class DashboardApiExtensions
                                         models.Add(n.GetString() ?? "");
                                 }
                             }
-                            return Results.Ok(models);
+                            return Results.Ok(AiProviderCatalog.OrderModels(provider, models));
                         }
                     }
                     catch { }

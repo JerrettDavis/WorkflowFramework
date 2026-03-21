@@ -226,7 +226,7 @@ public sealed class DashboardApiClient(HttpClient http)
     public async Task<DashboardSettingsDto?> GetSettingsAsync(CancellationToken ct = default)
         => await http.GetFromJsonAsync<DashboardSettingsDto>("/api/settings", ct);
 
-    public async Task<DashboardSettingsDto?> UpdateSettingsAsync(DashboardSettingsDto settings, CancellationToken ct = default)
+    public async Task<DashboardSettingsDto?> UpdateSettingsAsync(UpdateDashboardSettingsRequest settings, CancellationToken ct = default)
     {
         var resp = await http.PutAsJsonAsync("/api/settings", settings, ct);
         resp.EnsureSuccessStatusCode();
@@ -236,9 +236,12 @@ public sealed class DashboardApiClient(HttpClient http)
     public async Task<List<string>> GetProviderModelsAsync(string provider, CancellationToken ct = default)
         => await http.GetFromJsonAsync<List<string>>($"/api/providers/{Uri.EscapeDataString(provider)}/models", ct) ?? [];
 
-    public async Task<OllamaTestResult?> TestOllamaConnectionAsync(CancellationToken ct = default)
+    public async Task<OllamaTestResult?> TestOllamaConnectionAsync(string? ollamaUrl = null, CancellationToken ct = default)
     {
-        var resp = await http.PostAsync("/api/settings/test-ollama", null, ct);
+        var resp = await http.PostAsJsonAsync("/api/settings/test-ollama", new TestOllamaConnectionRequest
+        {
+            OllamaUrl = ollamaUrl
+        }, ct);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<OllamaTestResult>(ct);
     }
