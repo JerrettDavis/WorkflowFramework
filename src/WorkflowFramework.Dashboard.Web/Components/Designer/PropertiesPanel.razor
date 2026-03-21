@@ -282,6 +282,17 @@
                                     }
                                 </div>
                             }
+
+                            @if (field.SupportsVariables && GetUnresolvedVariableTokens(field).Count > 0)
+                            {
+                                <div class="mt-2 rounded border border-red-500/30 bg-red-500/10 p-2 text-[10px] text-red-200" data-testid="properties-variable-warnings-@field.Name">
+                                    <p class="font-semibold uppercase tracking-wider text-red-300 mb-1">Unresolved variables</p>
+                                    @foreach (var token in GetUnresolvedVariableTokens(field))
+                                    {
+                                        <p>@token</p>
+                                    }
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -331,6 +342,9 @@
 </div>
 
 @code {
+    private static readonly System.Text.RegularExpressions.Regex DirectTokenPattern = new(@"\{\{\s*([^{}]+?)\s*\}\}", System.Text.RegularExpressions.RegexOptions.Compiled);
+    private static readonly System.Text.RegularExpressions.Regex LegacyTokenPattern = new(@"\{([A-Za-z0-9_]+)\}", System.Text.RegularExpressions.RegexOptions.Compiled);
+
     [Parameter] public string? SelectedNodeId { get; set; }
     [Parameter] public string? SelectedNodeType { get; set; }
     [Parameter] public Dictionary<string, object?> NodeConfig { get; set; } = new();
@@ -668,5 +682,53 @@
             : " ";
 
         await UpdateConfig(key, currentValue + separator + token);
+    }
+
+    private IReadOnlyList<string> GetUnresolvedVariableTokens(SchemaField field)
+    {
+        var currentValue = NodeConfig.GetValueOrDefault(field.Name)?.ToString();
+        return GetUnresolvedVariableTokens(currentValue, AvailableVariables);
+    }
+
+    private static IReadOnlyList<string> GetUnresolvedVariableTokens(string? value, IReadOnlyList<VariableReferenceInfo> availableVariables)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return [];
+
+        var availableTokenSet = new HashSet<string>(
+            availableVariables
+                .Where(variable => !string.IsNullOrWhiteSpace(variable.Token))
+                .Select(variable => NormalizeVariableToken(variable.Token)),
+            StringComparer.Ordinal);
+
+        var unresolved = new List<string>();
+        foreach (var token in GetReferencedVariableTokens(value))
+        {
+            if (!availableTokenSet.Contains(NormalizeVariableToken(token)))
+                unresolved.Add(token);
+        }
+
+        return unresolved;
+    }
+
+    private static IReadOnlyList<string> GetReferencedVariableTokens(string value)
+    {
+        var tokens = new List<string>();
+
+        foreach (System.Text.RegularExpressions.Match match in DirectTokenPattern.Matches(value))
+            tokens.Add(NormalizeVariableToken(match.Value));
+
+        foreach (System.Text.RegularExpressions.Match match in LegacyTokenPattern.Matches(value))
+            tokens.Add(NormalizeVariableToken(match.Value));
+
+        return tokens;
+    }
+
+    private static string NormalizeVariableToken(string token)
+    {
+        if (token.StartsWith("{{", StringComparison.Ordinal) && token.EndsWith("}}", StringComparison.Ordinal))
+            return "{{" + token[2..^2].Trim() + "}}";
+
+        return token.Trim();
     }
 }

@@ -12,6 +12,7 @@ public sealed class WorkflowDesignerInteropContractTests
 {
     private static readonly Assembly WebAssembly = LoadWebAssembly();
     private static readonly Type WorkflowDesignerType = FindTypeByName("WorkflowDesigner");
+    private static readonly Type PropertiesPanelType = FindTypeByName("PropertiesPanel");
 
     [Fact]
     public void WorkflowDesigner_Exposes_OnSelectionChanged_AsJsInvokable()
@@ -346,6 +347,27 @@ public sealed class WorkflowDesignerInteropContractTests
             "{{Fetch Customer.Body}}",
             "{{Normalize transcript.Output}}"
         ]);
+    }
+
+    [Fact]
+    public void PropertiesPanel_GetUnresolvedVariableTokens_FlagsMissingReferences()
+    {
+        var variableType = PropertiesPanelType.GetNestedType("VariableReferenceInfo", BindingFlags.Public | BindingFlags.NonPublic);
+        variableType.Should().NotBeNull();
+
+        var availableVariables = Activator.CreateInstance(typeof(List<>).MakeGenericType(variableType!))!;
+        AddVariable(availableVariables, variableType!, "{transcript}");
+        AddVariable(availableVariables, variableType!, "{{Fetch Customer.Body}}");
+
+        var method = PropertiesPanelType.GetMethod("GetUnresolvedVariableTokens", BindingFlags.Static | BindingFlags.NonPublic, null, [typeof(string), typeof(IReadOnlyList<>).MakeGenericType(variableType!)], null);
+        method.Should().NotBeNull();
+
+        var unresolved = ((IEnumerable?)method!.Invoke(null, ["Use {{ Fetch Customer.Body }} and {{Missing.Response}} with {transcript}", availableVariables]))?
+            .Cast<object>()
+            .Select(token => token.ToString())
+            .ToList();
+
+        unresolved.Should().BeEquivalentTo(["{{Missing.Response}}"]);
     }
 
     [Fact]
@@ -846,6 +868,15 @@ public sealed class WorkflowDesignerInteropContractTests
 
     private static object? GetProperty(object target, string name)
         => target.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(target);
+
+    private static void AddVariable(object list, Type variableType, string token)
+    {
+        var item = Activator.CreateInstance(variableType);
+        item.Should().NotBeNull();
+        variableType.GetProperty("Token")!.SetValue(item, token);
+        variableType.GetProperty("GroupLabel")!.SetValue(item, "Available outputs");
+        list.GetType().GetMethod("Add")!.Invoke(list, [item]);
+    }
 
     private static Assembly LoadWebAssembly()
         => AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "WorkflowFramework.Dashboard.Web")
