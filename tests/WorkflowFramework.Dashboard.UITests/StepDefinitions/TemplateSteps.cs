@@ -53,6 +53,14 @@ public sealed class TemplateSteps
         await template.EvaluateAsync("el => el.click()");
     }
 
+    [When("I search templates for {string}")]
+    public async Task WhenISearchTemplatesFor(string searchTerm)
+    {
+        var search = Page.Locator("[data-testid='template-search']");
+        await search.FillAsync(searchTerm);
+        await Page.WaitForTimeoutAsync(250);
+    }
+
     [When("I click {string}")]
     public async Task WhenIClick(string buttonText)
     {
@@ -67,6 +75,21 @@ public sealed class TemplateSteps
     {
         var canvas = Page.Locator("#workflow-canvas");
         await canvas.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+    }
+
+    [Then("I should only see template results matching {string}")]
+    public async Task ThenIShouldOnlySeeTemplateResultsMatching(string searchTerm)
+    {
+        var templates = Page.Locator("[data-testid='template-card']");
+        var count = await templates.CountAsync();
+        count.Should().BeGreaterThan(0);
+
+        var loweredSearchTerm = searchTerm.ToLowerInvariant();
+        for (var index = 0; index < count; index++)
+        {
+            var text = (await templates.Nth(index).InnerTextAsync()).ToLowerInvariant();
+            text.Should().Contain(loweredSearchTerm);
+        }
     }
 }
 

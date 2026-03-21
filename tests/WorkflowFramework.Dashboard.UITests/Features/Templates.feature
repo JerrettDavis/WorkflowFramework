@@ -15,3 +15,9 @@ Feature: Templates
     And I select a template
     And I click "Use This Template"
     Then a new workflow should be created with the template steps
+
+  Scenario: Filter templates by search
+    Given the dashboard is running
+    When I open the template browser
+    And I search templates for "agent"
+    Then I should only see template results matching "agent"

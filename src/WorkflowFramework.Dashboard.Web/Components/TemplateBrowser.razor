@@ -17,14 +17,23 @@
             }
             else
             {
-                <div class="flex gap-2 px-5 py-3 border-b border-gray-700 overflow-x-auto">
-                    <button @onclick='() => _selectedCategory = null'
-                            class="@CategoryBtnClass(null)">All</button>
+                <div class="px-5 py-3 border-b border-gray-700 space-y-3">
+                    <input type="text"
+                           placeholder="Search templates..."
+                           @bind="_searchTerm"
+                           @bind:event="oninput"
+                           data-testid="template-search"
+                           class="w-full rounded bg-gray-700 px-3 py-2 text-sm text-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+
+                    <div class="flex gap-2 overflow-x-auto">
+                        <button @onclick='() => _selectedCategory = null'
+                                class="@CategoryBtnClass(null)">All (@_templates.Count)</button>
                     @foreach (var cat in _categories)
                     {
                         <button @onclick='() => _selectedCategory = cat'
-                                class="@CategoryBtnClass(cat)" data-testid="template-category">@cat</button>
+                                class="@CategoryBtnClass(cat)" data-testid="template-category">@cat (@GetCategoryCount(cat))</button>
                     }
+                    </div>
                 </div>
 
                 <div class="flex-1 overflow-y-auto p-5">
@@ -57,22 +66,40 @@
                     }
                     else
                     {
-                        var filtered = _selectedCategory is null ? _templates : _templates.Where(t => t.Category == _selectedCategory);
-                        <div class="grid grid-cols-3 gap-4">
-                            @foreach (var t in filtered)
-                            {
-                                <div @onclick="() => SelectTemplate(t)"
-                                     class="bg-gray-750 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" data-testid="template-card">
-                                    <h4 class="text-white font-semibold text-sm mb-1">@t.Name</h4>
-                                    <p class="text-gray-400 text-xs mb-2 line-clamp-2">@t.Description</p>
-                                    <div class="flex items-center gap-2">
-                                        <span class="@DifficultyBadge(t.Difficulty) text-[10px]">@t.Difficulty</span>
-                                        <span class="text-gray-500 text-[10px]">@t.StepCount steps</span>
-                                        <span class="text-gray-600 text-[10px] bg-gray-700 px-1.5 py-0.5 rounded">@t.Category</span>
+                        if (FilteredTemplates.Count == 0)
+                        {
+                            <div class="rounded-lg border border-dashed border-gray-600 bg-gray-900/40 px-6 py-10 text-center" data-testid="template-empty-state">
+                                <p class="text-sm font-semibold text-gray-200">No templates match your filters.</p>
+                                <p class="mt-1 text-xs text-gray-500">Try a different search term or switch categories.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="grid grid-cols-3 gap-4">
+                                @foreach (var t in FilteredTemplates)
+                                {
+                                    <div @onclick="() => SelectTemplate(t)"
+                                         class="bg-gray-750 border border-gray-600 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition-colors" data-testid="template-card">
+                                        <h4 class="text-white font-semibold text-sm mb-1">@t.Name</h4>
+                                        <p class="text-gray-400 text-xs mb-2 line-clamp-2">@t.Description</p>
+                                        <div class="flex items-center gap-2 mb-2">
+                                            <span class="@DifficultyBadge(t.Difficulty) text-[10px]">@t.Difficulty</span>
+                                            <span class="text-gray-500 text-[10px]">@t.StepCount steps</span>
+                                            <span class="text-gray-600 text-[10px] bg-gray-700 px-1.5 py-0.5 rounded">@t.Category</span>
+                                        </div>
+                                        @if (t.Tags.Count > 0)
+                                        {
+                                            <div class="flex flex-wrap gap-1">
+                                                @foreach (var tag in t.Tags.Take(3))
+                                                {
+                                                    <span class="rounded bg-gray-700 px-1.5 py-0.5 text-[10px] text-gray-300" data-testid="template-tag">@tag</span>
+                                                }
+                                            </div>
+                                        }
                                     </div>
-                                </div>
-                            }
-                        </div>
+                                }
+                            </div>
+                        }
                     }
                 </div>
             }
@@ -94,9 +121,19 @@
     private bool _using;
     private string? _error;
     private string? _selectedCategory;
+    private string _searchTerm = "";
     private List<string> _categories = [];
     private List<WorkflowTemplateSummary> _templates = [];
     private WorkflowTemplateSummary? _selectedTemplate;
+    private IReadOnlyList<WorkflowTemplateSummary> FilteredTemplates => _templates
+        .Where(template => _selectedCategory is null || string.Equals(template.Category, _selectedCategory, StringComparison.Ordinal))
+        .Where(template =>
+            string.IsNullOrWhiteSpace(_searchTerm) ||
+            template.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            template.Description.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+            template.Tags.Any(tag => tag.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)))
+        .OrderBy(template => template.Name, StringComparer.OrdinalIgnoreCase)
+        .ToList();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -141,6 +178,9 @@
         _selectedTemplate = null;
         await OnClose.InvokeAsync();
     }
+
+    private int GetCategoryCount(string category)
+        => _templates.Count(template => string.Equals(template.Category, category, StringComparison.Ordinal));
 
     private string CategoryBtnClass(string? cat) =>
         (cat == _selectedCategory)
