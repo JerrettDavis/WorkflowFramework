@@ -47,10 +47,30 @@ public sealed class PropertiesPanelSteps
         await Page.Locator("[data-testid='btn-open']").ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { Timeout = 15_000 });
-        var item = Page.Locator("[data-testid='workflow-list']")
-            .Locator($"text={stepType} Test Workflow").First;
-        if (await item.IsVisibleAsync())
-            await item.ClickAsync();
+        var workflowName = $"{stepType} Test Workflow";
+        var item = Page.Locator("[data-testid='workflow-list-item']",
+            new PageLocatorOptions { HasText = workflowName }).First;
+        try
+        {
+            await item.WaitForAsync(new LocatorWaitForOptions { Timeout = 30_000 });
+        }
+        catch (TimeoutException)
+        {
+            await Page.Keyboard.PressAsync("Escape");
+            await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
+                new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 10_000 });
+
+            await Page.Locator("[data-testid='btn-open']").ClickAsync();
+            await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
+                new PageWaitForSelectorOptions { Timeout = 15_000 });
+
+            item = Page.Locator("[data-testid='workflow-list-item']",
+                new PageLocatorOptions { HasText = workflowName }).First;
+            await item.WaitForAsync(new LocatorWaitForOptions { Timeout = 45_000 });
+        }
+
+        await item.ScrollIntoViewIfNeededAsync();
+        await item.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 10_000 });
         await Page.WaitForTimeoutAsync(1000);
@@ -84,8 +104,8 @@ public sealed class PropertiesPanelSteps
         var panel = Page.Locator("[data-testid='properties-panel']");
         await panel.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         var text = await panel.TextContentAsync();
-        // The panel should have configuration content
         text.Should().NotBeNullOrEmpty("Properties panel should display step configuration");
+        text.Should().Contain(fieldLabel, $"Properties panel should show the '{fieldLabel}' field label");
     }
 
     [Then("the field should be a text input")]
@@ -166,14 +186,17 @@ public sealed class PropertiesPanelSteps
         count.Should().BeGreaterThan(0, "Should have dropdown controls");
         // Verify options exist
         var expectedOptions = optionsStr.Split(',');
+        var found = false;
         for (var i = 0; i < count; i++)
         {
             var options = await selects.Nth(i).Locator("option").AllTextContentsAsync();
-            var allOptions = string.Join(",", options);
-            if (expectedOptions.Any(o => allOptions.Contains(o, StringComparison.OrdinalIgnoreCase)))
-                return;
+            if (expectedOptions.All(expected => options.Any(option => option.Contains(expected, StringComparison.OrdinalIgnoreCase))))
+            {
+                found = true;
+                break;
+            }
         }
-        // At least one dropdown should have the expected options
+        found.Should().BeTrue("one dropdown should contain the expected HTTP method options");
     }
 
     [Then("the properties panel should show a URL text field")]
@@ -244,6 +267,7 @@ public sealed class PropertiesPanelSteps
     [When("I change the step name to {string}")]
     public async Task WhenIChangeTheStepNameTo(string newName)
     {
+        _context.Set(newName, "UpdatedStepName");
         var nameInput = Page.Locator("[data-testid='properties-step-name']");
         await nameInput.ClearAsync();
         await nameInput.FillAsync(newName);
@@ -253,10 +277,12 @@ public sealed class PropertiesPanelSteps
     [Then("the step name should update on the canvas")]
     public async Task ThenTheStepNameShouldUpdateOnTheCanvas()
     {
-        // The canvas node label should update reactively
+        var expectedName = _context.Get<string>("UpdatedStepName");
         var nodes = Page.Locator(".react-flow__node");
-        var count = await nodes.CountAsync();
-        count.Should().BeGreaterThan(0, "Canvas should still have nodes");
+        await nodes.First.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+
+        var nodeTexts = await nodes.AllTextContentsAsync();
+        nodeTexts.Should().Contain(text => text.Contains(expectedName, StringComparison.Ordinal), "canvas node label should update reactively");
     }
 
     [When("I type {string} in the notes field")]

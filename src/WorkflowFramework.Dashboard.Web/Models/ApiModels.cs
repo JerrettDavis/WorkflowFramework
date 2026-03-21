@@ -32,6 +32,74 @@ public sealed class WorkflowDefinitionDto
 
     [JsonPropertyName("steps")]
     public List<StepDefinitionApiDto> Steps { get; set; } = new();
+
+    [JsonPropertyName("canvas")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public WorkflowCanvasDto? Canvas { get; set; }
+}
+
+public sealed class WorkflowCanvasDto
+{
+    [JsonPropertyName("nodes")]
+    public List<WorkflowCanvasNodeDto> Nodes { get; set; } = new();
+
+    [JsonPropertyName("edges")]
+    public List<WorkflowCanvasEdgeDto> Edges { get; set; } = new();
+}
+
+public sealed class WorkflowCanvasNodeDto
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "";
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "";
+
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = "";
+
+    [JsonPropertyName("icon")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Icon { get; set; }
+
+    [JsonPropertyName("category")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Category { get; set; }
+
+    [JsonPropertyName("color")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Color { get; set; }
+
+    [JsonPropertyName("x")]
+    public double X { get; set; }
+
+    [JsonPropertyName("y")]
+    public double Y { get; set; }
+
+    [JsonPropertyName("config")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Config { get; set; }
+}
+
+public sealed class WorkflowCanvasEdgeDto
+{
+    [JsonPropertyName("id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("kind")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("source")]
+    public string Source { get; set; } = "";
+
+    [JsonPropertyName("target")]
+    public string Target { get; set; } = "";
+
+    [JsonPropertyName("label")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Label { get; set; }
 }
 
 public sealed class StepDefinitionApiDto
@@ -66,6 +134,10 @@ public sealed class StepDefinitionApiDto
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double TimeoutSeconds { get; set; }
 
+    [JsonPropertyName("delaySeconds")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double DelaySeconds { get; set; }
+
     [JsonPropertyName("tryBody")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<StepDefinitionApiDto>? TryBody { get; set; }
@@ -77,6 +149,10 @@ public sealed class StepDefinitionApiDto
     [JsonPropertyName("finallyBody")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<StepDefinitionApiDto>? FinallyBody { get; set; }
+
+    [JsonPropertyName("subWorkflowName")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? SubWorkflowName { get; set; }
 
     [JsonPropertyName("config")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]

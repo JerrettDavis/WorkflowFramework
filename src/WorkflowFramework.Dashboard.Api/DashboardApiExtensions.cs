@@ -458,16 +458,12 @@ public static class DashboardApiExtensions
                         }
                     }
                     catch { }
-                    return Results.Ok(Array.Empty<string>());
+                    return Results.Ok(AiProviderCatalog.GetDefaultModels(provider));
 
                 case "openai":
-                    return Results.Ok(new[] { "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo", "o1-preview", "o1-mini" });
-
                 case "anthropic":
-                    return Results.Ok(new[] { "claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-3-5-haiku-20241022", "claude-3-opus-20240229" });
-
                 case "huggingface":
-                    return Results.Ok(new[] { "meta-llama/Llama-3-70b-chat-hf", "mistralai/Mixtral-8x7B-Instruct-v0.1", "microsoft/Phi-3-mini-4k-instruct" });
+                    return Results.Ok(AiProviderCatalog.GetDefaultModels(provider));
 
                 default:
                     return Results.Ok(Array.Empty<string>());

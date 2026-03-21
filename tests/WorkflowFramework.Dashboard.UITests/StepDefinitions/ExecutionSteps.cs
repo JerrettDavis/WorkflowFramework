@@ -52,6 +52,7 @@ public sealed class ExecutionSteps
         // Click on the workflow item in the list dialog
         var dialogContent = Page.Locator("[data-testid='workflow-list']");
         var item = dialogContent.Locator("div.cursor-pointer", new LocatorLocatorOptions { HasText = "Valid Test Workflow" }).First;
+        await item.ScrollIntoViewIfNeededAsync();
         await item.ClickAsync();
         // Wait for the dialog to close
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
@@ -224,6 +225,7 @@ public sealed class ExecutionSteps
             new PageWaitForSelectorOptions { Timeout = 15_000 });
         var item = Page.Locator("[data-testid='workflow-list-item']",
             new PageLocatorOptions { HasText = "Delay Test Workflow" }).First;
+        await item.ScrollIntoViewIfNeededAsync();
         await item.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 10_000 });
@@ -305,6 +307,7 @@ public sealed class ExecutionSteps
             new PageWaitForSelectorOptions { Timeout = 15_000 });
         var item = Page.Locator("[data-testid='workflow-list-item']",
             new PageLocatorOptions { HasText = "Failing HTTP Workflow" }).First;
+        await item.ScrollIntoViewIfNeededAsync();
         await item.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 10_000 });

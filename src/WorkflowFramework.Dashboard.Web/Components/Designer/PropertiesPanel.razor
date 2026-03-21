@@ -132,24 +132,25 @@
                             {
                                 case "providerSelect":
                                     <select value="@GetConfigValue(field)"
-                                            @onchange='e => UpdateConfig(field.Name, e.Value)'
+                                            @onchange='e => OnProviderChangedAsync(field, e.Value?.ToString())'
                                             class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
                                         <option value="">— Select provider —</option>
-                                        <option value="ollama">Ollama</option>
-                                        <option value="openai">OpenAI</option>
-                                        <option value="anthropic">Anthropic</option>
-                                        <option value="huggingface">HuggingFace</option>
+                                        @foreach (var provider in GetAvailableOptions(field))
+                                        {
+                                            <option value="@provider">@FormatOptionLabel(provider)</option>
+                                        }
                                     </select>
                                     break;
 
                                 case "modelSelect":
                                     <select value="@GetConfigValue(field)"
                                             @onchange='e => UpdateConfig(field.Name, e.Value)'
+                                            disabled="@(GetAvailableOptions(field).Count == 0)"
                                             class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                        <option value="">— Select model —</option>
-                                        @foreach (var m in GetModelsForProvider(field.DependsOn is not null ? NodeConfig.GetValueOrDefault(field.DependsOn)?.ToString() ?? "" : ""))
+                                        <option value="">@GetModelPlaceholder(field)</option>
+                                        @foreach (var model in GetAvailableOptions(field))
                                         {
-                                            <option value="@m">@m</option>
+                                            <option value="@model">@model</option>
                                         }
                                     </select>
                                     break;
@@ -298,6 +299,7 @@
     private bool _loadingSchema;
     private List<SchemaField> _schemaFields = [];
     private string? _lastLoadedType;
+    private string? _lastLoadedNodeId;
     private string? _stepTypeDescription;
 
     public sealed class NodeConnections
@@ -327,6 +329,7 @@
         public string? Default { get; set; }
         public string? DependsOn { get; set; }
         public List<string>? Options { get; set; }
+        public Dictionary<string, List<string>>? OptionGroups { get; set; }
     }
 
     private static bool IsContainerType(string? type) => type?.ToLowerInvariant() is
@@ -343,25 +346,18 @@
         return val == "true" || (val is null && field.Default == "true");
     }
 
-    private static List<string> GetModelsForProvider(string provider) => provider?.ToLowerInvariant() switch
-    {
-        "ollama"      => ["llama3.1", "llama3.2", "mistral", "codellama", "phi3", "gemma2", "qwen2.5"],
-        "openai"      => ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo", "o1", "o1-mini"],
-        "anthropic"   => ["claude-sonnet-4-20250514", "claude-3-5-haiku-20241022", "claude-3-opus-20240229"],
-        "huggingface" => ["meta-llama/Llama-3.1-8B", "mistralai/Mistral-7B-v0.3", "google/gemma-2-9b"],
-        _             => []
-    };
-
     protected override async Task OnParametersSetAsync()
     {
-        if (SelectedNodeType is not null && SelectedNodeType != _lastLoadedType)
+        if (SelectedNodeType is not null && (SelectedNodeType != _lastLoadedType || SelectedNodeId != _lastLoadedNodeId))
         {
             _lastLoadedType = SelectedNodeType;
+            _lastLoadedNodeId = SelectedNodeId;
             await LoadSchema(SelectedNodeType);
         }
         else if (SelectedNodeType is null)
         {
             _lastLoadedType = null;
+            _lastLoadedNodeId = null;
             _schemaFields = [];
             _stepTypeDescription = null;
         }
@@ -454,14 +450,136 @@
                                     field.Options.Add(o.GetString() ?? "");
                             }
 
+                            if (prop.Value.TryGetProperty("optionGroups", out var groups) && groups.ValueKind == System.Text.Json.JsonValueKind.Object)
+                            {
+                                field.OptionGroups = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+                                foreach (var group in groups.EnumerateObject())
+                                {
+                                    if (group.Value.ValueKind != System.Text.Json.JsonValueKind.Array)
+                                        continue;
+
+                                    var options = new List<string>();
+                                    foreach (var item in group.Value.EnumerateArray())
+                                        options.Add(item.GetString() ?? "");
+
+                                    field.OptionGroups[group.Name] = options;
+                                }
+                            }
+
                             _schemaFields.Add(field);
                         }
                     }
                 }
             }
         }
-        catch { /* fall back to local step definitions */ }
-        finally { _loadingSchema = false; }
+        catch
+        {
+            _schemaFields = BuildLocalSchemaFields(type);
+        }
+        finally
+        {
+            if (_schemaFields.Count == 0)
+                _schemaFields = BuildLocalSchemaFields(type);
+
+            _loadingSchema = false;
+        }
+    }
+
+    private List<SchemaField> BuildLocalSchemaFields(string type)
+    {
+        var stepDef = _localSteps.FirstOrDefault(step => string.Equals(step.Type, type, StringComparison.OrdinalIgnoreCase));
+        if (stepDef is null)
+            return [];
+
+        return stepDef.Properties.Select(prop => new SchemaField
+        {
+            Name = prop.Name,
+            Label = prop.Label,
+            UiType = prop.UiType ?? (prop.Type == "bool" ? "boolean" : prop.Type == "number" ? "number" : prop.Type == "select" ? "select" : "text"),
+            Required = prop.Required,
+            Default = prop.DefaultValue,
+            DependsOn = prop.DependsOn,
+            Options = prop.Options is null ? null : [.. prop.Options],
+            OptionGroups = prop.OptionGroups?.ToDictionary(
+                pair => pair.Key,
+                pair => pair.Value.ToList(),
+                StringComparer.OrdinalIgnoreCase)
+        }).ToList();
+    }
+
+    private IReadOnlyList<string> GetAvailableOptions(SchemaField field)
+    {
+        if (field.DependsOn is not null)
+        {
+            var dependencyValue = NodeConfig.GetValueOrDefault(field.DependsOn)?.ToString();
+            if (!string.IsNullOrWhiteSpace(dependencyValue) &&
+                field.OptionGroups is not null &&
+                field.OptionGroups.TryGetValue(dependencyValue, out var groupedOptions))
+            {
+                return groupedOptions;
+            }
+        }
+
+        return field.Options ?? [];
+    }
+
+    private static string FormatOptionLabel(string option)
+        => option.ToLowerInvariant() switch
+        {
+            "ollama" => "Ollama",
+            "openai" => "OpenAI",
+            "anthropic" => "Anthropic",
+            "huggingface" => "Hugging Face",
+            _ => option
+        };
+
+    private string GetModelPlaceholder(SchemaField field)
+    {
+        if (field.DependsOn is not null && string.IsNullOrWhiteSpace(NodeConfig.GetValueOrDefault(field.DependsOn)?.ToString()))
+            return "— Select provider first —";
+
+        return GetAvailableOptions(field).Count == 0
+            ? "— No models available —"
+            : "— Select model —";
+    }
+
+    private async Task OnProviderChangedAsync(SchemaField field, string? provider)
+    {
+        var newConfig = new Dictionary<string, object?>(NodeConfig)
+        {
+            [field.Name] = provider ?? string.Empty
+        };
+
+        foreach (var dependentField in _schemaFields.Where(schemaField =>
+                     schemaField.DependsOn is not null &&
+                     string.Equals(schemaField.DependsOn, field.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            var selectedValue = newConfig.GetValueOrDefault(dependentField.Name)?.ToString();
+            if (string.IsNullOrWhiteSpace(selectedValue))
+                continue;
+
+            var validOptions = GetAvailableOptionsForConfig(dependentField, newConfig);
+            if (!validOptions.Any(option => string.Equals(option, selectedValue, StringComparison.OrdinalIgnoreCase)))
+                newConfig.Remove(dependentField.Name);
+        }
+
+        await OnConfigChanged.InvokeAsync(newConfig);
+    }
+
+    private static IReadOnlyList<string> GetAvailableOptionsForConfig(SchemaField field, Dictionary<string, object?> config)
+    {
+        if (field.DependsOn is not null)
+        {
+            var dependencyValue = config.GetValueOrDefault(field.DependsOn)?.ToString();
+            if (!string.IsNullOrWhiteSpace(dependencyValue) &&
+                field.OptionGroups is not null &&
+                field.OptionGroups.TryGetValue(dependencyValue, out var groupedOptions))
+            {
+                return groupedOptions;
+            }
+        }
+
+        return field.Options ?? [];
     }
 
     private async Task UpdateConfig(string key, object? value)

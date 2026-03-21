@@ -15,6 +15,74 @@ public sealed class WorkflowDefinitionDto
 
     [JsonPropertyName("steps")]
     public List<StepDefinitionDto> Steps { get; set; } = new();
+
+    [JsonPropertyName("canvas")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public WorkflowCanvasDto? Canvas { get; set; }
+}
+
+public sealed class WorkflowCanvasDto
+{
+    [JsonPropertyName("nodes")]
+    public List<WorkflowCanvasNodeDto> Nodes { get; set; } = new();
+
+    [JsonPropertyName("edges")]
+    public List<WorkflowCanvasEdgeDto> Edges { get; set; } = new();
+}
+
+public sealed class WorkflowCanvasNodeDto
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = string.Empty;
+
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = string.Empty;
+
+    [JsonPropertyName("icon")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Icon { get; set; }
+
+    [JsonPropertyName("category")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Category { get; set; }
+
+    [JsonPropertyName("color")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Color { get; set; }
+
+    [JsonPropertyName("x")]
+    public double X { get; set; }
+
+    [JsonPropertyName("y")]
+    public double Y { get; set; }
+
+    [JsonPropertyName("config")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Config { get; set; }
+}
+
+public sealed class WorkflowCanvasEdgeDto
+{
+    [JsonPropertyName("id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("kind")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("source")]
+    public string Source { get; set; } = string.Empty;
+
+    [JsonPropertyName("target")]
+    public string Target { get; set; } = string.Empty;
+
+    [JsonPropertyName("label")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Label { get; set; }
 }
 
 /// <summary>

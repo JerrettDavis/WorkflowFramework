@@ -15,9 +15,12 @@ public sealed class StepProperty
     public string Name { get; init; } = "";
     public string Label { get; init; } = "";
     public string Type { get; init; } = "string"; // string, number, bool, select
+    public string? UiType { get; init; }
     public bool Required { get; init; }
     public string? DefaultValue { get; init; }
+    public string? DependsOn { get; init; }
     public List<string>? Options { get; init; }
+    public Dictionary<string, List<string>>? OptionGroups { get; init; }
 }
 
 public sealed class WorkflowNode
@@ -42,6 +45,15 @@ public sealed class WorkflowEdge
 
 public static class StepCatalog
 {
+    private static readonly List<string> AiProviders = ["ollama", "openai", "anthropic", "huggingface"];
+    private static readonly Dictionary<string, List<string>> AiModelOptionGroups = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["ollama"] = ["llama3.2", "mistral", "qwen2.5", "phi4-mini"],
+        ["openai"] = ["gpt-4o", "gpt-4o-mini", "o4-mini"],
+        ["anthropic"] = ["claude-sonnet-4-20250514", "claude-3-5-haiku-20241022", "claude-3-7-sonnet-20250219"],
+        ["huggingface"] = ["meta-llama/Llama-3.1-8B-Instruct", "mistralai/Mistral-7B-Instruct-v0.3", "Qwen/Qwen2.5-7B-Instruct"]
+    };
+
     public static readonly Dictionary<string, string> CategoryColors = new()
     {
         ["Core"] = "#3b82f6",
@@ -51,7 +63,7 @@ public static class StepCatalog
         ["HTTP"] = "#14b8a6",
         ["Events"] = "#eab308",
         ["Human"] = "#ec4899",
-    };
+        };
 
     public static List<StepDefinition> GetAll() =>
     [
@@ -59,7 +71,7 @@ public static class StepCatalog
         new() { Type = "Action", Name = "Action", Icon = "⬡", Category = "Core", Color = CategoryColors["Core"],
             Properties = [new() { Name = "expression", Label = "Expression" }] },
         new() { Type = "Conditional", Name = "Conditional", Icon = "◇", Category = "Core", Color = CategoryColors["Core"],
-            Properties = [new() { Name = "expression", Label = "Expression", Required = true }, new() { Name = "thenStep", Label = "Then Step" }, new() { Name = "elseStep", Label = "Else Step" }] },
+            Properties = [new() { Name = "expression", Label = "Expression", Required = true }] },
         new() { Type = "Parallel", Name = "Parallel", Icon = "⫘", Category = "Core", Color = CategoryColors["Core"],
             Properties = [new() { Name = "maxConcurrency", Label = "Max Concurrency", Type = "number" }] },
         new() { Type = "ForEach", Name = "ForEach", Icon = "↻", Category = "Core", Color = CategoryColors["Core"],
@@ -69,15 +81,15 @@ public static class StepCatalog
         new() { Type = "DoWhile", Name = "DoWhile", Icon = "↻", Category = "Core", Color = CategoryColors["Core"],
             Properties = [new() { Name = "expression", Label = "Expression", Required = true }] },
         new() { Type = "Retry", Name = "Retry", Icon = "🔄", Category = "Core", Color = CategoryColors["Core"],
-            Properties = [new() { Name = "maxAttempts", Label = "Max Attempts", Type = "number", DefaultValue = "3" }, new() { Name = "delayMs", Label = "Delay (ms)", Type = "number", DefaultValue = "1000" }, new() { Name = "backoffMultiplier", Label = "Backoff Multiplier", Type = "number" }] },
+            Properties = [new() { Name = "maxAttempts", Label = "Max Attempts", Type = "number", DefaultValue = "3" }] },
         new() { Type = "Timeout", Name = "Timeout", Icon = "⏱", Category = "Core", Color = CategoryColors["Core"],
-            Properties = [new() { Name = "durationMs", Label = "Duration (ms)", Type = "number", Required = true }] },
+            Properties = [new() { Name = "timeoutSeconds", Label = "Timeout (seconds)", Type = "number", Required = true }] },
         new() { Type = "Delay", Name = "Delay", Icon = "⏱", Category = "Core", Color = CategoryColors["Core"],
-            Properties = [new() { Name = "durationMs", Label = "Duration (ms)", Type = "number", Required = true }] },
+            Properties = [new() { Name = "delaySeconds", Label = "Delay (seconds)", Type = "number", Required = true }] },
         new() { Type = "TryCatch", Name = "TryCatch", Icon = "🛡", Category = "Core", Color = CategoryColors["Core"],
             Properties = [new() { Name = "catchTypes", Label = "Catch Types (comma-separated)" }] },
         new() { Type = "SubWorkflow", Name = "SubWorkflow", Icon = "📦", Category = "Core", Color = CategoryColors["Core"],
-            Properties = [new() { Name = "workflowName", Label = "Workflow Name", Required = true }] },
+            Properties = [new() { Name = "subWorkflowName", Label = "Workflow Name", Required = true }] },
         new() { Type = "Saga", Name = "Saga", Icon = "📜", Category = "Core", Color = CategoryColors["Core"],
             Properties = [new() { Name = "compensateOnFailure", Label = "Compensate On Failure", Type = "bool", DefaultValue = "true" }] },
         // Integration
@@ -99,13 +111,37 @@ public static class StepCatalog
             Properties = [new() { Name = "channelName", Label = "Channel Name", Required = true }, new() { Name = "maxRetries", Label = "Max Retries", Type = "number" }] },
         // AI/Agents
         new() { Type = "AgentLoopStep", Name = "Agent Loop", Icon = "🧠", Category = "AI/Agents", Color = CategoryColors["AI/Agents"],
-            Properties = [new() { Name = "provider", Label = "Provider", Required = true }, new() { Name = "model", Label = "Model", Required = true }, new() { Name = "systemPrompt", Label = "System Prompt" }, new() { Name = "maxIterations", Label = "Max Iterations", Type = "number", DefaultValue = "10" }, new() { Name = "tools", Label = "Tools (comma-separated)" }] },
+            Properties =
+            [
+                new() { Name = "provider", Label = "Provider", Type = "select", UiType = "providerSelect", Required = true, Options = AiProviders },
+                new() { Name = "model", Label = "Model", Type = "select", UiType = "modelSelect", Required = true, DependsOn = "provider", OptionGroups = AiModelOptionGroups },
+                new() { Name = "systemPrompt", Label = "System Prompt" },
+                new() { Name = "maxIterations", Label = "Max Iterations", Type = "number", DefaultValue = "10" }
+            ] },
         new() { Type = "AgentDecisionStep", Name = "Agent Decision", Icon = "🤖", Category = "AI/Agents", Color = CategoryColors["AI/Agents"],
-            Properties = [new() { Name = "provider", Label = "Provider", Required = true }, new() { Name = "model", Label = "Model" }, new() { Name = "prompt", Label = "Prompt", Required = true }, new() { Name = "options", Label = "Options (comma-separated)" }] },
+            Properties =
+            [
+                new() { Name = "provider", Label = "Provider", Type = "select", UiType = "providerSelect", Required = true, Options = AiProviders },
+                new() { Name = "model", Label = "Model", Type = "select", UiType = "modelSelect", DependsOn = "provider", OptionGroups = AiModelOptionGroups },
+                new() { Name = "prompt", Label = "Prompt", Required = true },
+                new() { Name = "options", Label = "Options (comma-separated)" }
+            ] },
         new() { Type = "AgentPlanStep", Name = "Agent Plan", Icon = "🤖", Category = "AI/Agents", Color = CategoryColors["AI/Agents"],
-            Properties = [new() { Name = "provider", Label = "Provider", Required = true }, new() { Name = "model", Label = "Model" }, new() { Name = "objective", Label = "Objective", Required = true }, new() { Name = "maxSteps", Label = "Max Steps", Type = "number" }] },
+            Properties =
+            [
+                new() { Name = "provider", Label = "Provider", Type = "select", UiType = "providerSelect", Required = true, Options = AiProviders },
+                new() { Name = "model", Label = "Model", Type = "select", UiType = "modelSelect", DependsOn = "provider", OptionGroups = AiModelOptionGroups },
+                new() { Name = "objective", Label = "Objective", Required = true }
+            ] },
         new() { Type = "LlmCallStep", Name = "LLM Call", Icon = "🤖", Category = "AI/Agents", Color = CategoryColors["AI/Agents"],
-            Properties = [new() { Name = "provider", Label = "Provider", Required = true }, new() { Name = "model", Label = "Model", Required = true }, new() { Name = "prompt", Label = "Prompt", Required = true }, new() { Name = "temperature", Label = "Temperature", Type = "number" }, new() { Name = "maxTokens", Label = "Max Tokens", Type = "number" }] },
+            Properties =
+            [
+                new() { Name = "provider", Label = "Provider", Type = "select", UiType = "providerSelect", Required = true, Options = AiProviders },
+                new() { Name = "model", Label = "Model", Type = "select", UiType = "modelSelect", Required = true, DependsOn = "provider", OptionGroups = AiModelOptionGroups },
+                new() { Name = "prompt", Label = "Prompt", Required = true },
+                new() { Name = "temperature", Label = "Temperature", Type = "number" },
+                new() { Name = "maxTokens", Label = "Max Tokens", Type = "number" }
+            ] },
         new() { Type = "ToolCallStep", Name = "Tool Call", Icon = "🔧", Category = "AI/Agents", Color = CategoryColors["AI/Agents"],
             Properties = [new() { Name = "toolName", Label = "Tool Name", Required = true }, new() { Name = "parameters", Label = "Parameters (JSON)" }] },
         // Data
@@ -119,7 +155,7 @@ public static class StepCatalog
             Properties = [new() { Name = "batchSize", Label = "Batch Size", Type = "number", Required = true, DefaultValue = "100" }] },
         // HTTP
         new() { Type = "HttpStep", Name = "HTTP Request", Icon = "🌐", Category = "HTTP", Color = CategoryColors["HTTP"],
-            Properties = [new() { Name = "url", Label = "URL", Required = true }, new() { Name = "method", Label = "Method", Type = "select", DefaultValue = "GET", Options = ["GET", "POST", "PUT", "DELETE", "PATCH"] }, new() { Name = "headers", Label = "Headers (JSON)" }, new() { Name = "body", Label = "Body" }, new() { Name = "contentType", Label = "Content Type" }, new() { Name = "timeoutMs", Label = "Timeout (ms)", Type = "number" }] },
+            Properties = [new() { Name = "url", Label = "URL", Required = true }, new() { Name = "method", Label = "Method", Type = "select", DefaultValue = "GET", Options = ["GET", "POST", "PUT", "DELETE", "PATCH"] }, new() { Name = "headers", Label = "Headers (JSON)" }, new() { Name = "body", Label = "Body" }, new() { Name = "contentType", Label = "Content Type" }] },
         new() { Type = "WebhookTriggerStep", Name = "Webhook Trigger", Icon = "📡", Category = "HTTP", Color = CategoryColors["HTTP"],
             Properties = [new() { Name = "path", Label = "Path", Required = true }, new() { Name = "method", Label = "Method", Type = "select", DefaultValue = "POST", Options = ["GET", "POST", "PUT"] }, new() { Name = "responseBody", Label = "Response Body" }] },
         // Events

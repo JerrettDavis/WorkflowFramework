@@ -1,3 +1,4 @@
+@using System.Globalization
 @using System.Text.RegularExpressions
 @using WorkflowFramework.Dashboard.Web.Services
 @inject IJSRuntime JS
@@ -560,6 +561,7 @@
     private string _workflowName = "Untitled Workflow";
     private string? _currentWorkflowId;
     private bool _dirty;
+    private bool _renderReady;
     private string? _selectedNodeId;
     private string? _selectedNodeType;
     private Dictionary<string, object?> _selectedNodeConfig = new();
@@ -681,6 +683,8 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        _renderReady = true;
+
         if (firstRender)
         {
             _dotNetRef = DotNetObjectReference.Create(this);
@@ -800,7 +804,11 @@
         // We only need a no-throw interop target plus clear panel state when empty.
         if (selectedNodeIds is null || selectedNodeIds.Length == 0)
         {
+            _selectedNodeId = null;
+            _selectedNodeType = null;
+            _selectedNodeConfig = new Dictionary<string, object?>();
             _selectedNodeConnections = null;
+            return _renderReady ? InvokeAsync(StateHasChanged) : Task.CompletedTask;
         }
 
         return Task.CompletedTask;
@@ -886,18 +894,10 @@
     {
         try
         {
-            if (_currentWorkflowId is not null)
-            {
-                var result = await Api.ValidateWorkflowAsync(_currentWorkflowId);
-                _validationErrors = result?.Errors ?? [];
-            }
-            else
-            {
-                var canvasData = await JS.InvokeAsync<System.Text.Json.JsonElement>("workflowEditor.getWorkflowDefinition");
-                var definition = CanvasToDefinition(canvasData);
-                var result = await Api.ValidateDefinitionAsync(definition);
-                _validationErrors = result?.Errors ?? [];
-            }
+            var canvasData = await JS.InvokeAsync<System.Text.Json.JsonElement>("workflowEditor.getWorkflowDefinition");
+            var definition = CanvasToDefinition(canvasData);
+            var result = await Api.ValidateDefinitionAsync(definition);
+            _validationErrors = result?.Errors ?? [];
 
             if (_validationErrors.Count == 0)
                 _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] ✅ Validation passed");
@@ -927,7 +927,7 @@
             return;
         }
 
-        if (_currentWorkflowId is null)
+        if (_currentWorkflowId is null || _dirty)
         {
             await HandleSave();
             if (_currentWorkflowId is null)
@@ -1428,7 +1428,9 @@
             var stepHint = $"{name} {type} {configHint}";
             var isReviewStep = type is "humantaskstep" or "approvalstep"
                 || ContainsAny(stepHint, "review", "approval", "human task", "manual");
-            var isQuestionStep = ContainsAny(stepHint, "question", "interview", "prompt");
+            var isQuestionStep = ContainsAny(stepHint, "question", "interview")
+                || (ContainsAny(stepHint, "prompt")
+                    && !ContainsAny(type, "llmcallstep", "agentdecisionstep", "agentplanstep", "agentloopstep"));
             var isQaAnswerStep = ContainsAny(stepHint, "recordanswers", "q/a", "qa pair", "question answer", "interview answer")
                 || (ContainsAny(stepHint, "answer", "response") && ContainsAny(stepHint, "interview", "question"));
             var isRecordStep = ContainsAny(stepHint, "record", "capture", "microphone", "mic", "dictat", "voice input", "audio");
@@ -2058,57 +2060,121 @@
 
         var dto = new WorkflowDefinitionDto { Name = _workflowName };
 
-        if (!canvasData.TryGetProperty("nodes", out var nodesEl) || !canvasData.TryGetProperty("edges", out var edgesEl))
+        var (nodes, edges) = ParseCanvasGraph(canvasData);
+        dto.Canvas = CreateCanvasSnapshot(nodes, edges);
+
+        if (nodes.Count == 0)
             return dto;
-
-        // Parse nodes and edges into working lists
-        var nodes = new List<CanvasNode>();
-        foreach (var n in nodesEl.EnumerateArray())
-        {
-            var cn = new CanvasNode
-            {
-                Id = n.GetProperty("id").GetString() ?? "",
-                Type = n.TryGetProperty("type", out var t) ? t.GetString() ?? "Action" : "Action",
-                Label = n.TryGetProperty("label", out var l) ? l.GetString() ?? "" : "",
-                Config = new Dictionary<string, string>()
-            };
-            if (n.TryGetProperty("config", out var cfg) && cfg.ValueKind == System.Text.Json.JsonValueKind.Object)
-            {
-                foreach (var prop in cfg.EnumerateObject())
-                {
-                    cn.Config[prop.Name] = prop.Value.ValueKind == System.Text.Json.JsonValueKind.String
-                        ? prop.Value.GetString() ?? ""
-                        : prop.Value.GetRawText();
-                }
-            }
-            nodes.Add(cn);
-        }
-
-        var edges = new List<CanvasEdge>();
-        foreach (var e in edgesEl.EnumerateArray())
-        {
-            edges.Add(new CanvasEdge
-            {
-                Source = e.GetProperty("source").GetString() ?? "",
-                Target = e.GetProperty("target").GetString() ?? "",
-                Label = e.TryGetProperty("label", out var el) && el.ValueKind == System.Text.Json.JsonValueKind.String ? el.GetString() : null
-            });
-        }
 
         var nodeMap = nodes.ToDictionary(n => n.Id);
         var outEdges = edges.GroupBy(e => e.Source).ToDictionary(g => g.Key, g => g.ToList());
         var inEdges = edges.GroupBy(e => e.Target).ToDictionary(g => g.Key, g => g.ToList());
 
         // Synthetic merge/join nodes (generated by LoadDefinitionIntoCanvas) should be skipped
-        bool IsSynthetic(CanvasNode n) => n.Label is "↪ Merge" or "↪ Join";
+        bool IsSynthetic(CanvasNode n)
+            => string.Equals(n.Config.GetValueOrDefault("__syntheticKind"), "container-exit", StringComparison.Ordinal);
+
+        var nodeOrder = nodes
+            .Select((node, index) => new { node.Id, index })
+            .ToDictionary(x => x.Id, x => x.index, StringComparer.Ordinal);
 
         // Find root nodes: no incoming edges and not synthetic
         var roots = nodes.Where(n => !IsSynthetic(n) && !inEdges.ContainsKey(n.Id)).ToList();
 
-        // Sort roots left-to-right by original insertion order (node id has counter)
-        roots.Sort((a, b) => string.Compare(a.Id, b.Id, StringComparison.Ordinal));
+        // Prefer the original canvas node order before falling back to numeric suffixes for imported ids.
+        roots.Sort((a, b) =>
+        {
+            var orderCompare = nodeOrder[a.Id].CompareTo(nodeOrder[b.Id]);
+            return orderCompare != 0 ? orderCompare : GetNodeOrderKey(a.Id).CompareTo(GetNodeOrderKey(b.Id));
+        });
+
+        static int GetNodeOrderKey(string id)
+        {
+            var separatorIndex = id.LastIndexOf('_');
+            return separatorIndex >= 0
+                && separatorIndex < id.Length - 1
+                && int.TryParse(id[(separatorIndex + 1)..], out var numericSuffix)
+                    ? numericSuffix
+                    : int.MaxValue;
+        }
 
         var visited = new HashSet<string>();
+
+        static string NormalizeType(string? type) => type?.Trim().ToLowerInvariant() ?? string.Empty;
+
+        bool IsContainer(CanvasNode node)
+            => NormalizeType(node.Type) is "conditional" or "parallel" or "retry" or "foreach" or "while" or "dowhile" or "saga" or "trycatch" or "timeout";
+
+        string? GetContainerExitId(string ownerId)
+            => nodes.FirstOrDefault(n =>
+                IsSynthetic(n)
+                && string.Equals(n.Config.GetValueOrDefault("__syntheticKind"), "container-exit", StringComparison.Ordinal)
+                && string.Equals(n.Config.GetValueOrDefault("__ownerId"), ownerId, StringComparison.Ordinal))?.Id;
+
+        CanvasEdge? GetContinueEdge(string nodeId)
+            => (outEdges.GetValueOrDefault(nodeId) ?? [])
+                .FirstOrDefault(e => string.Equals(e.Kind, "continue", StringComparison.OrdinalIgnoreCase));
+
+        string? GetSequentialNextId(string nodeId, string? stopAtExitId = null)
+        {
+            if (!nodeMap.TryGetValue(nodeId, out var currentNode))
+                return null;
+
+            if (IsContainer(currentNode))
+            {
+                var exitId = GetContainerExitId(nodeId);
+                if (string.IsNullOrWhiteSpace(exitId))
+                {
+                    var continueEdge = GetContinueEdge(nodeId);
+                    if (continueEdge is null || string.Equals(continueEdge.Target, stopAtExitId, StringComparison.Ordinal))
+                        return null;
+
+                    return nodeMap.TryGetValue(continueEdge.Target, out var continuationNode) && !IsSynthetic(continuationNode)
+                        ? continueEdge.Target
+                        : null;
+                }
+
+                if (string.Equals(exitId, stopAtExitId, StringComparison.Ordinal))
+                    return null;
+
+                var exitOuts = outEdges.GetValueOrDefault(exitId);
+                var nextEdge = exitOuts?.FirstOrDefault(IsUnlabeledEdge);
+                if (nextEdge is null || string.Equals(nextEdge.Target, stopAtExitId, StringComparison.Ordinal))
+                    return null;
+
+                return nodeMap.TryGetValue(nextEdge.Target, out var exitTargetNode) && !IsSynthetic(exitTargetNode)
+                    ? nextEdge.Target
+                    : null;
+            }
+
+            var outs = outEdges.GetValueOrDefault(nodeId);
+            var seqEdge = outs?.FirstOrDefault(IsUnlabeledEdge);
+            if (seqEdge is null || string.Equals(seqEdge.Target, stopAtExitId, StringComparison.Ordinal))
+                return null;
+
+            return nodeMap.TryGetValue(seqEdge.Target, out var targetNode) && !IsSynthetic(targetNode)
+                ? seqEdge.Target
+                : null;
+        }
+
+        List<StepDefinitionApiDto>? BuildSequenceFrom(string? startId, string? stopAtExitId = null)
+        {
+            var steps = new List<StepDefinitionApiDto>();
+            while (!string.IsNullOrWhiteSpace(startId) && !string.Equals(startId, stopAtExitId, StringComparison.Ordinal))
+            {
+                if (!nodeMap.TryGetValue(startId, out var currentNode) || IsSynthetic(currentNode))
+                    break;
+
+                var step = BuildStep(startId);
+                if (step is null)
+                    break;
+
+                steps.Add(step);
+                startId = GetSequentialNextId(startId, stopAtExitId);
+            }
+
+            return steps.Count > 0 ? steps : null;
+        }
 
         StepDefinitionApiDto? BuildStep(string nodeId)
         {
@@ -2116,12 +2182,24 @@
             if (!nodeMap.TryGetValue(nodeId, out var node)) return null;
             if (IsSynthetic(node)) return null;
 
+            var stepConfig = node.Config.Count > 0 ? new Dictionary<string, string>(node.Config) : null;
+            if (stepConfig is not null)
+            {
+                stepConfig.Remove("label");
+                stepConfig.Remove("_notes");
+                foreach (var designerKey in stepConfig.Keys.Where(static key => key.StartsWith("__", StringComparison.Ordinal)).ToList())
+                    stepConfig.Remove(designerKey);
+                if (stepConfig.Count == 0)
+                    stepConfig = null;
+            }
+
             var step = new StepDefinitionApiDto
             {
                 Name = node.Label,
                 Type = node.Type,
-                Config = node.Config.Count > 0 ? new Dictionary<string, string>(node.Config) : null
+                Config = stepConfig
             };
+            var normalizedType = NormalizeType(node.Type);
 
             // Extract well-known properties from config into DTO fields
             if (step.Config is not null)
@@ -2131,25 +2209,35 @@
                     step.MaxAttempts = maxAtt;
                     step.Config.Remove("maxAttempts");
                 }
-                if (step.Config.TryGetValue("timeoutSeconds", out var ts) && double.TryParse(ts, out var timeout))
+                if (step.Config.TryGetValue("timeoutSeconds", out var ts) && double.TryParse(ts, NumberStyles.Float, CultureInfo.InvariantCulture, out var timeout))
                 {
                     step.TimeoutSeconds = timeout;
                     step.Config.Remove("timeoutSeconds");
+                }
+                if (step.Config.TryGetValue("delaySeconds", out var ds) && double.TryParse(ds, NumberStyles.Float, CultureInfo.InvariantCulture, out var delay))
+                {
+                    step.DelaySeconds = delay;
+                    step.Config.Remove("delaySeconds");
                 }
                 if (step.Config.TryGetValue("catchTypes", out var ct) && !string.IsNullOrWhiteSpace(ct))
                 {
                     step.CatchTypes = ct.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
                     step.Config.Remove("catchTypes");
                 }
+                if (step.Config.TryGetValue("subWorkflowName", out var subWorkflowName) && !string.IsNullOrWhiteSpace(subWorkflowName))
+                {
+                    step.SubWorkflowName = subWorkflowName;
+                    step.Config.Remove("subWorkflowName");
+                }
                 if (step.Config.Count == 0) step.Config = null;
             }
 
             var outs = outEdges.GetValueOrDefault(node.Id) ?? [];
 
-            if (node.Type.Equals("Conditional", StringComparison.OrdinalIgnoreCase))
+            if (normalizedType == "conditional")
             {
-                var thenEdge = outs.FirstOrDefault(e => string.Equals(e.Label, "then", StringComparison.OrdinalIgnoreCase));
-                var elseEdge = outs.FirstOrDefault(e => string.Equals(e.Label, "else", StringComparison.OrdinalIgnoreCase));
+                var thenEdge = outs.FirstOrDefault(e => string.Equals(e.Kind, "then", StringComparison.OrdinalIgnoreCase) || string.Equals(e.Label, "then", StringComparison.OrdinalIgnoreCase));
+                var elseEdge = outs.FirstOrDefault(e => string.Equals(e.Kind, "else", StringComparison.OrdinalIgnoreCase) || string.Equals(e.Label, "else", StringComparison.OrdinalIgnoreCase));
 
                 if (thenEdge is not null)
                     step.Then = BuildStep(thenEdge.Target) ?? BuildChainFrom(thenEdge.Target);
@@ -2159,10 +2247,13 @@
                 return step;
             }
 
-            if (node.Type.Equals("Parallel", StringComparison.OrdinalIgnoreCase))
+            if (normalizedType == "parallel")
             {
                 step.Steps = [];
-                foreach (var edge in outs)
+                foreach (var edge in outs
+                    .Where(e => !string.Equals(e.Kind, "continue", StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(e => GetParallelBranchOrder(e.Kind))
+                    .ThenBy(e => e.Id, StringComparer.Ordinal))
                 {
                     var child = BuildStep(edge.Target);
                     if (child is not null) step.Steps.Add(child);
@@ -2171,41 +2262,73 @@
                 return step;
             }
 
-            if (node.Type is "Retry" or "ForEach" or "While" or "DoWhile" or "Saga"
+            static int GetParallelBranchOrder(string? kind)
+            {
+                const string prefix = "output-";
+                return kind is not null
+                    && kind.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                    && int.TryParse(kind[prefix.Length..], out var branchIndex)
+                        ? branchIndex
+                        : int.MaxValue;
+            }
+
+            if (normalizedType is "retry" or "foreach" or "while" or "dowhile" or "saga"
                 && outs.Count > 0)
             {
-                step.Steps = [];
-                // Children are chained sequentially from this node
-                var childId = outs[0].Target;
-                while (childId is not null)
-                {
-                    var child = BuildStep(childId);
-                    if (child is null) break;
-                    step.Steps.Add(child);
-                    // Follow the single outgoing edge from child (skip synthetic)
-                    var childOuts = outEdges.GetValueOrDefault(childId);
-                    childId = childOuts?.FirstOrDefault()?.Target;
-                    if (childId is not null && nodeMap.TryGetValue(childId, out var next) && IsSynthetic(next))
-                        childId = null;
-                }
-                if (step.Steps.Count == 0) step.Steps = null;
+                var continueEdge = GetContinueEdge(node.Id);
+                var stopAtId = continueEdge?.Target ?? GetContainerExitId(node.Id);
+                var bodyEdge = outs.FirstOrDefault(e => string.Equals(e.Kind, "body", StringComparison.OrdinalIgnoreCase))
+                    ?? outs.FirstOrDefault(e => !string.Equals(e.Kind, "continue", StringComparison.OrdinalIgnoreCase));
+                step.Steps = bodyEdge is null ? null : BuildSequenceFrom(bodyEdge.Target, stopAtId);
                 return step;
             }
 
-            if (node.Type.Equals("TryCatch", StringComparison.OrdinalIgnoreCase) && outs.Count > 0)
+            if (normalizedType == "timeout")
+            {
+                var innerEdge = outs.FirstOrDefault(e => string.Equals(e.Kind, "inner", StringComparison.OrdinalIgnoreCase))
+                    ?? outs.FirstOrDefault(e => !string.Equals(e.Kind, "continue", StringComparison.OrdinalIgnoreCase));
+                if (innerEdge is not null)
+                    step.Inner = BuildStep(innerEdge.Target) ?? BuildChainFrom(innerEdge.Target);
+                return step;
+            }
+
+            if (normalizedType == "trycatch" && outs.Count > 0)
             {
                 step.TryBody = [];
-                var childId = outs[0].Target;
+                var continueEdge = GetContinueEdge(node.Id);
+                var stopAtId = continueEdge?.Target ?? GetContainerExitId(node.Id);
+                var nodeFinallyEdge = outs.FirstOrDefault(e => string.Equals(e.Kind, "finally", StringComparison.OrdinalIgnoreCase));
+                var tryEdge = outs.FirstOrDefault(e => string.Equals(e.Kind, "try", StringComparison.OrdinalIgnoreCase))
+                    ?? outs.FirstOrDefault(e => !string.Equals(e.Kind, "continue", StringComparison.OrdinalIgnoreCase));
+                if (tryEdge is null)
+                {
+                    if (nodeFinallyEdge is not null)
+                        step.FinallyBody = BuildSequenceFrom(nodeFinallyEdge.Target, stopAtId);
+                    return step;
+                }
+                var childId = tryEdge.Target;
                 while (childId is not null)
                 {
                     var child = BuildStep(childId);
                     if (child is null) break;
                     step.TryBody.Add(child);
-                    var childOuts = outEdges.GetValueOrDefault(childId);
-                    childId = childOuts?.FirstOrDefault()?.Target;
-                    if (childId is not null && nodeMap.TryGetValue(childId, out var next) && IsSynthetic(next))
+
+                    var childOuts = outEdges.GetValueOrDefault(childId) ?? [];
+                    var finallyEdge = childOuts.FirstOrDefault(e => string.Equals(e.Kind, "finally", StringComparison.OrdinalIgnoreCase));
+                    if (finallyEdge is not null)
+                    {
+                        step.FinallyBody = BuildSequenceFrom(finallyEdge.Target, stopAtId);
                         childId = null;
+                    }
+                    else
+                    {
+                        childId = GetSequentialNextId(childId, stopAtId);
+                    }
                 }
+
+                if (step.FinallyBody is null && nodeFinallyEdge is not null)
+                    step.FinallyBody = BuildSequenceFrom(nodeFinallyEdge.Target, stopAtId);
+
                 if (step.TryBody.Count == 0) step.TryBody = null;
                 return step;
             }
@@ -2222,82 +2345,12 @@
         // Walk roots and their sequential successors
         foreach (var root in roots)
         {
-            var step = BuildStep(root.Id);
-            if (step is null) continue;
-            dto.Steps.Add(step);
-
-            // Follow sequential chain from this root
-            var currentId = root.Id;
-            while (true)
-            {
-                var outs = outEdges.GetValueOrDefault(currentId);
-                if (outs is null || outs.Count == 0) break;
-                // For non-container nodes, the unlabeled edge is the sequential next
-                if (nodeMap.TryGetValue(currentId, out var cur) &&
-                    cur.Type is "Conditional" or "Parallel" or "Retry" or "ForEach" or "While" or "DoWhile" or "Saga" or "TryCatch")
-                {
-                    // Container children are already handled; find the merge/join exit
-                    var mergeTargets = outs
-                        .Select(e => e.Target)
-                        .SelectMany(t => FindMergeExit(t))
-                        .Distinct()
-                        .ToList();
-                    if (mergeTargets.Count == 1)
-                    {
-                        currentId = mergeTargets[0];
-                        // Follow from merge exit
-                        var mergeOuts = outEdges.GetValueOrDefault(currentId);
-                        if (mergeOuts is { Count: 1 })
-                        {
-                            var nextId = mergeOuts[0].Target;
-                            if (nodeMap.TryGetValue(nextId, out var nn) && !IsSynthetic(nn))
-                            {
-                                var nextStep = BuildStep(nextId);
-                                if (nextStep is not null)
-                                {
-                                    dto.Steps.Add(nextStep);
-                                    currentId = nextId;
-                                    continue;
-                                }
-                            }
-                        }
-                    }
-                    break;
-                }
-
-                // Simple sequential: single unlabeled outgoing edge
-                var seqEdge = outs.FirstOrDefault(IsUnlabeledEdge);
-                if (seqEdge is null) break;
-                var targetNode = nodeMap.GetValueOrDefault(seqEdge.Target);
-                if (targetNode is null || IsSynthetic(targetNode)) break;
-                var seqStep = BuildStep(seqEdge.Target);
-                if (seqStep is null) break;
-                dto.Steps.Add(seqStep);
-                currentId = seqEdge.Target;
-            }
+            var steps = BuildSequenceFrom(root.Id);
+            if (steps is not null)
+                dto.Steps.AddRange(steps);
         }
 
         return dto;
-
-        // Helper: find merge/join node reachable from a node
-        IEnumerable<string> FindMergeExit(string fromId)
-        {
-            var seen = new HashSet<string>();
-            var queue = new Queue<string>();
-            queue.Enqueue(fromId);
-            while (queue.Count > 0)
-            {
-                var id = queue.Dequeue();
-                if (!seen.Add(id)) continue;
-                if (nodeMap.TryGetValue(id, out var n) && IsSynthetic(n))
-                {
-                    yield return id;
-                    continue;
-                }
-                foreach (var e in outEdges.GetValueOrDefault(id) ?? [])
-                    queue.Enqueue(e.Target);
-            }
-        }
     }
 
     private sealed class CanvasNode
@@ -2305,6 +2358,11 @@
         public string Id { get; set; } = "";
         public string Type { get; set; } = "";
         public string Label { get; set; } = "";
+        public string? Icon { get; set; }
+        public string? Category { get; set; }
+        public string? Color { get; set; }
+        public double X { get; set; }
+        public double Y { get; set; }
         public Dictionary<string, string> Config { get; set; } = new();
     }
 
@@ -2372,6 +2430,8 @@
 
     private sealed class CanvasEdge
     {
+        public string? Id { get; set; }
+        public string? Kind { get; set; }
         public string Source { get; set; } = "";
         public string Target { get; set; } = "";
         public string? Label { get; set; }
@@ -2379,10 +2439,52 @@
 
     private async Task LoadDefinitionIntoCanvas(WorkflowDefinitionDto definition)
     {
-        var nodes = new List<object>();
-        var edges = new List<object>();
+        var canvas = definition.Canvas is { Nodes.Count: > 0 } savedCanvas
+            ? savedCanvas
+            : BuildCanvasGraph(definition);
+
+        var nodes = canvas.Nodes
+            .Select(node => new
+            {
+                id = node.Id,
+                type = node.Type,
+                label = node.Label,
+                icon = node.Icon ?? "⬡",
+                category = node.Category ?? string.Empty,
+                color = node.Color ?? "#4b5563",
+                x = node.X,
+                y = node.Y,
+                config = node.Config?.ToDictionary(k => k.Key, k => (object?)k.Value) ?? new Dictionary<string, object?>()
+            })
+            .ToArray();
+
+        var edges = canvas.Edges
+            .Select(edge => new
+            {
+                id = edge.Id,
+                sourceHandle = edge.Kind,
+                kind = edge.Kind,
+                source = edge.Source,
+                target = edge.Target,
+                label = edge.Label
+            })
+            .ToArray();
+
+        await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", nodes, edges);
+        await JS.InvokeVoidAsync("workflowEditor.fitView");
+        _activeBottomTab = "steps";
+        _bottomPanelCollapsed = false;
+        StateHasChanged();
+        RefreshStepList();
+    }
+
+    private static WorkflowCanvasDto BuildCanvasGraph(WorkflowDefinitionDto definition)
+    {
+        var nodes = new List<WorkflowCanvasNodeDto>();
+        var edges = new List<WorkflowCanvasEdgeDto>();
         int nodeCounter = 0;
-        
+        int edgeCounter = 0;
+
         string NextId() => $"node_{++nodeCounter}";
 
         static (string category, string color, string icon) GetStepVisuals(string type) => type.ToLowerInvariant() switch
@@ -2396,12 +2498,12 @@
             "timeout" => ("Core", "#3b82f6", "⏱"),
             "delay" => ("Core", "#3b82f6", "⏱"),
             "saga" => ("Core", "#3b82f6", "📜"),
-            "contentbasedrouter" or "messagefilter" or "splitter" or "aggregator" 
-                or "recipientlist" or "wiretap" or "deadletterchannel" or "enricher" 
+            "contentbasedrouter" or "messagefilter" or "splitter" or "aggregator"
+                or "recipientlist" or "wiretap" or "deadletterchannel" or "enricher"
                 or "normalizer" or "claimcheck" or "dynamicrouter" or "routingslip"
                 => ("Integration", "#22c55e", "🔀"),
             "httpstep" => ("HTTP", "#14b8a6", "🌐"),
-            "llmcallstep" or "agentdecisionstep" => ("AI/Agents", "#a855f7", "🤖"),
+            "llmcallstep" or "agentdecisionstep" or "agentplanstep" => ("AI/Agents", "#a855f7", "🤖"),
             "agentloopstep" or "toolcallstep" => ("AI/Agents", "#a855f7", "🧠"),
             "datamapstep" or "validatestep" or "schemavalidatestep" => ("Data", "#f97316", "🗺"),
             "publisheventstep" or "subscribeeventstep" => ("Events", "#eab308", "⚡"),
@@ -2409,10 +2511,39 @@
             _ => ("Core", "#3b82f6", "⬡")
         };
 
-        int edgeCounter = 0;
-        void AddEdge(string source, string target, string? label = null)
+        void AddEdge(string source, string target, string? label = null, string? kind = null)
         {
-            edges.Add(new { id = $"edge_{++edgeCounter}", source, target, label });
+            edges.Add(new WorkflowCanvasEdgeDto
+            {
+                Id = $"edge_{++edgeCounter}",
+                Kind = kind,
+                Source = source,
+                Target = target,
+                Label = label
+            });
+        }
+
+        string AddSyntheticExitNode(string ownerId, double x, double y, string label)
+        {
+            var exitId = NextId();
+            nodes.Add(new WorkflowCanvasNodeDto
+            {
+                Id = exitId,
+                Type = "action",
+                Label = label,
+                Icon = "↪",
+                Category = "Core",
+                Color = "#6b7280",
+                X = x,
+                Y = y,
+                Config = new Dictionary<string, string>
+                {
+                    ["__syntheticKind"] = "container-exit",
+                    ["__ownerId"] = ownerId
+                }
+            });
+
+            return exitId;
         }
 
         (string entryId, string exitId) LayoutStep(StepDefinitionApiDto step, double x, double y)
@@ -2420,100 +2551,137 @@
             var (cat, color, icon) = GetStepVisuals(step.Type);
             var nodeId = NextId();
 
-            Dictionary<string, object?> ToNodeConfig(StepDefinitionApiDto s) =>
-                s.Config?.ToDictionary(k => k.Key, k => (object?)k.Value) ?? new Dictionary<string, object?>();
+            Dictionary<string, string> ToNodeConfig(StepDefinitionApiDto s) =>
+                (s.Config ?? new Dictionary<string, string>())
+                .Concat(new[] { new KeyValuePair<string, string>("label", s.Name) })
+                .Concat(s.MaxAttempts > 0 ? [new KeyValuePair<string, string>("maxAttempts", s.MaxAttempts.ToString(System.Globalization.CultureInfo.InvariantCulture))] : [])
+                .Concat(s.TimeoutSeconds > 0 ? [new KeyValuePair<string, string>("timeoutSeconds", s.TimeoutSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture))] : [])
+                .Concat(s.DelaySeconds > 0 ? [new KeyValuePair<string, string>("delaySeconds", s.DelaySeconds.ToString(System.Globalization.CultureInfo.InvariantCulture))] : [])
+                .Concat(!string.IsNullOrWhiteSpace(s.SubWorkflowName) ? [new KeyValuePair<string, string>("subWorkflowName", s.SubWorkflowName!)] : [])
+                .Concat(s.CatchTypes is { Count: > 0 } ? [new KeyValuePair<string, string>("catchTypes", string.Join(",", s.CatchTypes))] : [])
+                .Concat(s.Type.Equals("Parallel", StringComparison.OrdinalIgnoreCase) && s.Steps is { Count: > 0 }
+                    ? [new KeyValuePair<string, string>("__parallelBranchCount", s.Steps.Count.ToString(System.Globalization.CultureInfo.InvariantCulture))]
+                    : [])
+                .GroupBy(pair => pair.Key, StringComparer.Ordinal)
+                .ToDictionary(group => group.Key, group => group.Last().Value, StringComparer.Ordinal);
+
+            nodes.Add(new WorkflowCanvasNodeDto
+            {
+                Id = nodeId,
+                Type = step.Type,
+                Label = step.Name,
+                Icon = icon,
+                Category = cat,
+                Color = color,
+                X = x,
+                Y = y,
+                Config = ToNodeConfig(step)
+            });
 
             if (step.Type.Equals("Conditional", StringComparison.OrdinalIgnoreCase))
             {
-                nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = ToNodeConfig(step) });
-                string lastId = nodeId;
+                var mergeId = AddSyntheticExitNode(nodeId, x + 400, y, step.Else is not null ? "↪ Merge" : "↪ Continue");
 
                 if (step.Then is not null)
                 {
                     var (thenEntry, thenExit) = LayoutStep(step.Then, x + 200, y - 60);
-                    AddEdge(nodeId, thenEntry, "then");
-                    lastId = thenExit;
+                    AddEdge(nodeId, thenEntry, "then", "then");
+                    AddEdge(thenExit, mergeId);
                 }
                 if (step.Else is not null)
                 {
                     var (elseEntry, elseExit) = LayoutStep(step.Else, x + 200, y + 60);
-                    AddEdge(nodeId, elseEntry, "else");
-                    var mergeId = NextId();
-                    nodes.Add(new { id = mergeId, type = "action", label = "↪ Merge", icon = "↪", category = "Core", color = "#6b7280", x = x + 400, y, config = new Dictionary<string, object?>() });
-                    AddEdge(lastId, mergeId);
+                    AddEdge(nodeId, elseEntry, "else", "else");
                     AddEdge(elseExit, mergeId);
-                    return (nodeId, mergeId);
+                }
+                else
+                {
+                    AddEdge(nodeId, mergeId, kind: "continue");
                 }
 
-                return (nodeId, lastId);
+                return (nodeId, mergeId);
             }
-            
+
             if (step.Type.Equals("Parallel", StringComparison.OrdinalIgnoreCase) && step.Steps is { Count: > 0 })
             {
-                nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = ToNodeConfig(step) });
-                var joinId = NextId();
+                var joinId = AddSyntheticExitNode(nodeId, x + 400, y, "↪ Join");
                 double branchY = y - ((step.Steps.Count - 1) * 40.0);
                 var branchExits = new List<string>();
-                
+                var branchIndex = 1;
+
                 foreach (var child in step.Steps)
                 {
                     var (childEntry, childExit) = LayoutStep(child, x + 200, branchY);
-                    AddEdge(nodeId, childEntry);
+                    AddEdge(nodeId, childEntry, kind: $"output-{branchIndex++}");
                     branchExits.Add(childExit);
                     branchY += 80;
                 }
 
-                nodes.Add(new { id = joinId, type = "action", label = "↪ Join", icon = "↪", category = "Core", color = "#6b7280", x = x + 400, y, config = new Dictionary<string, object?>() });
                 foreach (var exit in branchExits) AddEdge(exit, joinId);
                 return (nodeId, joinId);
             }
 
-            if ((step.Type.Equals("Retry", StringComparison.OrdinalIgnoreCase) 
+            if (step.Type.Equals("Timeout", StringComparison.OrdinalIgnoreCase) && step.Inner is not null)
+            {
+                var exitId = AddSyntheticExitNode(nodeId, x + 400, y, "↪ Continue");
+                var (innerEntry, innerExit) = LayoutStep(step.Inner, x + 200, y);
+                AddEdge(nodeId, innerEntry, kind: "inner");
+                AddEdge(innerExit, exitId);
+                return (nodeId, exitId);
+            }
+
+            if ((step.Type.Equals("Retry", StringComparison.OrdinalIgnoreCase)
                 || step.Type.Equals("ForEach", StringComparison.OrdinalIgnoreCase)
                 || step.Type.Equals("While", StringComparison.OrdinalIgnoreCase)
                 || step.Type.Equals("DoWhile", StringComparison.OrdinalIgnoreCase)
                 || step.Type.Equals("Saga", StringComparison.OrdinalIgnoreCase))
                 && step.Steps is { Count: > 0 })
             {
-                nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = ToNodeConfig(step) });
-                string lastChild = nodeId;
+                string? lastChild = null;
                 double childX = x + 200;
                 foreach (var child in step.Steps)
                 {
                     var (childEntry, childExit) = LayoutStep(child, childX, y);
-                    AddEdge(lastChild, childEntry);
+                    AddEdge(lastChild ?? nodeId, childEntry, kind: lastChild is null ? "body" : null);
                     lastChild = childExit;
                     childX += 200;
                 }
-                return (nodeId, lastChild);
+
+                var exitId = AddSyntheticExitNode(nodeId, childX, y, "↪ Continue");
+                if (lastChild is not null)
+                    AddEdge(lastChild, exitId);
+                return (nodeId, exitId);
             }
 
             if (step.Type.Equals("TryCatch", StringComparison.OrdinalIgnoreCase) && step.TryBody is { Count: > 0 })
             {
-                nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = ToNodeConfig(step) });
-                string lastTry = nodeId;
+                string? lastTry = null;
                 double childX = x + 200;
                 foreach (var child in step.TryBody)
                 {
                     var (childEntry, childExit) = LayoutStep(child, childX, y);
-                    AddEdge(lastTry, childEntry);
+                    AddEdge(lastTry ?? nodeId, childEntry, kind: lastTry is null ? "try" : null);
                     lastTry = childExit;
                     childX += 200;
                 }
+
+                string? lastFinally = null;
                 if (step.FinallyBody is { Count: > 0 })
                 {
                     foreach (var fin in step.FinallyBody)
                     {
                         var (finEntry, finExit) = LayoutStep(fin, childX, y + 80);
-                        AddEdge(lastTry, finEntry);
-                        lastTry = finExit;
+                        AddEdge(lastFinally ?? lastTry ?? nodeId, finEntry, kind: lastFinally is null ? "finally" : null);
+                        lastFinally = finExit;
                         childX += 200;
                     }
                 }
-                return (nodeId, lastTry);
+
+                var exitId = AddSyntheticExitNode(nodeId, childX, y, "↪ Continue");
+                AddEdge(lastFinally ?? lastTry ?? nodeId, exitId);
+                return (nodeId, exitId);
             }
 
-            nodes.Add(new { id = nodeId, type = step.Type, label = step.Name, icon, category = cat, color, x, y, config = ToNodeConfig(step) });
             return (nodeId, nodeId);
         }
 
@@ -2523,21 +2691,118 @@
         foreach (var step in definition.Steps)
         {
             var (entryId, exitId) = LayoutStep(step, currentX, 100);
-            if (previousExit is not null) AddEdge(previousExit, entryId);
+            if (previousExit is not null)
+                AddEdge(previousExit, entryId);
             previousExit = exitId;
-            
-            currentX += step.Steps?.Count > 0 || step.Then is not null || step.TryBody?.Count > 0 
-                ? 600 
+
+            currentX += step.Steps?.Count > 0 || step.Then is not null || step.Else is not null || step.Inner is not null || step.TryBody?.Count > 0 || step.FinallyBody?.Count > 0
+                ? 600
                 : 200;
         }
 
-        await JS.InvokeVoidAsync("workflowEditor.setWorkflowDefinition", nodes.ToArray(), edges.ToArray());
-        await JS.InvokeVoidAsync("workflowEditor.fitView");
-        _activeBottomTab = "steps";
-        _bottomPanelCollapsed = false;
-        StateHasChanged();
-        RefreshStepList();
+        return new WorkflowCanvasDto
+        {
+            Nodes = nodes,
+            Edges = edges
+        };
     }
+
+    private static (List<CanvasNode> Nodes, List<CanvasEdge> Edges) ParseCanvasGraph(System.Text.Json.JsonElement canvasData)
+    {
+        if (!canvasData.TryGetProperty("nodes", out var nodesEl) || !canvasData.TryGetProperty("edges", out var edgesEl))
+            return ([], []);
+
+        var nodes = new List<CanvasNode>();
+        foreach (var nodeElement in nodesEl.EnumerateArray())
+        {
+            var config = new Dictionary<string, string>(StringComparer.Ordinal);
+            if (nodeElement.TryGetProperty("config", out var cfg) && cfg.ValueKind == System.Text.Json.JsonValueKind.Object)
+            {
+                foreach (var prop in cfg.EnumerateObject())
+                {
+                    config[prop.Name] = prop.Value.ValueKind == System.Text.Json.JsonValueKind.String
+                        ? prop.Value.GetString() ?? string.Empty
+                        : prop.Value.GetRawText();
+                }
+            }
+
+            var rawLabel = nodeElement.TryGetProperty("label", out var labelElement)
+                ? labelElement.GetString() ?? string.Empty
+                : string.Empty;
+
+            nodes.Add(new CanvasNode
+            {
+                Id = nodeElement.GetProperty("id").GetString() ?? string.Empty,
+                Type = nodeElement.TryGetProperty("type", out var typeElement) ? typeElement.GetString() ?? "Action" : "Action",
+                Label = ResolveNodeLabel(rawLabel, config),
+                Icon = nodeElement.TryGetProperty("icon", out var iconElement) && iconElement.ValueKind == System.Text.Json.JsonValueKind.String ? iconElement.GetString() : null,
+                Category = nodeElement.TryGetProperty("category", out var categoryElement) && categoryElement.ValueKind == System.Text.Json.JsonValueKind.String ? categoryElement.GetString() : null,
+                Color = nodeElement.TryGetProperty("color", out var colorElement) && colorElement.ValueKind == System.Text.Json.JsonValueKind.String ? colorElement.GetString() : null,
+                X = nodeElement.TryGetProperty("x", out var xElement) && xElement.TryGetDouble(out var x) ? x : 0,
+                Y = nodeElement.TryGetProperty("y", out var yElement) && yElement.TryGetDouble(out var y) ? y : 0,
+                Config = config
+            });
+        }
+
+        var edges = new List<CanvasEdge>();
+        foreach (var edgeElement in edgesEl.EnumerateArray())
+        {
+            edges.Add(new CanvasEdge
+            {
+                Id = edgeElement.TryGetProperty("id", out var idElement) && idElement.ValueKind == System.Text.Json.JsonValueKind.String ? idElement.GetString() : null,
+                Kind =
+                    edgeElement.TryGetProperty("kind", out var kindElement) && kindElement.ValueKind == System.Text.Json.JsonValueKind.String
+                        ? kindElement.GetString()
+                        : edgeElement.TryGetProperty("sourceHandle", out var sourceHandleElement) && sourceHandleElement.ValueKind == System.Text.Json.JsonValueKind.String
+                            ? sourceHandleElement.GetString()
+                            : null,
+                Source = edgeElement.GetProperty("source").GetString() ?? string.Empty,
+                Target = edgeElement.GetProperty("target").GetString() ?? string.Empty,
+                Label = edgeElement.TryGetProperty("label", out var edgeLabelElement) && edgeLabelElement.ValueKind == System.Text.Json.JsonValueKind.String ? edgeLabelElement.GetString() : null
+            });
+        }
+
+        return (nodes, edges);
+    }
+
+    private static WorkflowCanvasDto? CreateCanvasSnapshot(IReadOnlyList<CanvasNode> nodes, IReadOnlyList<CanvasEdge> edges)
+    {
+        if (nodes.Count == 0 && edges.Count == 0)
+            return null;
+
+        return new WorkflowCanvasDto
+        {
+            Nodes = nodes
+                .Select(node => new WorkflowCanvasNodeDto
+                {
+                    Id = node.Id,
+                    Type = node.Type,
+                    Label = node.Label,
+                    Icon = node.Icon,
+                    Category = node.Category,
+                    Color = node.Color,
+                    X = node.X,
+                    Y = node.Y,
+                    Config = node.Config.Count > 0 ? new Dictionary<string, string>(node.Config, StringComparer.Ordinal) : null
+                })
+                .ToList(),
+            Edges = edges
+                .Select(edge => new WorkflowCanvasEdgeDto
+                {
+                    Id = edge.Id,
+                    Kind = edge.Kind,
+                    Source = edge.Source,
+                    Target = edge.Target,
+                    Label = edge.Label
+                })
+                .ToList()
+        };
+    }
+
+    private static string ResolveNodeLabel(string rawLabel, IReadOnlyDictionary<string, string> config)
+        => config.TryGetValue("label", out var configuredLabel) && !string.IsNullOrWhiteSpace(configuredLabel)
+            ? configuredLabel
+            : rawLabel;
 
     private async Task HandleStepStatusChanged((string StepName, string Status) stepStatus)
     {

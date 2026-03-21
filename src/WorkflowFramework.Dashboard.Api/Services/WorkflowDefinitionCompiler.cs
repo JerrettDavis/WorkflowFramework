@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Reflection;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using WorkflowFramework.Builder;
@@ -17,11 +19,16 @@ public sealed class WorkflowDefinitionCompiler
 {
     private readonly IDashboardSettingsService _settings;
     private readonly PluginRegistry _pluginRegistry;
+    private readonly IWorkflowDefinitionStore? _workflowStore;
 
-    public WorkflowDefinitionCompiler(IDashboardSettingsService settings, PluginRegistry pluginRegistry)
+    public WorkflowDefinitionCompiler(
+        IDashboardSettingsService settings,
+        PluginRegistry pluginRegistry,
+        IWorkflowDefinitionStore? workflowStore = null)
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _pluginRegistry = pluginRegistry ?? throw new ArgumentNullException(nameof(pluginRegistry));
+        _workflowStore = workflowStore;
     }
 
     /// <summary>
@@ -42,9 +49,11 @@ public sealed class WorkflowDefinitionCompiler
 
     private void CompileStep(IWorkflowBuilder builder, StepDefinitionDto stepDto)
     {
-        switch (stepDto.Type)
+        var stepType = (stepDto.Type ?? string.Empty).Trim();
+
+        switch (stepType.ToLowerInvariant())
         {
-            case "Action":
+            case "action":
                 builder.Step(stepDto.Name, async ctx =>
                 {
                     var expression = stepDto.Config?.GetValueOrDefault("expression") ?? "No action defined";
@@ -55,28 +64,53 @@ public sealed class WorkflowDefinitionCompiler
                 });
                 break;
 
-            case "LlmCallStep":
+            case "llmcallstep":
                 var provider = ResolveProvider(stepDto.Config);
-                builder.Step(new LlmCallStep(provider, new LlmCallOptions
+                var llmCallOptions = new LlmCallOptions
                 {
                     StepName = stepDto.Name,
                     PromptTemplate = stepDto.Config?.GetValueOrDefault("prompt") ?? "",
                     Model = stepDto.Config?.GetValueOrDefault("model")
-                }));
+                };
+                if (double.TryParse(stepDto.Config?.GetValueOrDefault("temperature"), NumberStyles.Float, CultureInfo.InvariantCulture, out var temperature))
+                    llmCallOptions.Temperature = temperature;
+                if (int.TryParse(stepDto.Config?.GetValueOrDefault("maxTokens"), NumberStyles.Integer, CultureInfo.InvariantCulture, out var maxTokens))
+                    llmCallOptions.MaxTokens = maxTokens;
+                builder.Step(new LlmCallStep(provider, llmCallOptions));
                 break;
 
-            case "AgentLoopStep":
+            case "agentloopstep":
                 var agentProvider = ResolveProvider(stepDto.Config);
                 var tools = new ToolRegistry();
                 builder.Step(new AgentLoopStep(agentProvider, tools, new AgentLoopOptions
                 {
                     StepName = stepDto.Name,
                     SystemPrompt = stepDto.Config?.GetValueOrDefault("systemPrompt") ?? "",
-                    MaxIterations = int.TryParse(stepDto.Config?.GetValueOrDefault("maxIterations"), out var mi) ? mi : 5
+                    MaxIterations = int.TryParse(stepDto.Config?.GetValueOrDefault("maxIterations"), out var mi) ? mi : 10
                 }));
                 break;
 
-            case "HttpStep":
+            case "agentdecisionstep":
+                var decisionProvider = ResolveProvider(stepDto.Config);
+                builder.Step(new AgentDecisionStep(decisionProvider, new AgentDecisionOptions
+                {
+                    StepName = stepDto.Name,
+                    Prompt = stepDto.Config?.GetValueOrDefault("prompt") ?? "",
+                    Options = ParseOptions(stepDto.Config?.GetValueOrDefault("options"))
+                }));
+                break;
+
+            case "agentplanstep":
+                var planProvider = ResolveProvider(stepDto.Config);
+                builder.Step(new AgentPlanStep(planProvider, new AgentPlanOptions
+                {
+                    StepName = stepDto.Name,
+                    PromptTemplate = stepDto.Config?.GetValueOrDefault("objective") ?? "",
+                    Model = stepDto.Config?.GetValueOrDefault("model")
+                }));
+                break;
+
+            case "httpstep":
                 var httpOptions = new HttpStepOptions
                 {
                     Name = stepDto.Name,
@@ -99,13 +133,19 @@ public sealed class WorkflowDefinitionCompiler
                 builder.Step(new HttpStep(httpOptions));
                 break;
 
-            case "Conditional":
+            case "conditional":
                 var condExpr = stepDto.Config?.GetValueOrDefault("expression") ?? "true";
                 var condBuilder = builder.If(ctx =>
                 {
+                    if (bool.TryParse(condExpr, out var literalBool))
+                        return literalBool;
+
+                    if (double.TryParse(condExpr, NumberStyles.Float, CultureInfo.InvariantCulture, out var literalNumber))
+                        return literalNumber != 0;
+
                     if (ctx.Properties.TryGetValue(condExpr, out var val))
-                        return val?.ToString()?.ToLower() is not ("false" or "0" or "" or null);
-                    return true;
+                        return val?.ToString()?.ToLowerInvariant() is not ("false" or "0" or "" or null);
+                    return false;
                 });
                 var thenStep = stepDto.Then is not null
                     ? CreateStepFromDto(stepDto.Then)
@@ -116,7 +156,7 @@ public sealed class WorkflowDefinitionCompiler
                 condBuilder.Then(thenStep).Else(elseStep);
                 break;
 
-            case "Parallel":
+            case "parallel":
                 if (stepDto.Steps is { Count: > 0 })
                 {
                     builder.Parallel(p =>
@@ -127,14 +167,47 @@ public sealed class WorkflowDefinitionCompiler
                 }
                 break;
 
-            case "Delay":
-                var delayMs = stepDto.DelaySeconds > 0
-                    ? (int)(stepDto.DelaySeconds * 1000)
-                    : int.TryParse(stepDto.Config?.GetValueOrDefault("durationMs"), out var d) ? d : 1000;
-                builder.Delay(TimeSpan.FromMilliseconds(delayMs));
+            case "delay":
+                if (stepDto.DelaySeconds > 0 || (stepDto.DelaySeconds == 0 && !int.TryParse(stepDto.Config?.GetValueOrDefault("durationMs"), out var _)))
+                {
+                    builder.Delay(TimeSpan.FromSeconds(stepDto.DelaySeconds));
+                }
+                else if (int.TryParse(stepDto.Config?.GetValueOrDefault("durationMs"), out var delayMs))
+                {
+                    builder.Delay(TimeSpan.FromMilliseconds(delayMs));
+                }
+                else
+                {
+                    builder.Delay(TimeSpan.Zero);
+                }
                 break;
 
-            case "Retry":
+            case "timeout":
+                if (stepDto.Inner is null)
+                    throw new InvalidOperationException("Timeout step requires an inner step.");
+
+                var timeoutSeconds = stepDto.TimeoutSeconds;
+                if (timeoutSeconds <= 0 &&
+                    !double.TryParse(stepDto.Config?.GetValueOrDefault("timeoutSeconds"), NumberStyles.Float, CultureInfo.InvariantCulture, out timeoutSeconds))
+                {
+                    throw new InvalidOperationException("Timeout step requires timeoutSeconds > 0.");
+                }
+
+                if (timeoutSeconds <= 0)
+                    throw new InvalidOperationException("Timeout step requires timeoutSeconds > 0.");
+
+                builder.Step(CreateInternalFrameworkStep(
+                    "WorkflowFramework.Internal.TimeoutStep",
+                    CreateStepFromDto(stepDto.Inner),
+                    TimeSpan.FromSeconds(timeoutSeconds)));
+                break;
+
+            case "subworkflow":
+                var subWorkflowName = stepDto.SubWorkflowName ?? stepDto.Config?.GetValueOrDefault("subWorkflowName");
+                builder.SubWorkflow(CreateSubWorkflow(stepDto, subWorkflowName));
+                break;
+
+            case "retry":
                 if (stepDto.Steps is { Count: > 0 })
                 {
                     var maxAttempts = stepDto.MaxAttempts > 0 ? stepDto.MaxAttempts : 3;
@@ -146,36 +219,28 @@ public sealed class WorkflowDefinitionCompiler
                 }
                 break;
 
-            case "TryCatch":
+            case "trycatch":
                 if (stepDto.TryBody is { Count: > 0 })
                 {
-                    var tryCatch = builder.Try(inner =>
-                    {
-                        foreach (var child in stepDto.TryBody)
-                            CompileStep(inner, child);
-                    })
-                    .Catch<Exception>((ctx, ex) =>
+                    var catchHandler = new Func<IWorkflowContext, Exception, Task>((ctx, ex) =>
                     {
                         ctx.Properties[$"{stepDto.Name}.CaughtException"] = ex.Message;
                         return Task.CompletedTask;
                     });
 
-                    if (stepDto.FinallyBody is { Count: > 0 })
-                    {
-                        tryCatch.Finally(inner =>
-                        {
-                            foreach (var child in stepDto.FinallyBody)
-                                CompileStep(inner, child);
-                        });
-                    }
-                    else
-                    {
-                        tryCatch.EndTry();
-                    }
+                    var catchHandlers = ResolveCatchTypes(stepDto.CatchTypes)
+                        .ToDictionary(type => type, _ => catchHandler);
+
+                    builder.Step(CreateInternalFrameworkStep(
+                        "WorkflowFramework.Internal.TryCatchStep",
+                        stepDto.Name,
+                        stepDto.TryBody.Select(CreateStepFromDto).ToArray(),
+                        catchHandlers,
+                        stepDto.FinallyBody?.Select(CreateStepFromDto).ToArray()));
                 }
                 break;
 
-            case "HumanTaskStep":
+            case "humantaskstep":
                 builder.Step(stepDto.Name, async ctx =>
                 {
                     ctx.Properties[$"{stepDto.Name}.Status"] = "Auto-approved (dashboard mode)";
@@ -185,7 +250,7 @@ public sealed class WorkflowDefinitionCompiler
 
             default:
                 // Check plugin registry first
-                var pluginStep = _pluginRegistry.CreateStep(stepDto.Type, stepDto.Name, stepDto.Config);
+                var pluginStep = _pluginRegistry.CreateStep(stepType, stepDto.Name, stepDto.Config);
                 if (pluginStep is not null)
                 {
                     builder.Step(pluginStep);
@@ -193,7 +258,7 @@ public sealed class WorkflowDefinitionCompiler
                 }
                 builder.Step(stepDto.Name, ctx =>
                 {
-                    ctx.Properties[$"{stepDto.Name}.Output"] = $"Step type '{stepDto.Type}' executed (no-op in dashboard)";
+                    ctx.Properties[$"{stepDto.Name}.Output"] = $"Step type '{stepType}' executed (no-op in dashboard)";
                     return Task.CompletedTask;
                 });
                 break;
@@ -216,20 +281,32 @@ public sealed class WorkflowDefinitionCompiler
     {
         var settings = _settings.Get();
         var providerName = config?.GetValueOrDefault("provider") ?? settings.DefaultProvider ?? "ollama";
-        var model = config?.GetValueOrDefault("model") ?? settings.DefaultModel ?? "qwen3:30b-instruct";
+        var model = config?.GetValueOrDefault("model") ?? settings.DefaultModel;
 
-        return providerName.ToLower() switch
+        return providerName.ToLowerInvariant() switch
         {
             "ollama" => new OllamaAgentProvider(new OllamaOptions
             {
                 BaseUrl = settings.OllamaUrl ?? "http://localhost:11434",
-                DefaultModel = model
+                DefaultModel = model ?? "qwen3:30b-instruct"
             }),
-            _ => new OllamaAgentProvider(new OllamaOptions
+            "openai" => new OpenAiAgentProvider(new OpenAiOptions
             {
-                BaseUrl = settings.OllamaUrl ?? "http://localhost:11434",
-                DefaultModel = model
-            })
+                ApiKey = settings.OpenAiApiKey ?? throw new InvalidOperationException("OpenAI API key is not configured."),
+                BaseUrl = settings.OpenAiBaseUrl ?? "https://api.openai.com/v1",
+                DefaultModel = model ?? "gpt-4o"
+            }),
+            "anthropic" => new AnthropicAgentProvider(new AnthropicOptions
+            {
+                ApiKey = settings.AnthropicApiKey ?? throw new InvalidOperationException("Anthropic API key is not configured."),
+                DefaultModel = model ?? "claude-sonnet-4-20250514"
+            }),
+            "huggingface" => new HuggingFaceAgentProvider(new HuggingFaceOptions
+            {
+                ApiKey = settings.HuggingFaceApiKey ?? throw new InvalidOperationException("Hugging Face API key is not configured."),
+                DefaultModel = model ?? "mistralai/Mistral-7B-Instruct-v0.3"
+            }),
+            _ => throw new InvalidOperationException($"Unsupported AI provider '{providerName}'.")
         };
     }
 
@@ -274,6 +351,93 @@ public sealed class WorkflowDefinitionCompiler
         }
 
         return current is null ? null : Convert.ToString(current);
+    }
+
+    private IWorkflow CreateSubWorkflow(StepDefinitionDto stepDto, string? subWorkflowName)
+    {
+        if (stepDto.Steps is { Count: > 0 })
+        {
+            var inlineBuilder = Workflow.Create(subWorkflowName ?? stepDto.Name);
+            foreach (var child in stepDto.Steps)
+                CompileStep(inlineBuilder, child);
+            return inlineBuilder.Build();
+        }
+
+        if (string.IsNullOrWhiteSpace(subWorkflowName))
+            throw new InvalidOperationException("SubWorkflow step requires subWorkflowName.");
+
+        if (_workflowStore is null)
+            throw new InvalidOperationException($"SubWorkflow '{subWorkflowName}' cannot be resolved because no workflow store is available.");
+
+        var savedWorkflow = _workflowStore
+            .GetAllAsync()
+            .GetAwaiter()
+            .GetResult()
+            .FirstOrDefault(workflow =>
+                string.Equals(workflow.Definition.Name, subWorkflowName, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(workflow.Id, subWorkflowName, StringComparison.OrdinalIgnoreCase));
+
+        if (savedWorkflow is null)
+            throw new InvalidOperationException($"SubWorkflow '{subWorkflowName}' was not found.");
+
+        return Compile(savedWorkflow.Definition);
+    }
+
+    private static IStep CreateInternalFrameworkStep(string typeName, params object[] args)
+    {
+        var type = typeof(Workflow).Assembly.GetType(typeName, throwOnError: true)!;
+        var instance = Activator.CreateInstance(
+            type,
+            BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public,
+            binder: null,
+            args: args,
+            culture: CultureInfo.InvariantCulture);
+
+        return instance as IStep
+            ?? throw new InvalidOperationException($"Unable to create framework step '{typeName}'.");
+    }
+
+    private static IReadOnlyList<Type> ResolveCatchTypes(IReadOnlyList<string>? configuredCatchTypes)
+    {
+        if (configuredCatchTypes is null || configuredCatchTypes.Count == 0)
+            return [typeof(Exception)];
+
+        var resolved = new List<Type>();
+        foreach (var configuredType in configuredCatchTypes.Where(static type => !string.IsNullOrWhiteSpace(type)))
+        {
+            var resolvedType = Type.GetType(configuredType, throwOnError: false)
+                ?? AppDomain.CurrentDomain.GetAssemblies()
+                    .Select(assembly => assembly.GetType(configuredType, throwOnError: false))
+                    .FirstOrDefault(type => type is not null);
+
+            if (resolvedType is null || !typeof(Exception).IsAssignableFrom(resolvedType))
+                throw new InvalidOperationException($"Unsupported catch type '{configuredType}'.");
+
+            resolved.Add(resolvedType);
+        }
+
+        return resolved.Count > 0 ? resolved : [typeof(Exception)];
+    }
+
+    private static IList<string> ParseOptions(string? optionsValue)
+    {
+        if (string.IsNullOrWhiteSpace(optionsValue))
+            return [];
+
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<List<string>>(optionsValue);
+            if (parsed is { Count: > 0 })
+                return parsed;
+        }
+        catch (JsonException)
+        {
+        }
+
+        return optionsValue
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(option => !string.IsNullOrWhiteSpace(option))
+            .ToList();
     }
 }
 

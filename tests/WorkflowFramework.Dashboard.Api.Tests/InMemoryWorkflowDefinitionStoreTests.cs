@@ -112,4 +112,42 @@ public class InMemoryWorkflowDefinitionStoreTests
         dup.Definition.Name.Should().Be("Original (Copy)");
         dup.Definition.Steps.Should().HaveCount(1);
     }
+
+    [Fact]
+    public async Task DuplicateAsync_PreservesCanvasMetadata()
+    {
+        var created = await _store.CreateAsync(new CreateWorkflowRequest
+        {
+            Description = "A test workflow",
+            Definition = new WorkflowDefinitionDto
+            {
+                Name = "Original",
+                Steps = [new StepDefinitionDto { Name = "Ask model", Type = "Action" }],
+                Canvas = new WorkflowCanvasDto
+                {
+                    Nodes =
+                    [
+                        new WorkflowCanvasNodeDto
+                        {
+                            Id = "node_1",
+                            Type = "Action",
+                            Label = "Ask model",
+                            X = 220,
+                            Y = 140,
+                            Config = new Dictionary<string, string> { ["label"] = "Ask model", ["model"] = "llama3.1" }
+                        }
+                    ],
+                    Edges = []
+                }
+            }
+        });
+
+        var duplicate = await _store.DuplicateAsync(created.Id);
+
+        duplicate.Should().NotBeNull();
+        duplicate!.Definition.Canvas.Should().NotBeNull();
+        duplicate.Definition.Canvas!.Nodes.Should().ContainSingle();
+        duplicate.Definition.Canvas.Nodes[0].Label.Should().Be("Ask model");
+        duplicate.Definition.Canvas.Nodes[0].Config.Should().ContainKey("model");
+    }
 }

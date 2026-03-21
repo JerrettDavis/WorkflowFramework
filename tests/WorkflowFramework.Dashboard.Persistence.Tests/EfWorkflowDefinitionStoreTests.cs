@@ -74,6 +74,43 @@ public sealed class EfWorkflowDefinitionStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task CreateAsync_PreservesCanvasMetadata()
+    {
+        var created = await _store.CreateAsync(new CreateWorkflowRequest
+        {
+            Definition = new WorkflowDefinitionDto
+            {
+                Name = "Canvas Workflow",
+                Steps = [new StepDefinitionDto { Name = "Draft intro", Type = "Action" }],
+                Canvas = new WorkflowCanvasDto
+                {
+                    Nodes =
+                    [
+                        new WorkflowCanvasNodeDto
+                        {
+                            Id = "node_1",
+                            Type = "Action",
+                            Label = "Draft intro",
+                            X = 120,
+                            Y = 80,
+                            Config = new Dictionary<string, string> { ["label"] = "Draft intro", ["provider"] = "ollama" }
+                        }
+                    ],
+                    Edges = []
+                }
+            }
+        });
+
+        var reloaded = await _store.GetByIdAsync(created.Id);
+
+        reloaded.Should().NotBeNull();
+        reloaded!.Definition.Canvas.Should().NotBeNull();
+        reloaded.Definition.Canvas!.Nodes.Should().ContainSingle();
+        reloaded.Definition.Canvas.Nodes[0].Label.Should().Be("Draft intro");
+        reloaded.Definition.Canvas.Nodes[0].Config.Should().ContainKey("provider");
+    }
+
+    [Fact]
     public async Task UpdateAsync_ModifiesWorkflow()
     {
         var created = await _store.CreateAsync(new CreateWorkflowRequest
@@ -226,4 +263,3 @@ public sealed class EfWorkflowDefinitionStoreTests : IDisposable
         _factory.Dispose();
     }
 }
-

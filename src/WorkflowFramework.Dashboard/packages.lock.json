@@ -4,9 +4,9 @@
     "net10.0": {
       "Microsoft.AspNetCore.App.Internal.Assets": {
         "type": "Direct",
-        "requested": "[10.0.3, )",
-        "resolved": "10.0.3",
-        "contentHash": "mr3Zn+ht8lijYvlMIasftw9opU9hsLKDdnOgQMmYI3RjWPJLOF9l8+YHDseRkTs97wOrULmJgo/NDCmzL/EGDg=="
+        "requested": "[10.0.4, )",
+        "resolved": "10.0.4",
+        "contentHash": "M942X5Vy726SlvFBuoAC4cDczEMlPAFt1mmyFlrkw/QcpdVwVU0DkF4P9JabxX6eWNm9RvaYZHe25FN7oXoxpQ=="
       },
       "Microsoft.SourceLink.GitHub": {
         "type": "Direct",

@@ -58,6 +58,7 @@ public sealed class TriggerSteps
 
         var item = Page.Locator("[data-testid='workflow-list-item']",
             new PageLocatorOptions { HasText = name }).First;
+        await item.ScrollIntoViewIfNeededAsync();
         await item.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 10_000 });

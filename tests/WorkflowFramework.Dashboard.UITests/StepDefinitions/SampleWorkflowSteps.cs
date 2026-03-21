@@ -57,6 +57,7 @@ public sealed class SampleWorkflowSteps
     {
         var item = Page.Locator("[data-testid='workflow-list-item']",
             new PageLocatorOptions { HasText = workflowName }).First;
+        await item.ScrollIntoViewIfNeededAsync();
         await item.ClickAsync();
         // Wait for dialog to close and workflow to load
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
@@ -100,6 +101,7 @@ public sealed class SampleWorkflowSteps
             await item.WaitForAsync(new LocatorWaitForOptions { Timeout = 45_000 });
         }
 
+        await item.ScrollIntoViewIfNeededAsync();
         await item.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 10_000 });

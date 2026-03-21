@@ -31,6 +31,8 @@ public sealed class StepTypeRegistry
     public static StepTypeRegistry CreateDefault()
     {
         var registry = new StepTypeRegistry();
+        var aiProviderOptions = AiProviderCatalog.SerializeProviderOptions();
+        var aiModelOptionGroups = AiProviderCatalog.SerializeModelOptionGroups();
 
         // ── Core ──────────────────────────────────────────────────────
         Register(registry, "Action", "Core", "Executes a custom action delegate.",
@@ -47,9 +49,7 @@ public sealed class StepTypeRegistry
             Schema("""
             {
               "properties": {
-                "expression": { "type": "string", "uiType": "textarea", "label": "Condition Expression", "helpText": "Boolean expression that determines which branch to take", "required": true, "rows": 2 },
-                "thenStep":   { "type": "string", "label": "Then Step", "helpText": "Step to execute when condition is true" },
-                "elseStep":   { "type": "string", "label": "Else Step", "helpText": "Step to execute when condition is false" }
+                "expression": { "type": "string", "uiType": "textarea", "label": "Condition Expression", "helpText": "Boolean expression that determines which branch to take", "required": true, "rows": 2 }
               },
               "required": ["expression"]
             }
@@ -100,9 +100,7 @@ public sealed class StepTypeRegistry
             Schema("""
             {
               "properties": {
-                "maxAttempts":       { "type": "number", "uiType": "number", "label": "Max Attempts", "helpText": "Maximum number of retry attempts", "min": 1, "max": 50, "default": "3" },
-                "delayMs":           { "type": "number", "uiType": "number", "label": "Delay (ms)", "helpText": "Delay between retries in milliseconds", "min": 0, "max": 300000, "default": "1000" },
-                "backoffMultiplier": { "type": "number", "uiType": "number", "label": "Backoff Multiplier", "helpText": "Multiplier applied to delay after each attempt (e.g. 2.0 for exponential backoff)", "min": 1, "max": 10, "step": 0.1 }
+                "maxAttempts":       { "type": "number", "uiType": "number", "label": "Max Attempts", "helpText": "Maximum number of retry attempts", "min": 1, "max": 50, "default": "3" }
               },
               "required": []
             }
@@ -112,9 +110,9 @@ public sealed class StepTypeRegistry
             Schema("""
             {
               "properties": {
-                "durationMs": { "type": "number", "uiType": "number", "label": "Timeout (ms)", "helpText": "Maximum time to wait before cancelling the step", "required": true, "min": 100, "max": 3600000 }
+                "timeoutSeconds": { "type": "number", "uiType": "number", "label": "Timeout (seconds)", "helpText": "Maximum time to wait before cancelling the step", "required": true, "min": 0.1, "max": 3600, "step": 0.1 }
               },
-              "required": ["durationMs"]
+              "required": ["timeoutSeconds"]
             }
             """));
 
@@ -122,9 +120,9 @@ public sealed class StepTypeRegistry
             Schema("""
             {
               "properties": {
-                "durationMs": { "type": "number", "uiType": "slider", "label": "Delay (ms)", "helpText": "Duration to pause in milliseconds", "required": true, "min": 0, "max": 60000, "step": 100 }
+                "delaySeconds": { "type": "number", "uiType": "slider", "label": "Delay (seconds)", "helpText": "Duration to pause in seconds", "required": true, "min": 0.1, "max": 60, "step": 0.1 }
               },
-              "required": ["durationMs"]
+              "required": ["delaySeconds"]
             }
             """));
 
@@ -142,9 +140,9 @@ public sealed class StepTypeRegistry
             Schema("""
             {
               "properties": {
-                "workflowName": { "type": "string", "label": "Workflow Name", "helpText": "Name of the workflow to invoke", "required": true }
+                "subWorkflowName": { "type": "string", "label": "Workflow Name", "helpText": "Name of the workflow to invoke", "required": true }
               },
-              "required": ["workflowName"]
+              "required": ["subWorkflowName"]
             }
             """));
 
@@ -246,25 +244,24 @@ public sealed class StepTypeRegistry
 
         // ── AI/Agents ─────────────────────────────────────────────────
         Register(registry, "AgentLoopStep", "AI/Agents", "Runs an autonomous agent loop with tool access.",
-            Schema("""
+            Schema($$"""
             {
               "properties": {
-                "provider":      { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use for this agent", "required": true },
-                "model":         { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier (provider-specific)", "required": true, "dependsOn": "provider" },
+                "provider":      { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use for this agent", "required": true, "options": {{aiProviderOptions}} },
+                "model":         { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier (provider-specific)", "required": true, "dependsOn": "provider", "optionGroups": {{aiModelOptionGroups}} },
                 "systemPrompt":  { "type": "string", "uiType": "textarea", "label": "System Prompt", "helpText": "Instructions that define the agent's behavior and role", "rows": 6 },
-                "maxIterations": { "type": "number", "uiType": "number", "label": "Max Iterations", "helpText": "Maximum number of agent loop iterations", "min": 1, "max": 100, "default": "10" },
-                "tools":         { "type": "string", "uiType": "json", "label": "Tools", "helpText": "JSON array of tool definitions available to the agent", "rows": 6 }
+                "maxIterations": { "type": "number", "uiType": "number", "label": "Max Iterations", "helpText": "Maximum number of agent loop iterations", "min": 1, "max": 100, "default": "10" }
               },
               "required": ["provider", "model"]
             }
             """));
 
         Register(registry, "AgentDecisionStep", "AI/Agents", "Uses an AI agent to make a routing decision.",
-            Schema("""
+            Schema($$"""
             {
               "properties": {
-                "provider": { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use", "required": true },
-                "model":    { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier", "dependsOn": "provider" },
+                "provider": { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use", "required": true, "options": {{aiProviderOptions}} },
+                "model":    { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier", "dependsOn": "provider", "optionGroups": {{aiModelOptionGroups}} },
                 "prompt":   { "type": "string", "uiType": "textarea", "label": "Decision Prompt", "helpText": "Prompt describing the decision to make and available options", "required": true, "rows": 6 },
                 "options":  { "type": "string", "uiType": "json", "label": "Decision Options", "helpText": "JSON array of possible decision outcomes", "rows": 4 }
               },
@@ -273,24 +270,23 @@ public sealed class StepTypeRegistry
             """));
 
         Register(registry, "AgentPlanStep", "AI/Agents", "Generates an execution plan using an AI agent.",
-            Schema("""
+            Schema($$"""
             {
               "properties": {
-                "provider":  { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use", "required": true },
-                "model":     { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier", "dependsOn": "provider" },
-                "objective": { "type": "string", "uiType": "textarea", "label": "Objective", "helpText": "High-level objective for the agent to plan", "required": true, "rows": 4 },
-                "maxSteps":  { "type": "number", "uiType": "number", "label": "Max Plan Steps", "helpText": "Maximum number of steps in the generated plan", "min": 1, "max": 50 }
+                "provider":  { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use", "required": true, "options": {{aiProviderOptions}} },
+                "model":     { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier", "dependsOn": "provider", "optionGroups": {{aiModelOptionGroups}} },
+                "objective": { "type": "string", "uiType": "textarea", "label": "Objective", "helpText": "High-level objective for the agent to plan", "required": true, "rows": 4 }
               },
               "required": ["provider", "objective"]
             }
             """));
 
         Register(registry, "LlmCallStep", "AI/Agents", "Makes a direct call to a language model.",
-            Schema("""
+            Schema($$"""
             {
               "properties": {
-                "provider":    { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use", "required": true },
-                "model":       { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier", "required": true, "dependsOn": "provider" },
+                "provider":    { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "The AI provider to use", "required": true, "options": {{aiProviderOptions}} },
+                "model":       { "type": "string", "uiType": "modelSelect", "label": "Model", "helpText": "Model identifier", "required": true, "dependsOn": "provider", "optionGroups": {{aiModelOptionGroups}} },
                 "prompt":      { "type": "string", "uiType": "textarea", "label": "Prompt", "helpText": "The prompt to send to the language model", "required": true, "rows": 6 },
                 "temperature": { "type": "number", "uiType": "slider", "label": "Temperature", "helpText": "Controls randomness: 0 = deterministic, 2 = very creative", "min": 0, "max": 2, "step": 0.1, "default": "0.7" },
                 "maxTokens":   { "type": "number", "uiType": "number", "label": "Max Tokens", "helpText": "Maximum number of tokens in the response", "min": 1, "max": 128000 }
@@ -361,8 +357,7 @@ public sealed class StepTypeRegistry
                 "method":      { "type": "string", "uiType": "select", "label": "HTTP Method", "helpText": "HTTP method for the request", "options": ["GET", "POST", "PUT", "DELETE", "PATCH"], "default": "GET" },
                 "headers":     { "type": "string", "uiType": "json", "label": "Headers", "helpText": "JSON object of HTTP headers (e.g. {\"Authorization\": \"Bearer ...\"})", "rows": 4 },
                 "body":        { "type": "string", "uiType": "json", "label": "Request Body", "helpText": "Request body content (typically JSON)", "rows": 6 },
-                "contentType": { "type": "string", "label": "Content Type", "helpText": "Content-Type header value", "default": "application/json" },
-                "timeoutMs":   { "type": "number", "uiType": "number", "label": "Timeout (ms)", "helpText": "Request timeout in milliseconds", "min": 0, "max": 300000, "default": "30000" }
+                "contentType": { "type": "string", "label": "Content Type", "helpText": "Content-Type header value", "default": "application/json" }
               },
               "required": ["url"]
             }
