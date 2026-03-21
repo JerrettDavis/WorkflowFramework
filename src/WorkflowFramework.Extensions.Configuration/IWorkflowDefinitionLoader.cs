@@ -372,10 +372,13 @@ public sealed class WorkflowDefinitionBuilder
 
         builder.Parallel(p =>
         {
-            foreach (var child in childSteps)
+            for (var i = 0; i < childSteps.Count; i++)
             {
+                var child = childSteps[i];
                 // Use composite-aware grouping so nested conditionals/retries/etc. work inside parallel.
-                var branchStep = BuildStepsAsGroupStep(child.Name ?? "branch", new List<StepDefinition> { child });
+                // Include an index in the default name to ensure uniqueness when child.Name is null.
+                var branchName = child.Name ?? $"branch_{i}";
+                var branchStep = BuildStepsAsGroupStep(branchName, new List<StepDefinition> { child });
                 p.Step(branchStep);
             }
         });
@@ -456,12 +459,13 @@ public sealed class WorkflowDefinitionBuilder
             var exType = ResolveExceptionType(catchDef.Exception);
             var catchSteps = catchDef.Steps.ToList();
 
+            // Build the catch workflow once so it is not reconstructed on every exception.
+            var catchBodyBuilder = Workflow.Create("catch");
+            BuildSteps(catchBodyBuilder, catchSteps);
+            var catchWorkflow = catchBodyBuilder.Build();
+
             Func<IWorkflowContext, Exception, Task> handler = (ctx, _) =>
-            {
-                var catchBodyBuilder = Workflow.Create("catch");
-                BuildSteps(catchBodyBuilder, catchSteps);
-                return catchBodyBuilder.Build().ExecuteAsync(ctx);
-            };
+                catchWorkflow.ExecuteAsync(ctx);
 
             // Use reflection to call the generic Catch<TException> with the resolved exception type.
             var catchMethod = typeof(ITryCatchBuilder)
@@ -581,10 +585,15 @@ public sealed class WorkflowDefinitionBuilder
             var singleDef = steps[0];
             var typeCategory = singleDef.Type?.ToLowerInvariant() ?? string.Empty;
 
-            // A leaf step (explicit class, "step" category, or unrecognized type treated as class name)
-            // can be resolved directly without creating an extra inline workflow.
+            // A leaf step can be resolved directly without creating an extra inline workflow.
+            // A step is a leaf if:
+            //  - Type is empty/unset AND Class is set (bare class reference with no type category), OR
+            //  - Type is "step" (explicit leaf category), OR
+            //  - Type is set to a value that is NOT a known composite category (treated as a class name).
+            // When Type IS a known composite category (e.g., subworkflow, conditional), Class is
+            // interpreted as an identifier within that composite dispatch — NOT as a leaf class name.
             var isLeaf =
-                !string.IsNullOrEmpty(singleDef.Class) ||
+                (string.IsNullOrEmpty(singleDef.Type) && !string.IsNullOrEmpty(singleDef.Class)) ||
                 typeCategory == "step" ||
                 (!string.IsNullOrEmpty(singleDef.Type) && !KnownCategories.Contains(typeCategory));
 
