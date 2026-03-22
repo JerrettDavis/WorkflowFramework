@@ -4,22 +4,17 @@ Capture these screenshots and save them as PNG files in this directory.
 
 | Filename | Dimensions | Description |
 |---|---|---|
-| `overview.png` | 1400×900 | Full dashboard with a workflow open — palette on left, canvas with ~6 connected nodes, properties panel on right |
-| `aspire-launch.png` | 1200×600 | .NET Aspire dashboard showing Dashboard.Web and Dashboard.Api resources running |
-| `new-workflow-dialog.png` | 600×400 | New workflow modal with name, description, and tags fields |
-| `designer-overview.png` | 1400×900 | Designer with step palette expanded, canvas with nodes, properties panel showing a selected step |
-| `step-palette.png` | 350×700 | Left sidebar step palette with categories expanded and search box |
-| `properties-panel.png` | 400×600 | Right sidebar properties panel showing fields for a conditional step |
-| `node-status-colors.png` | 800×400 | Canvas section with nodes in running (blue), completed (green), and failed (red) states |
-| `toolbar.png` | 1200×60 | Designer toolbar showing all buttons |
-| `open-workflow-dialog.png` | 800×500 | Workflow browser modal with search bar, tag filters, and workflow list |
-| `template-browser.png` | 900×600 | Template browser modal showing categories, difficulty badges, and template cards |
-| `execution-panel.png` | 1200×300 | Bottom execution panel with log entries, timestamps, and connection status indicator |
-| `ollama-local-run.png` | 1400×900 | Local Ollama smoke workflow running end to end with the execution panel visible |
-| `run-history.png` | 800×400 | Run history list showing multiple past executions with status and duration |
-| `validation-badge.png` | 300×60 | Close-up of toolbar with red validation error badge showing a count |
-| `validation-panel.png` | 1200×250 | Validation panel with a mix of errors and warnings with severity icons |
-| `version-history.png` | 800×500 | Version history panel with version numbers, timestamps, authors, and change summaries |
-| `version-diff.png` | 900×500 | Version diff view showing added (green), removed (red), and renamed (yellow) steps |
-| `audit-trail.png` | 1200×500 | Audit trail view with filters and a list of audit entries |
-| `help-modal.png` | 500×400 | Keyboard shortcuts help modal |
+| `overview.png` | 1920×1080 | Full dashboard with a workflow open — palette on left, canvas with ~6 connected nodes, properties panel on right |
+| `new-workflow-dialog.png` | 1920×1080 | New workflow modal with name, description, and tags fields |
+| `designer-overview.png` | 1920×1080 | Designer with step palette expanded, canvas with nodes, properties panel showing a selected step |
+| `step-palette.png` | 1920×1080 | Left sidebar step palette with categories expanded and search box |
+| `properties-panel.png` | 1920×1080 | Right sidebar properties panel showing fields for a conditional step |
+| `node-status-colors.png` | 1920×1080 | Canvas section with nodes in running (blue), completed (green), and failed (red) states |
+| `toolbar.png` | 1920×1080 | Designer toolbar showing all buttons |
+| `open-workflow-dialog.png` | 1920×1080 | Workflow browser modal with search bar, tag filters, and workflow list |
+| `template-browser.png` | 1920×1080 | Template browser modal showing categories, difficulty badges, and template cards |
+| `execution-panel.png` | 1920×1080 | Bottom execution panel with log entries, timestamps, and connection status indicator |
+| `ollama-local-run.png` | 1920×1080 | Local Ollama smoke workflow running end to end with the execution panel visible |
+| `validation-badge.png` | 1920×1080 | Close-up of toolbar with red validation error badge showing a count |
+| `validation-panel.png` | 1920×1080 | Validation panel with a mix of errors and warnings with severity icons |
+| `help-modal.png` | 1920×1080 | Keyboard shortcuts help modal |

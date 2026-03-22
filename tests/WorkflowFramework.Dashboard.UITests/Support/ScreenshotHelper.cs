@@ -9,13 +9,16 @@ namespace WorkflowFramework.Dashboard.UITests.Support;
 /// </summary>
 public static class ScreenshotHelper
 {
+    private const int DefaultScreenshotWidth = 1920;
+    private const int DefaultScreenshotHeight = 1080;
+
     public static async Task<string> CaptureFullPageAsync(IPage page, ScenarioContext scenarioContext, string filename, bool promoteForDocs = false)
     {
         var path = ArtifactPaths.GetScenarioArtifactPath(scenarioContext, "screenshots", filename);
         await page.ScreenshotAsync(new PageScreenshotOptions
         {
             Path = path,
-            FullPage = false // Use viewport size (1400x900)
+            FullPage = false // Use viewport size (1920x1080 baseline)
         });
 
         return await PromoteIfRequested(path, filename, promoteForDocs);
@@ -37,7 +40,7 @@ public static class ScreenshotHelper
         await page.SetViewportSizeAsync(width, height);
         await page.ScreenshotAsync(new PageScreenshotOptions { Path = path });
         // Reset to default
-        await page.SetViewportSizeAsync(1400, 900);
+        await page.SetViewportSizeAsync(DefaultScreenshotWidth, DefaultScreenshotHeight);
 
         return await PromoteIfRequested(path, filename, promoteForDocs);
     }
