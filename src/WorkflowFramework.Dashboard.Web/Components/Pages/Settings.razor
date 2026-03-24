@@ -36,7 +36,7 @@
                     <div>
                         <label class="block text-sm text-gray-400 mb-1">Ollama URL</label>
                         <div class="flex gap-2">
-                            <input type="text" @bind="_settings.OllamaUrl" data-testid="settings-ollama-url" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+                            <input type="text" @bind="_settings.OllamaUrl" @bind:after="OnOllamaUrlChangedAsync" data-testid="settings-ollama-url" class="flex-1 bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
                             <button @onclick="TestOllama" disabled="@_testingOllama" data-testid="settings-test-connection" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition disabled:opacity-50">
                                 @(_testingOllama ? "Testing..." : "Test Connection")
                             </button>
@@ -186,9 +186,25 @@
     private async Task LoadModels(string provider)
     {
         _loadingModels = true;
-        try { _models = await Api.GetProviderModelsAsync(provider); }
+        try
+        {
+            var ollamaUrl = string.Equals(provider, "ollama", StringComparison.OrdinalIgnoreCase)
+                ? _settings?.OllamaUrl
+                : null;
+            _models = await Api.GetProviderModelsAsync(provider, ollamaUrl);
+        }
         catch { _models = []; }
         finally { _loadingModels = false; }
+    }
+
+    private async Task OnOllamaUrlChangedAsync()
+    {
+        if (_settings is null || !string.Equals(_settings.DefaultProvider, "ollama", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _settings.DefaultModel = null;
+        _models = [];
+        await LoadModels(_settings.DefaultProvider);
     }
 
     private async Task SaveSettings()

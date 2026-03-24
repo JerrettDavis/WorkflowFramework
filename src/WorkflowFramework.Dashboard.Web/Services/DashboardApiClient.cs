@@ -233,8 +233,14 @@ public sealed class DashboardApiClient(HttpClient http)
         return await resp.Content.ReadFromJsonAsync<DashboardSettingsDto>(ct);
     }
 
-    public async Task<List<string>> GetProviderModelsAsync(string provider, CancellationToken ct = default)
-        => await http.GetFromJsonAsync<List<string>>($"/api/providers/{Uri.EscapeDataString(provider)}/models", ct) ?? [];
+    public async Task<List<string>> GetProviderModelsAsync(string provider, string? ollamaUrl = null, CancellationToken ct = default)
+    {
+        var url = $"/api/providers/{Uri.EscapeDataString(provider)}/models";
+        if (!string.IsNullOrWhiteSpace(ollamaUrl))
+            url += $"?ollamaUrl={Uri.EscapeDataString(ollamaUrl)}";
+
+        return await http.GetFromJsonAsync<List<string>>(url, ct) ?? [];
+    }
 
     public async Task<OllamaTestResult?> TestOllamaConnectionAsync(string? ollamaUrl = null, CancellationToken ct = default)
     {

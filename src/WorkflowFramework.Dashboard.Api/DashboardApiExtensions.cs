@@ -33,6 +33,7 @@ public static class DashboardApiExtensions
         services.AddSingleton(TriggerTypeRegistry.CreateDefault());
         services.AddSingleton<WorkflowSchedulerService>();
         services.AddSingleton<VoiceSubmissionStore>();
+        services.AddScoped<ProviderModelCatalogService>();
         services.AddHostedService(sp => sp.GetRequiredService<WorkflowSchedulerService>());
         services.AddHttpClient("OllamaClient");
         return services;
@@ -441,7 +442,7 @@ public static class DashboardApiExtensions
             {
                 var client = factory.CreateClient("OllamaClient");
                 client.Timeout = TimeSpan.FromSeconds(5);
-                var resp = await client.GetAsync(new Uri(ollamaUri!, "/api/tags"));
+                var resp = await client.GetAsync(ProviderModelCatalogService.BuildTagsUri(ollamaUri!));
                 return resp.IsSuccessStatusCode
                     ? Results.Ok(new { success = true, message = "Connected to Ollama" })
                     : Results.Ok(new { success = false, message = $"Ollama returned {resp.StatusCode}" });
@@ -452,37 +453,13 @@ public static class DashboardApiExtensions
             }
         }).WithName("TestOllamaConnection");
 
-        endpoints.MapGet("/api/providers/{provider}/models", async (string provider, IDashboardSettingsService svc, IHttpClientFactory factory) =>
+        endpoints.MapGet("/api/providers/{provider}/models", async (string provider, string? ollamaUrl, IDashboardSettingsService svc, ProviderModelCatalogService catalog, CancellationToken cancellationToken) =>
         {
             var settings = svc.Get();
             switch (provider.ToLowerInvariant())
             {
                 case "ollama":
-                    if (!DashboardSettingsHttpMapper.TryCreateValidatedOllamaUri(settings.OllamaUrl, out var ollamaUri, out _))
-                        return Results.Ok(AiProviderCatalog.GetDefaultModels(provider));
-
-                    try
-                    {
-                        var client = factory.CreateClient("OllamaClient");
-                        client.Timeout = TimeSpan.FromSeconds(10);
-                        var resp = await client.GetAsync(new Uri(ollamaUri!, "/api/tags"));
-                        if (resp.IsSuccessStatusCode)
-                        {
-                            var json = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-                            var models = new List<string>();
-                            if (json.TryGetProperty("models", out var arr))
-                            {
-                                foreach (var m in arr.EnumerateArray())
-                                {
-                                    if (m.TryGetProperty("name", out var n))
-                                        models.Add(n.GetString() ?? "");
-                                }
-                            }
-                            return Results.Ok(AiProviderCatalog.OrderModels(provider, models));
-                        }
-                    }
-                    catch { }
-                    return Results.Ok(AiProviderCatalog.GetDefaultModels(provider));
+                    return Results.Ok(await catalog.GetModelsAsync(provider, ollamaUrl, settings, cancellationToken));
 
                 case "openai":
                 case "anthropic":
