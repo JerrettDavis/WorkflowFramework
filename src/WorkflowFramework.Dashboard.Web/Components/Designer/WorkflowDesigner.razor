@@ -82,6 +82,7 @@
             </button>
             <div class="flex-1"></div>
             <button @onclick="() => _bottomPanelCollapsed = !_bottomPanelCollapsed"
+                    aria-label="@(_bottomPanelCollapsed ? "Expand bottom panel" : "Collapse bottom panel")"
                     class="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-300"
                     data-testid="toggle-bottom-panel">
                 @(_bottomPanelCollapsed ? "▲" : "▼")
@@ -118,8 +119,8 @@
                                     </div>
                                 </div>
                                 <div class="run-hero-actions">
-                                    <div class="run-status-badge @GetRunStatusBadgeClass()" data-testid="run-status-badge">
-                                        <span class="run-status-dot"></span>
+                                    <div class="run-status-badge @GetRunStatusBadgeClass()" data-testid="run-status-badge" role="status" aria-live="polite">
+                                        <span class="run-status-dot" aria-hidden="true"></span>
                                         @_runStatus
                                     </div>
                                     @if (_activeRunId is not null && _runStatus == "Running")
@@ -133,7 +134,12 @@
                                 </div>
                             </div>
 
-                            <div class="run-progress-track">
+                            <div class="run-progress-track"
+                                 role="progressbar"
+                                 aria-label="Workflow run progress"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"
+                                 aria-valuenow="@Math.Round(RunProgressPercent)">
                                 <div class="run-progress-fill" style="width:@($"{RunProgressPercent:0.#}%")" data-testid="run-progress-fill"></div>
                             </div>
                         </section>
@@ -165,7 +171,7 @@
                             </article>
                         </section>
 
-                        <section class="run-narrative-card @(_runStatus == "Running" ? "run-narrative-live" : string.Empty)" data-testid="run-narrative">
+                        <section class="run-narrative-card @(_runStatus == "Running" ? "run-narrative-live" : string.Empty)" data-testid="run-narrative" role="status" aria-live="polite">
                             <div class="run-narrative-title">What&apos;s Happening Now</div>
                             <div class="run-narrative-body">@RunNarrative</div>
                             <div class="run-narrative-foot">
@@ -248,7 +254,12 @@
                                     @_runStatus
                                 </div>
                             </div>
-                            <div class="run-progress-track">
+                            <div class="run-progress-track"
+                                 role="progressbar"
+                                 aria-label="Workflow step progress"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"
+                                 aria-valuenow="@Math.Round(RunProgressPercent)">
                                 <div class="run-progress-fill" style="width:@($"{RunProgressPercent:0.#}%")"></div>
                             </div>
                             <div class="mt-1 text-[10px] text-gray-400">
@@ -331,7 +342,12 @@
                                         <span class="run-assistant-hint" data-testid="run-assistant-hint">@RunAssistantHint</span>
                                     </div>
 
-                                    <div class="run-assistant-progress-track">
+                                    <div class="run-assistant-progress-track"
+                                         role="progressbar"
+                                         aria-label="Run assistant progress"
+                                         aria-valuemin="0"
+                                         aria-valuemax="100"
+                                         aria-valuenow="@Math.Round(RunAssistantProgressPercent)">
                                         <div class="run-assistant-progress-fill"
                                              style="width:@($"{RunAssistantProgressPercent:0.#}%")"
                                              data-testid="run-assistant-progress-fill"></div>
@@ -362,11 +378,12 @@
                                         var stepTask = _runAssistantTasks[idx];
                                         var stepClass = idx == _runAssistantIndex
                                             ? "run-assistant-task-pill-active"
-                                            : stepTask.Completed
+                                            : IsRunTaskSatisfied(stepTask)
                                                 ? "run-assistant-task-pill-complete"
                                                 : "run-assistant-task-pill-pending";
                                         <button @onclick="() => JumpToRunTask(idx)"
                                                 class="run-assistant-task-pill @stepClass"
+                                                title="@stepTask.Title"
                                                 data-testid="run-assistant-task-pill">
                                             <span class="run-assistant-task-ordinal">@(idx + 1)</span>
                                             <span class="run-assistant-task-name">@stepTask.StepName</span>
@@ -384,42 +401,53 @@
                                             </div>
                                         }
 
-                                        <div class="run-assistant-controls">
-                                            <select @bind="_runSelectedDeviceId"
-                                                    class="run-assistant-select"
-                                                    disabled="@(!_runRecorderSupported || _runRecording)">
-                                                @if (_runAudioDevices.Count == 0)
-                                                {
-                                                    <option value="">Default microphone</option>
-                                                }
-                                                else
-                                                {
-                                                    @foreach (var device in _runAudioDevices)
-                                                    {
-                                                        <option value="@device.DeviceId">@device.Label</option>
-                                                    }
-                                                }
-                                            </select>
+                                        <div class="run-assistant-control-deck">
+                                            <div class="run-assistant-control-kicker">[ INPUT ] Audio console</div>
+                                            <div class="run-assistant-control-help">Choose a source, record clean audio, or upload a clip to unlock the next step.</div>
+                                            <div class="run-assistant-controls">
+                                                <label class="run-assistant-field">
+                                                    <span class="run-assistant-field-label">Input device</span>
+                                                    <select @bind="_runSelectedDeviceId"
+                                                            class="run-assistant-select"
+                                                            disabled="@(!_runRecorderSupported || _runRecording)">
+                                                        @if (_runAudioDevices.Count == 0)
+                                                        {
+                                                            <option value="">Default microphone</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            @foreach (var device in _runAudioDevices)
+                                                            {
+                                                                <option value="@device.DeviceId">@device.Label</option>
+                                                            }
+                                                        }
+                                                    </select>
+                                                </label>
 
-                                            <button @onclick="ToggleRunRecordingAsync"
-                                                    disabled="@(!_runRecorderSupported || _runBusy)"
-                                                    class="run-assistant-record-btn @( _runRecording ? "run-assistant-record-stop" : "run-assistant-record-start" )"
-                                                    data-testid="btn-run-assistant-record">
-                                                @(_runRecording ? "Stop Recording" : "Start Recording")
-                                            </button>
+                                                <div class="run-assistant-action-cluster">
+                                                    <button @onclick="ToggleRunRecordingAsync"
+                                                            disabled="@(!_runRecorderSupported || _runBusy)"
+                                                            class="run-assistant-record-btn @( _runRecording ? "run-assistant-record-stop" : "run-assistant-record-start" )"
+                                                            data-testid="btn-run-assistant-record">
+                                                        <span class="run-assistant-btn-prefix">@(_runRecording ? "■" : "●")</span>
+                                                        <span>@(_runRecording ? "Stop Recording" : "Start Recording")</span>
+                                                    </button>
 
-                                            <label class="run-assistant-upload-btn">
-                                                Upload Audio
-                                                <InputFile OnChange="HandleRunAudioUploadAsync"
-                                                           accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm,.flac"
-                                                           disabled="@(_runRecording || _runBusy)"
-                                                           data-testid="input-run-audio-upload" />
-                                            </label>
+                                                    <label class="run-assistant-upload-btn">
+                                                        <span class="run-assistant-btn-prefix">⇪</span>
+                                                        <span>Upload Audio</span>
+                                                        <InputFile OnChange="HandleRunAudioUploadAsync"
+                                                                   accept="audio/*,.wav,.mp3,.m4a,.ogg,.webm,.flac"
+                                                                   disabled="@(_runRecording || _runBusy)"
+                                                                   data-testid="input-run-audio-upload" />
+                                                    </label>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         @if (_runRecording || !string.IsNullOrWhiteSpace(_runLiveInterimTranscript))
                                         {
-                                            <div class="run-assistant-live">
+                                            <div class="run-assistant-live" aria-live="polite">
                                                 <div class="run-assistant-live-title">Live transcript</div>
                                                 <p class="run-assistant-live-body">@_runLiveFinalTranscript <span class="run-assistant-live-interim">@_runLiveInterimTranscript</span></p>
                                             </div>
@@ -504,36 +532,39 @@
                                     }
                                 </section>
 
-                                <div class="run-assistant-footer">
-                                    <div class="run-assistant-requirement">@RunAssistantRequirementHint</div>
-                                    <div class="flex items-center justify-between">
-                                        <button @onclick="GoToPreviousRunTask"
-                                                disabled="@(_runAssistantIndex == 0)"
-                                                class="run-assistant-secondary-btn"
-                                                data-testid="btn-run-assistant-back">
-                                            Back
-                                        </button>
+                                    <div class="run-assistant-footer">
+                                        <div class="run-assistant-requirement">@RunAssistantRequirementHint</div>
+                                        <div class="run-assistant-footer-actions">
+                                            <button @onclick="GoToPreviousRunTask"
+                                                    disabled="@(_runAssistantIndex == 0)"
+                                                    class="run-assistant-secondary-btn"
+                                                    data-testid="btn-run-assistant-back">
+                                                <span class="run-assistant-btn-prefix">←</span>
+                                                <span>Back</span>
+                                            </button>
 
-                                        @if (_runAssistantIndex < _runAssistantTasks.Count - 1)
-                                        {
-                                            <button @onclick="GoToNextRunTask"
-                                                    disabled="@(!canAdvanceTask)"
-                                                    class="run-assistant-primary-btn"
-                                                    data-testid="btn-run-assistant-next">
-                                                Next
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button @onclick="RunWithAssistantInputsAsync"
-                                                    disabled="@(!canAdvanceTask || _runBusy)"
-                                                    class="run-assistant-start-btn"
-                                                    data-testid="btn-run-assistant-start-workflow">
-                                                Start Workflow
-                                            </button>
-                                        }
+                                            @if (_runAssistantIndex < _runAssistantTasks.Count - 1)
+                                            {
+                                                <button @onclick="GoToNextRunTask"
+                                                        disabled="@(!canAdvanceTask)"
+                                                        class="run-assistant-primary-btn"
+                                                        data-testid="btn-run-assistant-next">
+                                                    <span>Next</span>
+                                                    <span class="run-assistant-btn-prefix">→</span>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button @onclick="RunWithAssistantInputsAsync"
+                                                        disabled="@(!CanStartRunAssistant() || _runBusy)"
+                                                        class="run-assistant-start-btn"
+                                                        data-testid="btn-run-assistant-start-workflow">
+                                                    <span class="run-assistant-btn-prefix">▶</span>
+                                                    <span>Start Workflow</span>
+                                                </button>
+                                            }
+                                        </div>
                                     </div>
-                                </div>
                             </div>
                         }
                     </div>
@@ -609,8 +640,8 @@
     private RunSummary? _latestRunSummary;
 
     private int ValidationErrorCount => _validationErrors.Count(e => e.Severity == "Error");
-    private int RunAssistantPendingCount => _runAssistantTasks.Count(t => !t.Completed);
-    private int RunAssistantCompletedCount => _runAssistantTasks.Count(t => t.Completed);
+    private int RunAssistantPendingCount => _runAssistantTasks.Count(t => !IsRunTaskSatisfied(t));
+    private int RunAssistantCompletedCount => _runAssistantTasks.Count(IsRunTaskSatisfied);
     private RunAssistantTask? CurrentRunTask => _runAssistantTasks.Count == 0 || _runAssistantIndex < 0 || _runAssistantIndex >= _runAssistantTasks.Count
         ? null
         : _runAssistantTasks[_runAssistantIndex];
@@ -1604,7 +1635,11 @@
         if (!_runAssistantActive || index < 0 || index >= _runAssistantTasks.Count)
             return;
 
-        _runAssistantIndex = index;
+        var canJumpForward = index <= _runAssistantIndex
+            || _runAssistantTasks.Take(index).All(IsRunTaskSatisfied);
+
+        if (canJumpForward)
+            _runAssistantIndex = index;
     }
 
     private void GoToPreviousRunTask()
@@ -1619,10 +1654,12 @@
         if (task is null || !CanAdvanceRunTask(task))
             return;
 
-        task.Completed = true;
         if (_runAssistantIndex < _runAssistantTasks.Count - 1)
             _runAssistantIndex++;
     }
+
+    private bool IsRunTaskSatisfied(RunAssistantTask task)
+        => CanAdvanceRunTask(task);
 
     private bool CanAdvanceRunTask(RunAssistantTask task) => task.Kind switch
     {
@@ -1634,13 +1671,14 @@
         _ => true
     };
 
+    private bool CanStartRunAssistant()
+        => _runAssistantTasks.All(IsRunTaskSatisfied);
+
     private async Task RunWithAssistantInputsAsync()
     {
-        var task = CurrentRunTask;
-        if (task is null || !CanAdvanceRunTask(task))
+        if (_runBusy || !CanStartRunAssistant())
             return;
 
-        task.Completed = true;
         var request = BuildRunAssistantRequest();
         await StartWorkflowRunAsync(request);
         await CancelRunAssistant();
@@ -2406,7 +2444,6 @@
         public RunAssistantTaskKind Kind { get; }
         public string Title { get; }
         public string Instructions { get; }
-        public bool Completed { get; set; }
     }
 
     private sealed class RunQaPair
