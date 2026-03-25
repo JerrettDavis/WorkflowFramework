@@ -992,7 +992,7 @@
 
             if (runTasks.Count > 0)
             {
-                InitializeRunAssistant(runTasks);
+                await InitializeRunAssistantAsync(runTasks);
                 _activeBottomTab = "run";
                 _bottomPanelCollapsed = false;
                 _logEntries.Add($"[{DateTime.Now:HH:mm:ss}] Opened run assistant with {runTasks.Count} interactive task(s)");
@@ -1463,6 +1463,7 @@
         bool hasTranscribeTask = false;
         bool addedQuestionsTask = false;
         bool addedQaTask = false;
+        bool addedTranscriptTask = false;
 
         foreach (var step in steps)
         {
@@ -1527,7 +1528,11 @@
             if (isTranscribeStep)
             {
                 hasVoiceIndicators = true;
-                tasks.Add(new RunAssistantTask(stepName, RunAssistantTaskKind.Transcript, $"Transcript Input: {stepName}", "Review or provide transcript text used for this run."));
+                if (!addedTranscriptTask)
+                {
+                    tasks.Add(new RunAssistantTask("Transcript", RunAssistantTaskKind.Transcript, "Transcript Input", "Review or provide transcript text used for this run."));
+                    addedTranscriptTask = true;
+                }
                 continue;
             }
         }
@@ -1592,8 +1597,9 @@
         }
     }
 
-    private void InitializeRunAssistant(List<RunAssistantTask> tasks)
+    private async Task InitializeRunAssistantAsync(List<RunAssistantTask> tasks)
     {
+        await ClearRunAudioAsync();
         _runAssistantTasks.Clear();
         _runAssistantTasks.AddRange(tasks);
         _runAssistantIndex = 0;
@@ -1601,7 +1607,6 @@
         _runTranscript = "";
         _runLiveFinalTranscript = "";
         _runLiveInterimTranscript = "";
-        _runAudioByStep.Clear();
         _runReviews.Clear();
         _runQuestions.Clear();
         _runQaPairs.Clear();
@@ -1615,7 +1620,7 @@
         _runQuestions.Clear();
         _runQaPairs.Clear();
         _runReviews.Clear();
-        _runAudioByStep.Clear();
+        await ClearRunAudioAsync();
         _runTranscript = "";
         _runLiveFinalTranscript = "";
         _runLiveInterimTranscript = "";
@@ -1774,15 +1779,23 @@
             _runBusy = true;
             var payload = await JS.InvokeAsync<BrowserAudioPayload?>("voiceRecorder.stopRecording");
             _runRecording = false;
+            if (payload is null)
+            {
+                Toast.Warning("No audio was captured.");
+                return;
+            }
+
             if (payload is not null)
             {
-                _runAudioByStep[task.StepName] = payload;
-                if (!string.IsNullOrWhiteSpace(payload.LiveTranscript))
-                    _runTranscript = payload.LiveTranscript;
+                await SetRunAudioAsync(task.StepName, payload);
+                var transcript = ResolveRunAssistantTranscript(payload.LiveTranscript);
+                if (!string.IsNullOrWhiteSpace(transcript))
+                    _runTranscript = transcript;
             }
         }
         catch (Exception ex)
         {
+            _runRecording = false;
             Toast.Error($"Unable to stop recording: {ex.Message}");
         }
         finally
@@ -1804,17 +1817,19 @@
             await using var stream = file.OpenReadStream(maxAllowedSize: 1024L * 1024L * 30L);
             await using var ms = new MemoryStream();
             await stream.CopyToAsync(ms);
-            var base64 = Convert.ToBase64String(ms.ToArray());
+            var mimeType = file.ContentType ?? "audio/wav";
+            var base64 = Convert.ToBase64String(ms.GetBuffer(), 0, checked((int)ms.Length));
+            var previewUrl = await JS.InvokeAsync<string>("voiceRecorder.createPreviewUrlFromBase64", base64, mimeType);
 
-            _runAudioByStep[task.StepName] = new BrowserAudioPayload
+            await SetRunAudioAsync(task.StepName, new BrowserAudioPayload
             {
                 FileName = file.Name,
-                MimeType = file.ContentType ?? "audio/wav",
+                MimeType = mimeType,
                 Size = ms.Length,
                 Base64 = base64,
-                PreviewUrl = $"data:{file.ContentType};base64,{base64}",
+                PreviewUrl = previewUrl,
                 LiveTranscript = _runTranscript
-            };
+            });
         }
         catch (Exception ex)
         {
@@ -1824,6 +1839,51 @@
         {
             _runBusy = false;
         }
+    }
+
+    private async Task SetRunAudioAsync(string stepName, BrowserAudioPayload payload)
+    {
+        if (_runAudioByStep.TryGetValue(stepName, out var existing))
+            await ReleaseRunAudioPreviewAsync(existing);
+
+        _runAudioByStep[stepName] = payload;
+    }
+
+    private async Task ClearRunAudioAsync()
+    {
+        foreach (var payload in _runAudioByStep.Values)
+            await ReleaseRunAudioPreviewAsync(payload);
+
+        _runAudioByStep.Clear();
+    }
+
+    private async Task ReleaseRunAudioPreviewAsync(BrowserAudioPayload? payload)
+    {
+        if (payload is null || string.IsNullOrWhiteSpace(payload.PreviewUrl))
+            return;
+
+        if (!payload.PreviewUrl.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        await JS.InvokeVoidAsync("voiceRecorder.revokePreviewUrl", payload.PreviewUrl);
+    }
+
+    private string ResolveRunAssistantTranscript(string? payloadTranscript)
+    {
+        var payloadText = payloadTranscript?.Trim() ?? "";
+        var liveText = $"{_runLiveFinalTranscript} {_runLiveInterimTranscript}".Trim();
+
+        if (string.IsNullOrWhiteSpace(payloadText))
+            return liveText;
+
+        if (!string.IsNullOrWhiteSpace(liveText)
+            && liveText.Length > payloadText.Length
+            && liveText.StartsWith(payloadText, StringComparison.Ordinal))
+        {
+            return liveText;
+        }
+
+        return payloadText;
     }
 
     private string GetRunReviewText(string stepName)
@@ -3075,6 +3135,7 @@
     public async ValueTask DisposeAsync()
     {
         await StopRunTrackingAsync();
+        try { await ClearRunAudioAsync(); } catch { _runAudioByStep.Clear(); }
         _dotNetRef?.Dispose();
         try { await Shortcuts.DisposeAsync(); } catch { }
         try { await JS.InvokeVoidAsync("voiceRecorder.dispose"); } catch { }

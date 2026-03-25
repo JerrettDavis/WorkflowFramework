@@ -19,6 +19,13 @@ public sealed class RunAssistantSteps
 
     [Given("the browser voice recorder is mocked")]
     public async Task GivenTheBrowserVoiceRecorderIsMocked()
+        => await ConfigureVoiceRecorderMockAsync(stopThrows: false);
+
+    [Given("the browser voice recorder stop fails after transcription halts")]
+    public async Task GivenTheBrowserVoiceRecorderStopFailsAfterTranscriptionHalts()
+        => await ConfigureVoiceRecorderMockAsync(stopThrows: true);
+
+    private async Task ConfigureVoiceRecorderMockAsync(bool stopThrows)
     {
         var browserErrors = new List<string>();
         _context.Set(browserErrors, BrowserErrorKey);
@@ -31,8 +38,25 @@ public sealed class RunAssistantSteps
 
         Page.PageError += (_, message) => browserErrors.Add(message);
 
+        var stopImplementation = stopThrows
+            ? """
+                  mockRecorder._recording = false;
+                  throw new Error('Mock stop failure');
+              """
+            : """
+                  mockRecorder._recording = false;
+                  return {
+                    fileName: 'mock.wav',
+                    mimeType: 'audio/wav',
+                    size: 12,
+                    base64: 'QUJD',
+                    previewUrl: 'blob:mock-preview-recording',
+                    liveTranscript: 'mock transcript text'
+                  };
+              """;
+
         await Page.AddInitScriptAsync(
-            """
+            $$"""
             (() => {
               window.__uiRuntimeErrors = [];
               window.__uiConsoleErrors = [];
@@ -58,18 +82,12 @@ public sealed class RunAssistantSteps
                   return { isRecording: true, speechRecognition: true };
                 },
                 stopRecording: async () => {
-                  mockRecorder._recording = false;
-                  return {
-                    fileName: 'mock.wav',
-                    mimeType: 'audio/wav',
-                    size: 12,
-                    base64: 'QUJD',
-                    previewUrl: 'data:audio/wav;base64,QUJD',
-                    liveTranscript: 'mock transcript text'
-                  };
+                  {{stopImplementation}}
                 },
+                createPreviewUrlFromBase64: async () => 'blob:mock-preview',
                 isRecording: () => mockRecorder._recording,
                 clearPreview: () => { },
+                revokePreviewUrl: () => { },
                 dispose: () => { mockRecorder._recording = false; }
               };
 
@@ -130,6 +148,15 @@ public sealed class RunAssistantSteps
             .WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 
+    [When("stopping recording fails in the run assistant")]
+    public async Task WhenStoppingRecordingFailsInTheRunAssistant()
+    {
+        var runAssistant = Page.Locator("[data-testid='run-assistant-content']");
+        var stopRecordingButton = runAssistant.Locator("[data-testid='btn-run-assistant-record']").First;
+        await stopRecordingButton.ClickAsync();
+        await Page.WaitForTimeoutAsync(250);
+    }
+
     [Then("the run assistant should show captured audio")]
     public async Task ThenTheRunAssistantShouldShowCapturedAudio()
     {
@@ -139,6 +166,18 @@ public sealed class RunAssistantSteps
 
         var audioPreview = runAssistant.Locator("[data-testid='run-assistant-audio-preview'] audio").First;
         (await audioPreview.IsVisibleAsync()).Should().BeTrue();
+    }
+
+    [Then("the run assistant should reset recording controls after a stop failure")]
+    public async Task ThenTheRunAssistantShouldResetRecordingControlsAfterAStopFailure()
+    {
+        var runAssistant = Page.Locator("[data-testid='run-assistant-content']");
+        var recordButton = runAssistant.Locator("[data-testid='btn-run-assistant-record']").First;
+        await recordButton.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        (await recordButton.TextContentAsync()).Should().Contain("Start Recording");
+
+        var uploadInput = runAssistant.Locator("[data-testid='input-run-audio-upload']").First;
+        (await uploadInput.IsDisabledAsync()).Should().BeFalse("upload should be re-enabled after a stop failure");
     }
 
     [Then("the run assistant should expose multiple interactive tasks")]

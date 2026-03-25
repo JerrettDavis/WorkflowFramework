@@ -93,6 +93,48 @@ public sealed class WorkflowDesignerInteropContractTests
     }
 
     [Fact]
+    public void BuildRunAssistantTasks_DeduplicatesTranscriptTasks_ForSharedRunTranscript()
+    {
+        var workflowDefinition = CreateWorkflowDefinition(
+            "Dual Transcript Flow",
+            CreateStep("TranscribeTopic", "Action"),
+            CreateStep("TranscribeAnswers", "Action"));
+
+        var buildTasks = WorkflowDesignerType.GetMethod("BuildRunAssistantTasks", BindingFlags.Static | BindingFlags.NonPublic);
+        buildTasks.Should().NotBeNull();
+
+        var tasks = ((IEnumerable?)buildTasks!.Invoke(null, [workflowDefinition]))?.Cast<object>().ToList();
+        tasks.Should().NotBeNull();
+        tasks.Should().NotBeEmpty();
+
+        var transcriptTasks = tasks!
+            .Where(task => string.Equals(GetProperty(task, "Kind")?.ToString(), "Transcript", StringComparison.Ordinal))
+            .ToList();
+
+        transcriptTasks.Should().HaveCount(1);
+        GetProperty(transcriptTasks[0], "Title")?.ToString().Should().Be("Transcript Input");
+        tasks.Count(task => string.Equals(GetProperty(task, "Kind")?.ToString(), "Record", StringComparison.Ordinal)).Should().Be(1);
+    }
+
+    [Fact]
+    public void ResolveRunAssistantTranscript_PrefersLongerLiveTranscript_WhenPayloadDropsInterimSpeech()
+    {
+        var designer = Activator.CreateInstance(WorkflowDesignerType);
+        designer.Should().NotBeNull();
+
+        WorkflowDesignerType.GetField("_runLiveFinalTranscript", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(designer, "hello");
+        WorkflowDesignerType.GetField("_runLiveInterimTranscript", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(designer, "world");
+
+        var resolveTranscript = WorkflowDesignerType.GetMethod("ResolveRunAssistantTranscript", BindingFlags.Instance | BindingFlags.NonPublic);
+        resolveTranscript.Should().NotBeNull();
+
+        var resolved = resolveTranscript!.Invoke(designer, ["hello"]);
+        resolved.Should().Be("hello world");
+    }
+
+    [Fact]
     public void BuildRunAssistantRequest_IncludesRecordedAudioBase64Payload()
     {
         var designer = Activator.CreateInstance(WorkflowDesignerType);
