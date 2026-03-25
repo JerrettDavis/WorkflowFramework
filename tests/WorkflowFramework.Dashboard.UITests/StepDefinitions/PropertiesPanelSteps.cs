@@ -19,7 +19,7 @@ public sealed class PropertiesPanelSteps
     private IPage Page => _context.Get<IPage>();
     private string WebUrl => AspireHooks.Fixture.WebBaseUrl;
 
-    private async Task CreateAndOpenWorkflow(string stepType, string stepName = "TestStep")
+    private async Task CreateAndOpenWorkflow(string stepType, string stepName = "TestStep", Dictionary<string, object>? config = null)
     {
         using var client = AspireHooks.Fixture.CreateApiClient();
         var workflowName = $"{stepType} Test Workflow";
@@ -32,7 +32,7 @@ public sealed class PropertiesPanelSteps
                 name = workflowName,
                 steps = new[]
                 {
-                    new { id = "step1", type = stepType, name = stepName, config = new Dictionary<string, object>() }
+                    new { id = "step1", type = stepType, name = stepName, config = config ?? new Dictionary<string, object>() }
                 }
             }
         };
@@ -470,5 +470,6 @@ public sealed class PropertiesPanelSteps
         var value = await notes.InputValueAsync();
         value.Should().NotBeNullOrEmpty("Notes should contain text after editing");
     }
+
 }
 

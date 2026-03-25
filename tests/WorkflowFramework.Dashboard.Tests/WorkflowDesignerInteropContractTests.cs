@@ -1,8 +1,14 @@
 using System.Collections;
 using System.Globalization;
 using System.Reflection;
+using System.Net;
+using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using FluentAssertions;
+#if NET10_0
+using WorkflowFramework.Dashboard.Web.Services;
+#endif
 using Xunit;
 
 namespace WorkflowFramework.Dashboard.Tests;
@@ -400,6 +406,87 @@ public sealed class WorkflowDesignerInteropContractTests
             .ToList();
 
         unresolved.Should().BeEquivalentTo(["{{Missing.Response}}"]);
+    }
+
+    [Fact]
+    public async Task PropertiesPanel_LoadProviderModelsAsync_UsesLiveOllamaModels_AndPreservesLastGoodCache()
+    {
+        var panel = Activator.CreateInstance(PropertiesPanelType);
+        panel.Should().NotBeNull();
+
+        SetProperty(panel!, "Api", CreateDashboardApiClient(
+            CreateJsonResponse("""["qwen3:latest","phi4-mini:latest"]"""),
+            new HttpRequestException("transient test failure")));
+        SetProperty(panel, "NodeConfig", new Dictionary<string, object?> { ["provider"] = "ollama" });
+
+        var modelField = CreateSchemaField(
+            name: "model",
+            label: "Model",
+            uiType: "modelSelect",
+            dependsOn: "provider",
+            optionGroups: new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["ollama"] = ["llama3.2", "mistral"]
+            });
+
+        SetPrivateField(panel, "_schemaFields", CreateSchemaFieldList(modelField));
+
+        await InvokeAsync(panel, "LoadProviderModelsAsync", "ollama");
+
+        GetAvailableOptions(panel, modelField)
+            .Should()
+            .Equal("qwen3:latest", "phi4-mini:latest");
+
+        await InvokeAsync(panel, "LoadProviderModelsAsync", "ollama");
+
+        GetAvailableOptions(panel, modelField)
+            .Should()
+            .Equal("qwen3:latest", "phi4-mini:latest");
+    }
+
+    [Fact]
+    public void PropertiesPanel_UsesManualModelEntry_WhenDynamicOllamaModelsAreUnavailable_EvenWithSavedModel()
+    {
+        var panel = Activator.CreateInstance(PropertiesPanelType);
+        panel.Should().NotBeNull();
+
+        SetProperty(panel!, "NodeConfig", new Dictionary<string, object?>
+        {
+            ["provider"] = "ollama",
+            ["model"] = "my-local-model"
+        });
+        var modelField = CreateSchemaField(
+            name: "model",
+            label: "Model",
+            uiType: "modelSelect",
+            dependsOn: "provider");
+
+        var usesManualModelEntry = PropertiesPanelType.GetMethod("UsesManualModelEntry", BindingFlags.Instance | BindingFlags.NonPublic);
+        usesManualModelEntry.Should().NotBeNull();
+
+        var result = usesManualModelEntry!.Invoke(panel, [modelField]);
+        result.Should().Be(true);
+    }
+
+    [Fact]
+    public void PropertiesPanel_SyncOllamaRefreshLoop_StartsAndStopsTimerForSelectedOllamaNodes()
+    {
+        var panel = Activator.CreateInstance(PropertiesPanelType);
+        panel.Should().NotBeNull();
+
+        SetProperty(panel!, "SelectedNodeId", "node-1");
+        SetProperty(panel, "NodeConfig", new Dictionary<string, object?> { ["provider"] = "ollama" });
+
+        var syncOllamaRefreshLoop = PropertiesPanelType.GetMethod("SyncOllamaRefreshLoop", BindingFlags.Instance | BindingFlags.NonPublic);
+        syncOllamaRefreshLoop.Should().NotBeNull();
+
+        syncOllamaRefreshLoop!.Invoke(panel, ["ollama"]);
+        GetPrivateField(panel, "_ollamaRefreshCancellation").Should().NotBeNull();
+
+        syncOllamaRefreshLoop.Invoke(panel, ["openai"]);
+        GetPrivateField(panel, "_ollamaRefreshCancellation").Should().BeNull();
+
+        (panel as IDisposable)?.Dispose();
     }
 
     [Fact]
@@ -922,6 +1009,83 @@ public sealed class WorkflowDesignerInteropContractTests
     private static object? GetProperty(object target, string name)
         => target.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(target);
 
+    private static void SetPrivateField(object target, string name, object? value)
+        => target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
+
+    private static object? GetPrivateField(object target, string name)
+        => target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(target);
+
+    private static object CreateSchemaField(
+        string name,
+        string label,
+        string uiType,
+        string? dependsOn = null,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? optionGroups = null)
+    {
+        var schemaFieldType = PropertiesPanelType.GetNestedType("SchemaField", BindingFlags.NonPublic);
+        schemaFieldType.Should().NotBeNull();
+
+        var field = Activator.CreateInstance(schemaFieldType!)!;
+        SetProperty(field, "Name", name);
+        SetProperty(field, "Label", label);
+        SetProperty(field, "UiType", uiType);
+        SetProperty(field, "DependsOn", dependsOn);
+
+        if (optionGroups is not null)
+        {
+            var dictionary = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(typeof(string), typeof(List<string>)), StringComparer.OrdinalIgnoreCase)!;
+            var addMethod = dictionary.GetType().GetMethod("Add")!;
+            foreach (var pair in optionGroups)
+                addMethod.Invoke(dictionary, [pair.Key, pair.Value.ToList()]);
+
+            SetProperty(field, "OptionGroups", dictionary);
+        }
+
+        return field;
+    }
+
+    private static object CreateSchemaFieldList(params object[] fields)
+    {
+        var schemaFieldType = PropertiesPanelType.GetNestedType("SchemaField", BindingFlags.NonPublic);
+        schemaFieldType.Should().NotBeNull();
+
+        var list = Activator.CreateInstance(typeof(List<>).MakeGenericType(schemaFieldType!)) as IList;
+        list.Should().NotBeNull();
+        foreach (var field in fields)
+            list!.Add(field);
+
+        return list!;
+    }
+
+    private static IReadOnlyList<string> GetAvailableOptions(object panel, object field)
+    {
+        var method = PropertiesPanelType.GetMethod("GetAvailableOptions", BindingFlags.Instance | BindingFlags.NonPublic);
+        method.Should().NotBeNull();
+        return ((IEnumerable?)method!.Invoke(panel, [field]))?.Cast<string>().ToList() ?? [];
+    }
+
+    private static async Task InvokeAsync(object target, string methodName, params object?[] args)
+    {
+        var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        method.Should().NotBeNull();
+
+        var task = method!.Invoke(target, args) as Task;
+        task.Should().NotBeNull();
+        await task!;
+    }
+
+    private static DashboardApiClient CreateDashboardApiClient(params object[] responses)
+        => new(new HttpClient(new SequencedHttpMessageHandler(responses))
+        {
+            BaseAddress = new Uri("http://localhost")
+        });
+
+    private static HttpResponseMessage CreateJsonResponse(string json)
+        => new(HttpStatusCode.OK)
+        {
+            Content = new StringContent(json, Encoding.UTF8, "application/json")
+        };
+
     private static void AddVariable(object list, Type variableType, string token)
     {
         var item = Activator.CreateInstance(variableType);
@@ -937,5 +1101,23 @@ public sealed class WorkflowDesignerInteropContractTests
 
     private static Type FindTypeByName(string typeName)
         => WebAssembly.GetTypes().First(t => string.Equals(t.Name, typeName, StringComparison.Ordinal));
+
+    private sealed class SequencedHttpMessageHandler(params object[] responses) : HttpMessageHandler
+    {
+        private readonly Queue<object> _responses = new(responses);
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            if (_responses.Count == 0)
+                throw new InvalidOperationException("No queued HTTP response configured for test.");
+
+            return _responses.Dequeue() switch
+            {
+                HttpResponseMessage response => Task.FromResult(response),
+                Exception exception => Task.FromException<HttpResponseMessage>(exception),
+                _ => throw new InvalidOperationException("Unsupported test response type.")
+            };
+        }
+    }
 }
 #endif

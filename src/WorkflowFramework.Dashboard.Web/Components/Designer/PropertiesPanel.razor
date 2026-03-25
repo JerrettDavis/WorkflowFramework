@@ -1,4 +1,5 @@
 @inject DashboardApiClient Api
+@implements IDisposable
 
 <div class="w-80 bg-gray-800 border-l border-gray-700 overflow-y-auto flex-shrink-0" data-testid="properties-panel">
     @if (SelectedNodeId is null)
@@ -142,18 +143,36 @@
                                     </select>
                                     break;
 
-                                case "modelSelect":
-                                    <select value="@GetConfigValue(field)"
-                                            @onchange='e => UpdateConfig(field.Name, e.Value)'
-                                            disabled="@(GetAvailableOptions(field).Count == 0)"
-                                            class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                        <option value="">@GetModelPlaceholder(field)</option>
-                                        @foreach (var model in GetAvailableOptions(field))
-                                        {
-                                            <option value="@model">@model</option>
-                                        }
-                                    </select>
-                                    break;
+                                 case "modelSelect":
+                                     @if (UsesManualModelEntry(field))
+                                     {
+                                         <input type="text"
+                                                list="@GetProviderModelSuggestionListId(field)"
+                                                value="@GetConfigValue(field)"
+                                                placeholder="@GetModelPlaceholder(field)"
+                                                data-testid="properties-model-input-@field.Name"
+                                                @oninput='e => UpdateConfig(field.Name, e.Value)'
+                                                class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                         <datalist id="@GetProviderModelSuggestionListId(field)">
+                                             @foreach (var model in GetAvailableOptions(field))
+                                             {
+                                                 <option value="@model">@model</option>
+                                             }
+                                         </datalist>
+                                     }
+                                     else
+                                     {
+                                         <select value="@GetConfigValue(field)"
+                                                 @onchange='e => UpdateConfig(field.Name, e.Value)'
+                                                 class="w-full bg-gray-700 text-gray-200 text-sm px-2 py-1 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                             <option value="">@GetModelPlaceholder(field)</option>
+                                             @foreach (var model in GetAvailableOptions(field))
+                                             {
+                                                 <option value="@model">@model</option>
+                                             }
+                                         </select>
+                                     }
+                                     break;
 
                                  case "select":
                                      <select value="@GetConfigValue(field)"
@@ -437,13 +456,19 @@
 
     private List<StepDefinition> _localSteps = StepCatalog.GetAll();
     private bool _loadingSchema;
+    private bool _loadingProviderModels;
     private bool _loadingWorkflowReferences;
     private List<SchemaField> _schemaFields = [];
+    private static readonly TimeSpan ProviderModelRefreshInterval = TimeSpan.FromSeconds(5);
     private string? _lastLoadedType;
     private string? _lastLoadedNodeId;
+    private string? _lastLoadedModelProvider;
+    private string? _ollamaRefreshNodeId;
+    private CancellationTokenSource? _ollamaRefreshCancellation;
     private string? _stepTypeDescription;
     private string? _workflowReferenceError;
     private List<WorkflowReferenceInfo> _availableWorkflowReferences = [];
+    private readonly Dictionary<string, IReadOnlyList<string>> _providerModelOptions = new(StringComparer.OrdinalIgnoreCase);
 
     public sealed class NodeConnections
     {
@@ -517,10 +542,25 @@
         {
             _lastLoadedType = null;
             _lastLoadedNodeId = null;
+            _lastLoadedModelProvider = null;
             _schemaFields = [];
             _stepTypeDescription = null;
+            _providerModelOptions.Clear();
             _availableWorkflowReferences = [];
             _workflowReferenceError = null;
+            StopOllamaRefreshLoop();
+        }
+        else if (RequiresDynamicProviderModels())
+        {
+            var currentProvider = GetCurrentModelProvider();
+            if (!string.Equals(currentProvider, _lastLoadedModelProvider, StringComparison.OrdinalIgnoreCase))
+                await LoadProviderModelsAsync(currentProvider);
+
+            SyncOllamaRefreshLoop(currentProvider);
+        }
+        else
+        {
+            StopOllamaRefreshLoop();
         }
     }
 
@@ -654,6 +694,8 @@
             _loadingSchema = false;
         }
 
+        await LoadProviderModelsAsync(GetCurrentModelProvider());
+
         if (_schemaFields.Any(IsWorkflowReferenceField))
         {
             await LoadWorkflowReferencesAsync();
@@ -664,6 +706,8 @@
             _workflowReferenceError = null;
             _loadingWorkflowReferences = false;
         }
+
+        SyncOllamaRefreshLoop();
     }
 
     private List<SchemaField> BuildLocalSchemaFields(string type)
@@ -692,6 +736,20 @@
 
     private IReadOnlyList<string> GetAvailableOptions(SchemaField field)
     {
+        if (IsDynamicModelField(field))
+        {
+            var currentValue = NodeConfig.GetValueOrDefault(field.Name)?.ToString();
+            var options = GetDynamicModelSuggestions(field).ToList();
+
+            if (!string.IsNullOrWhiteSpace(currentValue) &&
+                !options.Any(option => string.Equals(option, currentValue, StringComparison.OrdinalIgnoreCase)))
+            {
+                options.Insert(0, currentValue);
+            }
+
+            return options;
+        }
+
         if (field.DependsOn is not null)
         {
             var dependencyValue = NodeConfig.GetValueOrDefault(field.DependsOn)?.ToString();
@@ -721,10 +779,20 @@
         if (field.DependsOn is not null && string.IsNullOrWhiteSpace(NodeConfig.GetValueOrDefault(field.DependsOn)?.ToString()))
             return "— Select provider first —";
 
+        if (IsDynamicModelField(field) && _loadingProviderModels)
+            return "Loading models...";
+
         return GetAvailableOptions(field).Count == 0
-            ? "— No models available —"
+            ? IsDynamicModelField(field)
+                ? "Enter a model name or verify the provider connection"
+                : "— No models available —"
             : "— Select model —";
     }
+
+    private bool UsesManualModelEntry(SchemaField field)
+        => IsDynamicModelField(field)
+           && !string.IsNullOrWhiteSpace(GetCurrentProviderValue(field))
+           && GetDynamicModelSuggestions(field).Count == 0;
 
     private async Task OnProviderChangedAsync(SchemaField field, string? provider)
     {
@@ -733,10 +801,18 @@
             [field.Name] = provider ?? string.Empty
         };
 
+        await LoadProviderModelsAsync(provider);
+
         foreach (var dependentField in _schemaFields.Where(schemaField =>
                      schemaField.DependsOn is not null &&
                      string.Equals(schemaField.DependsOn, field.Name, StringComparison.OrdinalIgnoreCase)))
         {
+            if (IsDynamicModelField(dependentField))
+            {
+                newConfig.Remove(dependentField.Name);
+                continue;
+            }
+
             var selectedValue = newConfig.GetValueOrDefault(dependentField.Name)?.ToString();
             if (string.IsNullOrWhiteSpace(selectedValue))
                 continue;
@@ -747,6 +823,133 @@
         }
 
         await OnConfigChanged.InvokeAsync(newConfig);
+    }
+
+    private bool RequiresDynamicProviderModels()
+        => _schemaFields.Any(IsDynamicModelField);
+
+    private static bool IsDynamicModelField(SchemaField field)
+        => string.Equals(field.UiType, "modelSelect", StringComparison.OrdinalIgnoreCase)
+           && string.Equals(field.DependsOn, "provider", StringComparison.OrdinalIgnoreCase);
+
+    private string? GetCurrentProviderValue(SchemaField field)
+        => field.DependsOn is null
+            ? null
+            : NodeConfig.GetValueOrDefault(field.DependsOn)?.ToString();
+
+    private IReadOnlyList<string> GetDynamicModelSuggestions(SchemaField field)
+    {
+        var provider = GetCurrentProviderValue(field);
+        if (string.IsNullOrWhiteSpace(provider))
+            return [];
+
+        if (_providerModelOptions.TryGetValue(provider, out var dynamicModels))
+            return dynamicModels;
+
+        if (!string.Equals(provider, "ollama", StringComparison.OrdinalIgnoreCase) &&
+            field.OptionGroups is not null &&
+            field.OptionGroups.TryGetValue(provider, out var fallbackOptions))
+        {
+            return fallbackOptions;
+        }
+
+        return [];
+    }
+
+    private string? GetCurrentModelProvider()
+    {
+        var modelField = _schemaFields.FirstOrDefault(IsDynamicModelField);
+        return modelField is null
+            ? null
+            : NodeConfig.GetValueOrDefault(modelField.DependsOn!)?.ToString();
+    }
+
+    private async Task LoadProviderModelsAsync(string? provider)
+    {
+        _lastLoadedModelProvider = null;
+
+        if (string.IsNullOrWhiteSpace(provider))
+            return;
+
+        _loadingProviderModels = true;
+        try
+        {
+            var models = await Api.GetProviderModelsAsync(provider);
+            _providerModelOptions[provider] = models;
+            _lastLoadedModelProvider = provider;
+        }
+        catch (System.Net.Http.HttpRequestException)
+        {
+            _lastLoadedModelProvider = provider;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            _lastLoadedModelProvider = provider;
+        }
+        catch (NotSupportedException)
+        {
+            _lastLoadedModelProvider = provider;
+        }
+        catch (TaskCanceledException)
+        {
+            _lastLoadedModelProvider = provider;
+        }
+        finally
+        {
+            _loadingProviderModels = false;
+        }
+    }
+
+    private string GetProviderModelSuggestionListId(SchemaField field)
+        => $"provider-model-suggestions-{field.Name}-{SelectedNodeId ?? "node"}";
+
+    private void SyncOllamaRefreshLoop(string? provider = null)
+    {
+        var currentProvider = provider ?? GetCurrentModelProvider();
+        if (!string.Equals(currentProvider, "ollama", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(SelectedNodeId))
+        {
+            StopOllamaRefreshLoop();
+            return;
+        }
+
+        if (_ollamaRefreshCancellation is not null &&
+            string.Equals(_ollamaRefreshNodeId, SelectedNodeId, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        StopOllamaRefreshLoop();
+
+        _ollamaRefreshNodeId = SelectedNodeId;
+        _ollamaRefreshCancellation = new CancellationTokenSource();
+        var cancellationToken = _ollamaRefreshCancellation.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                using var timer = new PeriodicTimer(ProviderModelRefreshInterval);
+                while (await timer.WaitForNextTickAsync(cancellationToken))
+                {
+                    await InvokeAsync(async () =>
+                    {
+                        await LoadProviderModelsAsync("ollama");
+                        StateHasChanged();
+                    });
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }, cancellationToken);
+    }
+
+    private void StopOllamaRefreshLoop()
+    {
+        _ollamaRefreshCancellation?.Cancel();
+        _ollamaRefreshCancellation?.Dispose();
+        _ollamaRefreshCancellation = null;
+        _ollamaRefreshNodeId = null;
     }
 
     private static IReadOnlyList<string> GetAvailableOptionsForConfig(SchemaField field, Dictionary<string, object?> config)
@@ -770,6 +973,9 @@
         var newConfig = new Dictionary<string, object?>(NodeConfig) { [key] = value };
         await OnConfigChanged.InvokeAsync(newConfig);
     }
+
+    public void Dispose()
+        => StopOllamaRefreshLoop();
 
     private static bool IsWorkflowReferenceField(SchemaField field)
         => string.Equals(field.UiType, "workflowSelect", StringComparison.OrdinalIgnoreCase);
