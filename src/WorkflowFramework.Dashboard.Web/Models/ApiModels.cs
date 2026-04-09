@@ -431,3 +431,29 @@ public sealed class VoiceQaPairDto
     public string Question { get; set; } = "";
     public string Answer { get; set; } = "";
 }
+
+// History Graph DTOs
+public sealed class HistoryNodeSummary
+{
+    public string Fingerprint { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Kind { get; set; } = "";
+    public string? Target { get; set; }
+    public long ExecutionCount { get; set; }
+    public long SuccessCount { get; set; }
+    public long FailureCount { get; set; }
+    public DateTimeOffset FirstSeenAt { get; set; }
+    public DateTimeOffset LastSeenAt { get; set; }
+    public double SuccessRate => ExecutionCount > 0 ? (double)SuccessCount / ExecutionCount : 0.0;
+}
+
+public sealed class HistoryEdgeSummary
+{
+    public string Id { get; set; } = "";
+    public string SourceFingerprint { get; set; } = "";
+    public string TargetFingerprint { get; set; } = "";
+    public string Kind { get; set; } = "";
+    public long Weight { get; set; }
+    public DateTimeOffset FirstSeenAt { get; set; }
+    public DateTimeOffset LastSeenAt { get; set; }
+}

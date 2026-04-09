@@ -322,6 +322,39 @@ public sealed class DashboardApiClient(HttpClient http)
         return await resp.Content.ReadFromJsonAsync<RunSummary>(ct);
     }
 
+    // History Graph
+    public async Task<List<HistoryNodeSummary>> GetHistoryNodesAsync(string? query = null, int limit = 50, CancellationToken ct = default)
+    {
+        var url = $"/api/history/nodes?limit={limit}";
+        if (!string.IsNullOrWhiteSpace(query))
+            url += $"&query={Uri.EscapeDataString(query)}";
+        return await http.GetFromJsonAsync<List<HistoryNodeSummary>>(url, ct) ?? [];
+    }
+
+    public async Task<List<HistoryEdgeSummary>> GetHistoryEdgesAsync(string? workflow = null, long minWeight = 1, CancellationToken ct = default)
+    {
+        var url = "/api/history/edges";
+        var q = new List<string>();
+        if (!string.IsNullOrWhiteSpace(workflow)) q.Add($"workflow={Uri.EscapeDataString(workflow)}");
+        if (q.Count > 0) url += "?" + string.Join("&", q);
+        var edges = await http.GetFromJsonAsync<List<HistoryEdgeSummary>>(url, ct) ?? [];
+        return minWeight > 1 ? edges.Where(e => e.Weight >= minWeight).ToList() : edges;
+    }
+
+    public async Task<string?> GetHistoryMermaidAsync(int maxNodes = 50, long minEdgeWeight = 1, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/api/history/mermaid?maxNodes={maxNodes}&minEdgeWeight={minEdgeWeight}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadAsStringAsync(ct);
+    }
+
+    public async Task<string?> GetHistoryMermaidSubgraphAsync(string fingerprint, int maxDepth = 5, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/api/history/mermaid/{Uri.EscapeDataString(fingerprint)}?maxDepth={maxDepth}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadAsStringAsync(ct);
+    }
+
     // Voice
     public async Task<List<VoiceSubmissionDto>> GetVoiceSubmissionsAsync(int? limit = null, CancellationToken ct = default)
     {

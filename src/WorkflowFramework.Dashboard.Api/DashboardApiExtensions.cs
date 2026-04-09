@@ -66,6 +66,7 @@ public static class DashboardApiExtensions
         MapScheduleEndpoints(endpoints);
         MapTriggerEndpoints(endpoints);
         MapVoiceEndpoints(endpoints);
+        endpoints.MapHistoryGraphEndpoints();
 
         // Merge plugin step types into the registry
         var pluginRegistry = endpoints.ServiceProvider.GetRequiredService<PluginRegistry>();
