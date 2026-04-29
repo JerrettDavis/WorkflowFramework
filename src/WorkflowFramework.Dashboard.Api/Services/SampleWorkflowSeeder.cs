@@ -386,7 +386,7 @@ public static class SampleWorkflowSeeder
                     Version = 1,
                     Steps =
                     [
-                        Step("SelectProvider", "Action", Cfg("expression", "Resolve the agent provider from {provider} (echo or ollama) and store it in context for DslEmitterStep.")),
+                        Step("SelectProvider", "Action", Cfg("expression", "Provider is configured as echo (offline/demo default). To run live, change the provider field in EmitSteps to ollama before executing.")),
                         Step("EmitSteps", "DslEmitterStep", new Dictionary<string, string>
                         {
                             ["provider"]      = "echo",
