@@ -12,7 +12,7 @@ public sealed class OllamaOptions
     public string BaseUrl { get; set; } = "http://localhost:11434";
 
     /// <summary>Gets or sets the default model.</summary>
-    public string DefaultModel { get; set; } = "qwen3:30b-instruct";
+    public string DefaultModel { get; set; } = "qwen2.5:1.5b";
 
     /// <summary>Gets or sets the request timeout.</summary>
     public TimeSpan Timeout { get; set; } = TimeSpan.FromSeconds(120);
