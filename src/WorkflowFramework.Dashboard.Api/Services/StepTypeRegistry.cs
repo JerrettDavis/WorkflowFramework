@@ -306,6 +306,31 @@ public sealed class StepTypeRegistry
             }
             """));
 
+        Register(registry, "DslEmitterStep", "AI/Agents", "Iteratively prompts an LLM to emit workflow step definitions as a JSON array.",
+            Schema($$"""
+            {
+              "properties": {
+                "provider":             { "type": "string", "uiType": "providerSelect", "label": "AI Provider", "helpText": "Provider used to call the LLM (use 'echo' for offline demos)", "required": true, "options": {{aiProviderOptions}} },
+                "model":                { "type": "string", "uiType": "modelSelect",    "label": "Model",       "helpText": "Model identifier (provider-specific)", "dependsOn": "provider", "optionGroups": {{aiModelOptionGroups}} },
+                "systemPrompt":         { "type": "string", "uiType": "textarea",       "label": "System Prompt", "helpText": "Instructions telling the LLM to emit step definitions as a JSON array", "rows": 8 },
+                "maxIterations":        { "type": "number", "uiType": "number",         "label": "Max Iterations", "helpText": "Maximum LLM turns before stopping", "min": 1, "max": 20, "default": "5" },
+                "doneSignal":           { "type": "string",                             "label": "Done Signal",    "helpText": "Exact string the LLM returns to signal it is finished emitting steps (default: [])", "default": "[]" },
+                "includeSchemaInPrompt":{ "type": "boolean","uiType": "checkbox",       "label": "Include Schema in Prompt", "helpText": "Append the step-definition JSON schema to the system prompt", "default": "false" }
+              },
+              "required": ["provider"]
+            }
+            """));
+
+        Register(registry, "WorkflowDslExecutorStep", "AI/Agents", "Materialises and executes step definitions emitted by DslEmitterStep.",
+            Schema("""
+            {
+              "properties": {
+                "stepsKey": { "type": "string", "label": "Steps Context Key", "helpText": "Context property key that holds the List<StepDefinitionDto> to execute (default: WorkflowDslExecutor.Steps)", "default": "WorkflowDslExecutor.Steps" }
+              },
+              "required": []
+            }
+            """));
+
         // ── Data ──────────────────────────────────────────────────────
         Register(registry, "DataMapStep", "Data", "Transforms data using field mapping rules.",
             Schema("""

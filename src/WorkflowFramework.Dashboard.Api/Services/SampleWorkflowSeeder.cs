@@ -373,7 +373,39 @@ public static class SampleWorkflowSeeder
                 }
             },
 
-            // k) Order Saga with Compensation
+            // k) AI DSL Emitter Demo
+            new SavedWorkflowDefinition
+            {
+                Id = "sample-ai-dsl-emitter",
+                Description = "LLM dynamically emits workflow step definitions as JSON, a human approves the plan, then the framework executes those steps at runtime. Runs offline with the echo provider.",
+                Tags = ["sample", "ai", "dsl", "dynamic", "human-in-the-loop", "echo"],
+                LastModified = now,
+                Definition = new WorkflowDefinitionDto
+                {
+                    Name = "AI DSL Emitter",
+                    Version = 1,
+                    Steps =
+                    [
+                        Step("SelectProvider", "Action", Cfg("expression", "Resolve the agent provider from {provider} (echo or ollama) and store it in context for DslEmitterStep.")),
+                        Step("EmitSteps", "DslEmitterStep", new Dictionary<string, string>
+                        {
+                            ["provider"]      = "echo",
+                            ["systemPrompt"]  = "You are a workflow planning assistant. Respond ONLY with a valid JSON array of step definitions. Each step must have \"name\" and \"type\" fields. When finished, respond with exactly: []",
+                            ["maxIterations"] = "5",
+                            ["doneSignal"]    = "[]"
+                        }),
+                        Step("ApprovePlan", "ApprovalStep", new Dictionary<string, string>
+                        {
+                            ["title"]        = "Review AI-emitted workflow plan",
+                            ["instructions"] = "The LLM emitted {{EmitSteps.EmittedSteps}}. Approve to execute these steps or reject to abort."
+                        }),
+                        Step("BridgeContext", "Action", Cfg("expression", "Copy {{EmitSteps.EmittedSteps}} into WorkflowDslExecutor.Steps so the executor can pick them up.")),
+                        Step("ExecuteEmittedSteps", "WorkflowDslExecutorStep")
+                    ]
+                }
+            },
+
+            // l) Order Saga with Compensation
             new SavedWorkflowDefinition
             {
                 Id = "sample-order-saga",

@@ -29,4 +29,27 @@ public sealed class SampleWorkflowSeederTests
         llmStep.Config.Should().ContainKey("model");
         llmStep.Config["model"].Should().Be("qwen3:30b-instruct");
     }
+
+    [Fact]
+    public async Task SeedAsync_IncludesAiDslEmitterWorkflow()
+    {
+        var store = new InMemoryWorkflowDefinitionStore();
+
+        await SampleWorkflowSeeder.SeedAsync(store);
+
+        var workflow = (await store.GetAllAsync())
+            .SingleOrDefault(item => item.Definition.Name == "AI DSL Emitter");
+
+        workflow.Should().NotBeNull();
+        workflow!.Tags.Should().Contain(["ai", "dsl", "dynamic", "human-in-the-loop", "echo"]);
+        workflow.Definition.Steps.Should().HaveCount(5);
+
+        var emitStep = workflow.Definition.Steps.Single(s => s.Name == "EmitSteps");
+        emitStep.Type.Should().Be("DslEmitterStep");
+        emitStep.Config.Should().ContainKey("provider");
+        emitStep.Config!["provider"].Should().Be("echo");
+
+        workflow.Definition.Steps.Single(s => s.Name == "ExecuteEmittedSteps")
+            .Type.Should().Be("WorkflowDslExecutorStep");
+    }
 }

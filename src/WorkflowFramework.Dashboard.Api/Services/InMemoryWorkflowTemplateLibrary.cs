@@ -81,6 +81,7 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
         templates.Add(TaskExtractionPipeline());
         templates.Add(AgentTriageWorkflow());
         templates.Add(MultimodalLocalRouter());
+        templates.Add(AiDslEmitter());
 
         // === Voice & Audio ===
         templates.Add(QuickTranscript());
@@ -617,6 +618,72 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
                         ["title"] = "Review specialist output package",
                         ["instructions"] = "Review the merged draft, audit notes, and routing recommendation before publishing."
                     }
+                }
+            ]
+        }
+    };
+
+    private static WorkflowTemplate AiDslEmitter() => new()
+    {
+        Id = "ai-dsl-emitter",
+        Name = "AI DSL Emitter",
+        Description = "An LLM iteratively emits workflow step definitions as JSON. A human reviews and approves the plan, then WorkflowDslExecutorStep materialises and runs those steps at runtime. Works offline with the built-in echo provider or live with Ollama.",
+        Category = "AI & Agents",
+        Tags = ["ai", "dsl", "dynamic", "human-in-the-loop", "echo", "ollama"],
+        Difficulty = TemplateDifficulty.Advanced,
+        StepCount = 5,
+        PreviewImageUrl = "/images/templates/ai-dsl-emitter-preview.svg",
+        IsFeatured = true,
+        FeaturedReason = "Demonstrates LLM-driven dynamic workflow construction: the model plans, a human approves, and the framework executes the emitted steps at runtime.",
+        Definition = new WorkflowDefinitionDto
+        {
+            Name = "AiDslEmitterDemo",
+            Steps =
+            [
+                new StepDefinitionDto
+                {
+                    Name = "SelectProvider",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Resolve the agent provider from {provider} (echo or ollama) and store it in context for DslEmitterStep."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "EmitSteps",
+                    Type = "DslEmitterStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"]      = "echo",
+                        ["systemPrompt"]  = "You are a workflow planning assistant. Respond ONLY with a valid JSON array of step definitions. Each step must have \"name\" and \"type\" fields. When finished, respond with exactly: []",
+                        ["maxIterations"] = "5",
+                        ["doneSignal"]    = "[]"
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "ApprovePlan",
+                    Type = "ApprovalStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["title"]        = "Review AI-emitted workflow plan",
+                        ["instructions"] = "The LLM emitted {{EmitSteps.EmittedSteps}}. Approve to execute these steps or reject to abort."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "BridgeContext",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Copy {{EmitSteps.EmittedSteps}} into WorkflowDslExecutor.Steps so the executor can pick them up."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "ExecuteEmittedSteps",
+                    Type = "WorkflowDslExecutorStep"
                 }
             ]
         }
