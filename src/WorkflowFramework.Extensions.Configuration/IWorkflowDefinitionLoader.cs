@@ -395,7 +395,9 @@ public sealed class WorkflowDefinitionBuilder
         var bodySteps = stepDef.Steps ?? [];
         var itemsKey = stepDef.Condition ?? "items";
 
-        builder.ForEach<object>(
+        // Use a temp builder to capture the created step so we can apply the configured name.
+        var tempBuilder = Workflow.Create("_temp");
+        tempBuilder.ForEach<object>(
             ctx =>
             {
                 if (!ctx.Properties.TryGetValue(itemsKey, out var col)) return Array.Empty<object>();
@@ -407,6 +409,7 @@ public sealed class WorkflowDefinitionBuilder
                 return Array.Empty<object>();
             },
             b => BuildSteps(b, bodySteps));
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
     }
 
     private void BuildWhileStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -416,13 +419,16 @@ public sealed class WorkflowDefinitionBuilder
                 $"While step '{stepDef.Name ?? "unnamed"}' requires a 'condition' property.");
         var bodySteps = stepDef.Steps ?? [];
 
-        builder.While(
+        // Use a temp builder to capture the created step so we can apply the configured name.
+        var tempBuilder = Workflow.Create("_temp");
+        tempBuilder.While(
             ctx =>
             {
                 ctx.Properties.TryGetValue(conditionKey, out var val);
                 return val is true or "true";
             },
             b => BuildSteps(b, bodySteps));
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
     }
 
     private void BuildDoWhileStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -432,13 +438,16 @@ public sealed class WorkflowDefinitionBuilder
                 $"DoWhile step '{stepDef.Name ?? "unnamed"}' requires a 'condition' property.");
         var bodySteps = stepDef.Steps ?? [];
 
-        builder.DoWhile(
+        // Use a temp builder to capture the created step so we can apply the configured name.
+        var tempBuilder = Workflow.Create("_temp");
+        tempBuilder.DoWhile(
             b => BuildSteps(b, bodySteps),
             ctx =>
             {
                 ctx.Properties.TryGetValue(conditionKey, out var val);
                 return val is true or "true";
             });
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
     }
 
     private void BuildRetryGroupStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -449,7 +458,10 @@ public sealed class WorkflowDefinitionBuilder
                 $"Retry step '{stepDef.Name ?? "unnamed"}' requires a non-empty 'steps' list.");
 
         var maxAttempts = stepDef.Retry?.MaxAttempts ?? 3;
-        builder.Retry(b => BuildSteps(b, bodySteps), maxAttempts);
+        // Use a temp builder to capture the created step so we can apply the configured name.
+        var tempBuilder = Workflow.Create("_temp");
+        tempBuilder.Retry(b => BuildSteps(b, bodySteps), maxAttempts);
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
     }
 
     private void BuildTryStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -459,7 +471,9 @@ public sealed class WorkflowDefinitionBuilder
         var finallyBody = stepDef.FinallySteps ?? stepDef.ElseSteps ?? [];
         var catchDefs = stepDef.Catch ?? [];
 
-        var tryCatchBuilder = builder.Try(b => BuildSteps(b, tryBody));
+        // Use a temp builder to capture the created TryCatchStep so we can apply the configured name.
+        var tempBuilder = Workflow.Create("_temp");
+        var tryCatchBuilder = tempBuilder.Try(b => BuildSteps(b, tryBody));
 
         foreach (var catchDef in catchDefs)
         {
@@ -485,6 +499,8 @@ public sealed class WorkflowDefinitionBuilder
             tryCatchBuilder.Finally(b => BuildSteps(b, finallyBody));
         else
             tryCatchBuilder.EndTry();
+
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
     }
 
     /// <summary>
@@ -548,12 +564,15 @@ public sealed class WorkflowDefinitionBuilder
 
         if (_subWorkflows != null && _subWorkflows.TryGetValue(name, out var wf))
         {
-            builder.SubWorkflow(wf);
+            // Use a temp builder to capture the SubWorkflowStep so we can apply the configured name.
+            var tempBuilder = Workflow.Create("_temp");
+            tempBuilder.SubWorkflow(wf);
+            builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
         }
         else
         {
             // Fall back to treating the name as a step class registered in the registry
-            builder.Step(_stepRegistry.Resolve(name));
+            builder.Step(ApplyName(_stepRegistry.Resolve(name), stepDef.Name));
         }
     }
 
@@ -564,7 +583,7 @@ public sealed class WorkflowDefinitionBuilder
         try
         {
             var approvalStep = _stepRegistry.Resolve(stepKey);
-            builder.Step(approvalStep);
+            builder.Step(ApplyName(approvalStep, stepDef.Name));
         }
         catch (KeyNotFoundException)
         {
@@ -600,24 +619,6 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// Resolves a single leaf <see cref="IStep"/> from a step definition.
-    /// For a simple <c>type: step</c> or direct class-name reference, this returns the registry lookup.
-    /// </summary>
-    private IStep ResolveLeafStep(StepDefinition stepDef)
-    {
-        if (!string.IsNullOrEmpty(stepDef.Class))
-            return ApplyName(_stepRegistry.Resolve(stepDef.Class), stepDef.Name);
-
-        var typeCategory = stepDef.Type?.ToLowerInvariant() ?? string.Empty;
-
-        if (!string.IsNullOrEmpty(stepDef.Type) && !KnownCategories.Contains(typeCategory))
-            return ApplyName(_stepRegistry.Resolve(stepDef.Type), stepDef.Name);
-
-        throw new InvalidOperationException(
-            $"Cannot resolve a single step from composite step definition '{stepDef.Name ?? "unnamed"}' (type='{stepDef.Type}').");
-    }
-
-    /// <summary>
     /// Builds a list of step definitions into a single <see cref="IStep"/>.
     /// The result is always an <see cref="InlineWorkflowStep"/> named <paramref name="groupName"/>
     /// so that callers (e.g., conditional branch builders) can rely on the group name being
@@ -649,39 +650,38 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// Wraps an <see cref="IStep"/> and overrides its <see cref="IStep.Name"/>.
-    /// Used to honour <see cref="StepDefinition.Name"/> for leaf steps resolved from the registry
-    /// so that multiple instances of the same step class can have distinct names and avoid
-    /// duplicate-step-name validation failures.
-    /// When the inner step implements <see cref="ICompensatingStep"/>, this wrapper also
-    /// implements <see cref="ICompensatingStep"/> and delegates <see cref="ICompensatingStep.CompensateAsync"/>
-    /// so that saga compensation is not silently lost through the name override.
+    /// Wraps an <see cref="IStep"/> and overrides its <see cref="IStep.Name"/> without affecting
+    /// interface membership. Used when the inner step does not implement <see cref="ICompensatingStep"/>.
     /// </summary>
-    private sealed class NamedStep : ICompensatingStep
+    private sealed class NamedStep(string name, IStep inner) : IStep
     {
-        private readonly IStep _inner;
+        public string Name => name;
+        public Task ExecuteAsync(IWorkflowContext context) => inner.ExecuteAsync(context);
+    }
 
-        public NamedStep(string name, IStep inner)
-        {
-            Name = name;
-            _inner = inner;
-        }
-
-        public string Name { get; }
-
-        public Task ExecuteAsync(IWorkflowContext context) => _inner.ExecuteAsync(context);
-
-        // Delegate CompensateAsync when the inner step supports it; otherwise no-op.
-        public Task CompensateAsync(IWorkflowContext context) =>
-            _inner is ICompensatingStep comp ? comp.CompensateAsync(context) : Task.CompletedTask;
+    /// <summary>
+    /// Wraps an <see cref="ICompensatingStep"/> and overrides its <see cref="IStep.Name"/>,
+    /// delegating <see cref="ICompensatingStep.CompensateAsync"/> to the inner step so that
+    /// saga compensation is not silently lost through the name override.
+    /// </summary>
+    private sealed class NamedCompensatingStep(string name, ICompensatingStep inner) : ICompensatingStep
+    {
+        public string Name => name;
+        public Task ExecuteAsync(IWorkflowContext context) => inner.ExecuteAsync(context);
+        public Task CompensateAsync(IWorkflowContext context) => inner.CompensateAsync(context);
     }
 
     /// <summary>
     /// Applies <paramref name="overrideName"/> to <paramref name="step"/> when the name is non-empty
     /// and different from the step's existing <see cref="IStep.Name"/>.
+    /// Preserves <see cref="ICompensatingStep"/> membership when the inner step implements it.
     /// </summary>
-    private static IStep ApplyName(IStep step, string? overrideName) =>
-        string.IsNullOrWhiteSpace(overrideName) || overrideName == step.Name
-            ? step
+    private static IStep ApplyName(IStep step, string? overrideName)
+    {
+        if (string.IsNullOrWhiteSpace(overrideName) || overrideName == step.Name)
+            return step;
+        return step is ICompensatingStep comp
+            ? new NamedCompensatingStep(overrideName, comp)
             : new NamedStep(overrideName, step);
+    }
 }

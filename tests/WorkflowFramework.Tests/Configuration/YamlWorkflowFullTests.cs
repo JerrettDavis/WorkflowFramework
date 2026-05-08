@@ -998,13 +998,13 @@ public class YamlWorkflowFullTests
             "snake_case 'timeout_minutes' is not recognized; use camelCase 'timeoutMinutes'");
     }
 
-    // ── NamedStep ICompensatingStep delegation ────────────────────────────────
+    // ── NamedCompensatingStep ICompensatingStep delegation ────────────────────
 
     [Fact]
     public async Task NamedStep_WithCompensatingInner_DelegatesCompensate()
     {
-        // When ApplyName wraps a compensating step with a NamedStep, CompensateAsync must
-        // be forwarded to the inner step so saga compensation is not silently lost.
+        // When ApplyName wraps a compensating step, a NamedCompensatingStep is returned and
+        // CompensateAsync must be forwarded to the inner step so saga compensation is not silently lost.
         var inner = new CompensatingTestStep("OriginalName");
         var registry = new StepRegistry();
         registry.Register("CompStep", () => inner);
@@ -1016,7 +1016,7 @@ public class YamlWorkflowFullTests
             [
                 new StepDefinition
                 {
-                    Name = "RenamedStep",  // override name forces NamedStep wrapping
+                    Name = "RenamedStep",  // override name forces NamedCompensatingStep wrapping
                     Type = "step",
                     Class = "CompStep"
                 }
@@ -1026,12 +1026,41 @@ public class YamlWorkflowFullTests
         var wf = new WorkflowDefinitionBuilder(registry).Build(def);
         wf.Steps.Should().HaveCount(1);
         wf.Steps[0].Should().BeAssignableTo<ICompensatingStep>(
-            "NamedStep wrapping a compensating inner step must implement ICompensatingStep");
+            "NamedCompensatingStep wrapping a compensating inner step must implement ICompensatingStep");
 
         var comp = (ICompensatingStep)wf.Steps[0];
         var ctx = new WorkflowContext();
         await comp.CompensateAsync(ctx);
         inner.Compensated.Should().BeTrue("CompensateAsync must be delegated to the inner compensating step");
+    }
+
+    [Fact]
+    public void NamedStep_WithNonCompensatingInner_DoesNotImplementICompensatingStep()
+    {
+        // When ApplyName wraps a non-compensating step, the result should be a plain NamedStep
+        // that does NOT implement ICompensatingStep — non-compensating steps must not become
+        // inadvertently compensatable by the mere act of overriding their name.
+        var registry = new StepRegistry();
+        registry.Register("PlainStep", () => new TestStep("OriginalName"));
+
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Name = "RenamedPlain",
+                    Type = "step",
+                    Class = "PlainStep"
+                }
+            ]
+        };
+
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        wf.Steps.Should().HaveCount(1);
+        wf.Steps[0].Name.Should().Be("RenamedPlain");
+        wf.Steps[0].Should().NotBeAssignableTo<ICompensatingStep>(
+            "a plain (non-compensating) step renamed via ApplyName must not acquire ICompensatingStep");
     }
 
     // ── approval fallback: TimeoutMinutes ─────────────────────────────────────
