@@ -353,20 +353,23 @@ public sealed class WorkflowDefinitionBuilder
                 $"Conditional step '{stepDef.Name ?? "unnamed"}' requires 'then', 'thenSteps', or equivalent.");
         }
 
+        // Use a temp builder to capture the created ConditionalStep so we can apply the configured name.
+        var tempBuilder = Workflow.Create("_temp");
         if (elseSteps != null && elseSteps.Count > 0)
         {
             var elseStep = BuildStepsAsGroupStep($"{stepName}_else", elseSteps);
-            builder.If(predicate).Then(thenStep).Else(elseStep);
+            tempBuilder.If(predicate).Then(thenStep).Else(elseStep);
         }
         else if (stepDef.Else != null)
         {
             var elseStep = _stepRegistry.Resolve(stepDef.Else);
-            builder.If(predicate).Then(thenStep).Else(elseStep);
+            tempBuilder.If(predicate).Then(thenStep).Else(elseStep);
         }
         else
         {
-            builder.If(predicate).Then(thenStep).EndIf();
+            tempBuilder.If(predicate).Then(thenStep).EndIf();
         }
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
     }
 
     private void BuildParallelStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -376,7 +379,7 @@ public sealed class WorkflowDefinitionBuilder
             throw new InvalidOperationException(
                 $"Parallel step '{stepDef.Name ?? "unnamed"}' requires a non-empty 'steps' list.");
 
-        // Use a temp builder to capture the created ParallelStep so we can apply the configured name.
+        // Use a temp builder to capture the created step so we can apply the configured name.
         var tempBuilder = Workflow.Create("_temp");
         tempBuilder.Parallel(p =>
         {
@@ -618,7 +621,11 @@ public sealed class WorkflowDefinitionBuilder
         sagaBuilder.WithCompensation();
         BuildSteps(sagaBuilder, bodySteps);
         var sagaWorkflow = sagaBuilder.Build();
-        builder.SubWorkflow(sagaWorkflow);
+
+        // Use a temp builder to capture the SubWorkflowStep so we can apply the configured name.
+        var tempBuilder = Workflow.Create("_temp");
+        tempBuilder.SubWorkflow(sagaWorkflow);
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
     }
 
     /// <summary>
