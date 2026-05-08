@@ -497,10 +497,13 @@ public sealed class WorkflowDefinitionBuilder
         return ExceptionTypeCache.GetOrAdd(typeName, static name =>
         {
             // Try assembly-qualified or fully-qualified name first.
-            var resolved = Type.GetType(name)
-                ?? Type.GetType($"System.{name}");
+            // Guard each result: Type.GetType may return non-Exception types (e.g. System.IO.Stream),
+            // which would cause MakeGenericMethod(Catch<TException>) to throw at runtime.
+            var resolved = Type.GetType(name);
+            if (resolved != null && typeof(Exception).IsAssignableFrom(resolved)) return resolved;
 
-            if (resolved != null) return resolved;
+            resolved = Type.GetType($"System.{name}");
+            if (resolved != null && typeof(Exception).IsAssignableFrom(resolved)) return resolved;
 
             // Scan all loaded assemblies to find the type by full or short name.
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -605,42 +608,19 @@ public sealed class WorkflowDefinitionBuilder
 
     /// <summary>
     /// Builds a list of step definitions into a single <see cref="IStep"/>.
-    /// Multiple steps are grouped into a sequential inline workflow step.
+    /// The result is always an <see cref="InlineWorkflowStep"/> named <paramref name="groupName"/>
+    /// so that callers (e.g., conditional branch builders) can rely on the group name being
+    /// reflected in the resulting step's <see cref="IStep.Name"/>, preventing duplicate step-name
+    /// validation failures when multiple branches share the same leaf step type.
     /// </summary>
     private IStep BuildStepsAsGroupStep(string groupName, List<StepDefinition> steps)
     {
         if (steps.Count == 0)
             throw new InvalidOperationException($"Step group '{groupName}' is empty.");
 
-        if (steps.Count == 1)
-        {
-            var singleDef = steps[0];
-            var typeCategory = singleDef.Type?.ToLowerInvariant() ?? string.Empty;
-
-            // A leaf step can be resolved directly without creating an extra inline workflow.
-            // A step is a leaf if:
-            //  - Type is empty/unset AND Class is set (bare class reference with no type category), OR
-            //  - Type is "step" (explicit leaf category), OR
-            //  - Type is set to a value that is NOT a known composite category (treated as a class name).
-            // When Type IS a known composite category (e.g., subworkflow, conditional), Class is
-            // interpreted as an identifier within that composite dispatch — NOT as a leaf class name.
-            var isLeaf =
-                (string.IsNullOrEmpty(singleDef.Type) && !string.IsNullOrEmpty(singleDef.Class)) ||
-                typeCategory == "step" ||
-                (!string.IsNullOrEmpty(singleDef.Type) && !KnownCategories.Contains(typeCategory));
-
-            if (isLeaf)
-                return ResolveLeafStep(singleDef);
-
-            // Single composite step (e.g., conditional, retry, saga): wrap in an inline workflow
-            // so composite dispatch logic runs correctly.
-            var singleBuilder = Workflow.Create(groupName);
-            BuildSteps(singleBuilder, steps);
-            var singleWorkflow = singleBuilder.Build();
-            return new InlineWorkflowStep(groupName, singleWorkflow);
-        }
-
-        // Multiple steps: create an inline sequential workflow
+        // Always wrap in an InlineWorkflowStep so the groupName is preserved as the step name.
+        // This prevents duplicate-step-name failures when multiple conditional branches contain
+        // identically-named leaf steps (the ConditionalStep.Name is derived from its branch names).
         var subBuilder = Workflow.Create(groupName);
         BuildSteps(subBuilder, steps);
         var subWorkflow = subBuilder.Build();
