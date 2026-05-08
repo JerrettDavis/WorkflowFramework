@@ -376,7 +376,9 @@ public sealed class WorkflowDefinitionBuilder
             throw new InvalidOperationException(
                 $"Parallel step '{stepDef.Name ?? "unnamed"}' requires a non-empty 'steps' list.");
 
-        builder.Parallel(p =>
+        // Use a temp builder to capture the created ParallelStep so we can apply the configured name.
+        var tempBuilder = Workflow.Create("_temp");
+        tempBuilder.Parallel(p =>
         {
             for (var i = 0; i < childSteps.Count; i++)
             {
@@ -388,6 +390,7 @@ public sealed class WorkflowDefinitionBuilder
                 p.Step(branchStep);
             }
         });
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
     }
 
     private void BuildForEachStep(IWorkflowBuilder builder, StepDefinition stepDef)
