@@ -288,6 +288,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.3, )",
+          "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )"
         }
       },

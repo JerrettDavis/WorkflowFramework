@@ -96,16 +96,29 @@ public sealed class StepDefinition
     public string? Else { get; set; }
 
     /// <summary>
-    /// Gets or sets the then branch step definitions for a conditional step (new nested format).
+    /// Gets or sets the then-branch step definitions for a <c>conditional</c> step (new nested format),
+    /// or the try-body steps for a <c>try</c> step when <see cref="Steps"/> is not set.
+    /// Precedence for <c>type: try</c>: <see cref="Steps"/> is used first; <see cref="ThenSteps"/> is
+    /// the fallback for backward compatibility. Prefer <see cref="Steps"/> for new try-body definitions
+    /// and <see cref="FinallySteps"/> for the finally-body.
     /// </summary>
     [JsonPropertyName("thenSteps")]
     public List<StepDefinition>? ThenSteps { get; set; }
 
     /// <summary>
-    /// Gets or sets the else branch step definitions for a conditional step (new nested format).
+    /// Gets or sets the else-branch step definitions for a <c>conditional</c> step (new nested format).
+    /// Also used as the finally-body for a <c>try</c> step when <see cref="FinallySteps"/> is not set
+    /// (legacy — prefer <see cref="FinallySteps"/> for try/finally definitions).
     /// </summary>
     [JsonPropertyName("elseSteps")]
     public List<StepDefinition>? ElseSteps { get; set; }
+
+    /// <summary>
+    /// Gets or sets the finally-body step definitions for a <c>type: try</c> step.
+    /// Takes precedence over the legacy <see cref="ElseSteps"/> repurposing for try/finally.
+    /// </summary>
+    [JsonPropertyName("finallySteps")]
+    public List<StepDefinition>? FinallySteps { get; set; }
 
     /// <summary>
     /// Gets or sets retry configuration.

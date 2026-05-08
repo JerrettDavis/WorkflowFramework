@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text.Json;
 using WorkflowFramework.Builder;
 using YamlDotNet.Serialization;
@@ -206,7 +207,7 @@ public sealed class WorkflowDefinitionBuilder
                     var className = stepDef.Class
                         ?? throw new InvalidOperationException(
                             $"Step '{stepDef.Name ?? "unnamed"}' of type 'step' requires a 'class' property.");
-                    builder.Step(_stepRegistry.Resolve(className));
+                    builder.Step(ApplyName(_stepRegistry.Resolve(className), stepDef.Name));
                     break;
 
                 case "conditional":
@@ -306,12 +307,12 @@ public sealed class WorkflowDefinitionBuilder
         else if (!string.IsNullOrEmpty(stepDef.Class))
         {
             // New format shorthand: class without explicit category
-            builder.Step(_stepRegistry.Resolve(stepDef.Class));
+            builder.Step(ApplyName(_stepRegistry.Resolve(stepDef.Class), stepDef.Name));
         }
         else if (!string.IsNullOrEmpty(stepDef.Type))
         {
             // Legacy format: type is the class name
-            builder.Step(_stepRegistry.Resolve(stepDef.Type));
+            builder.Step(ApplyName(_stepRegistry.Resolve(stepDef.Type), stepDef.Name));
         }
         else
         {
@@ -454,7 +455,8 @@ public sealed class WorkflowDefinitionBuilder
     private void BuildTryStep(IWorkflowBuilder builder, StepDefinition stepDef)
     {
         var tryBody = stepDef.Steps ?? stepDef.ThenSteps ?? [];
-        var finallyBody = stepDef.ElseSteps ?? [];
+        // FinallySteps is the dedicated finally-body; fall back to the legacy ElseSteps repurposing.
+        var finallyBody = stepDef.FinallySteps ?? stepDef.ElseSteps ?? [];
         var catchDefs = stepDef.Catch ?? [];
 
         var tryCatchBuilder = builder.Try(b => BuildSteps(b, tryBody));
@@ -513,7 +515,20 @@ public sealed class WorkflowDefinitionBuilder
                 if (candidate != null && typeof(Exception).IsAssignableFrom(candidate))
                     return candidate;
 
-                foreach (var type in assembly.GetTypes())
+                // GetTypes() can throw ReflectionTypeLoadException for partially-loaded assemblies.
+                // Use ex.Types (non-null entries) to continue scanning rather than aborting.
+                Type[] types;
+                try { types = assembly.GetTypes(); }
+                catch (ReflectionTypeLoadException ex)
+                {
+                    var loaded = ex.Types;
+                    var nonNull = new List<Type>(loaded.Length);
+                    foreach (var t in loaded)
+                        if (t != null) nonNull.Add(t!);
+                    types = nonNull.ToArray();
+                }
+
+                foreach (var type in types)
                 {
                     if (!typeof(Exception).IsAssignableFrom(type)) continue;
                     if (type.FullName == name || type.Name == name)
@@ -587,20 +602,12 @@ public sealed class WorkflowDefinitionBuilder
     private IStep ResolveLeafStep(StepDefinition stepDef)
     {
         if (!string.IsNullOrEmpty(stepDef.Class))
-            return _stepRegistry.Resolve(stepDef.Class);
+            return ApplyName(_stepRegistry.Resolve(stepDef.Class), stepDef.Name);
 
         var typeCategory = stepDef.Type?.ToLowerInvariant() ?? string.Empty;
 
-        if (typeCategory == "step")
-        {
-            var className = stepDef.Class
-                ?? throw new InvalidOperationException(
-                    $"Step '{stepDef.Name ?? "unnamed"}' of type 'step' requires a 'class' property.");
-            return _stepRegistry.Resolve(className);
-        }
-
         if (!string.IsNullOrEmpty(stepDef.Type) && !KnownCategories.Contains(typeCategory))
-            return _stepRegistry.Resolve(stepDef.Type);
+            return ApplyName(_stepRegistry.Resolve(stepDef.Type), stepDef.Name);
 
         throw new InvalidOperationException(
             $"Cannot resolve a single step from composite step definition '{stepDef.Name ?? "unnamed"}' (type='{stepDef.Type}').");
@@ -636,4 +643,25 @@ public sealed class WorkflowDefinitionBuilder
         public string Name => name;
         public Task ExecuteAsync(IWorkflowContext context) => workflow.ExecuteAsync(context);
     }
+
+    /// <summary>
+    /// Wraps an <see cref="IStep"/> and overrides its <see cref="IStep.Name"/>.
+    /// Used to honour <see cref="StepDefinition.Name"/> for leaf steps resolved from the registry
+    /// so that multiple instances of the same step class can have distinct names and avoid
+    /// duplicate-step-name validation failures.
+    /// </summary>
+    private sealed class NamedStep(string name, IStep inner) : IStep
+    {
+        public string Name => name;
+        public Task ExecuteAsync(IWorkflowContext context) => inner.ExecuteAsync(context);
+    }
+
+    /// <summary>
+    /// Applies <paramref name="overrideName"/> to <paramref name="step"/> when the name is non-empty
+    /// and different from the step's existing <see cref="IStep.Name"/>.
+    /// </summary>
+    private static IStep ApplyName(IStep step, string? overrideName) =>
+        string.IsNullOrWhiteSpace(overrideName) || overrideName == step.Name
+            ? step
+            : new NamedStep(overrideName, step);
 }
