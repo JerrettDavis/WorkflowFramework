@@ -8,6 +8,7 @@ Feature: Sample Workflows
     Then I should see at least 10 sample workflows
     And I should see "Hello World" in the list
     And I should see "TaskStream" in the list
+    And I should see "Local Ollama Smoke Test" in the list
     And I should see "Quick Transcript" in the list
 
   Scenario: Open a sample workflow and see configured steps

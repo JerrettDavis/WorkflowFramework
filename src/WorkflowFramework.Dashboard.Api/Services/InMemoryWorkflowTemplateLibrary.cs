@@ -34,7 +34,9 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
             Tags = t.Tags,
             Difficulty = t.Difficulty,
             StepCount = t.StepCount,
-            PreviewImageUrl = t.PreviewImageUrl
+            PreviewImageUrl = t.PreviewImageUrl,
+            IsFeatured = t.IsFeatured,
+            FeaturedReason = t.FeaturedReason
         }).ToList();
 
         return Task.FromResult<IReadOnlyList<WorkflowTemplateSummary>>(result);
@@ -78,6 +80,7 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
         // === AI & Agents ===
         templates.Add(TaskExtractionPipeline());
         templates.Add(AgentTriageWorkflow());
+        templates.Add(MultimodalLocalRouter());
 
         // === Voice & Audio ===
         templates.Add(QuickTranscript());
@@ -508,6 +511,117 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
         }
     };
 
+    private static WorkflowTemplate MultimodalLocalRouter() => new()
+    {
+        Id = "multimodal-local-router",
+        Name = "Multimodal Local Router",
+        Description = "Capture a multimodal brief, let a cheap local model route and plan the work, then hand specialist passes to downstream OpenAI and Anthropic models before human review.",
+        Category = "AI & Agents",
+        Tags = ["ai", "agent", "multimodal", "local-model", "routing", "provider-selection"],
+        Difficulty = TemplateDifficulty.Advanced,
+        StepCount = 8,
+        PreviewImageUrl = "/images/templates/multimodal-local-router-preview.svg",
+        IsFeatured = true,
+        FeaturedReason = "Shows local-first routing and specialist-model handoff with reusable prompt variables.",
+        Definition = new WorkflowDefinitionDto
+        {
+            Name = "MultimodalLocalRouter",
+            Steps =
+            [
+                new StepDefinitionDto
+                {
+                    Name = "Capture Brief",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Capture multimodal inputs from {recordings}, {transcript}, and any uploaded notes."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Transcribe Brief",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Normalize {recordings} and {transcript} into a single working brief."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Route Brief",
+                    Type = "AgentDecisionStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "ollama",
+                        ["model"] = "phi4-mini",
+                        ["prompt"] = "Review {{Transcribe Brief.Output}} and decide which downstream specialist models should draft, verify, or escalate the task.",
+                        ["options"] = "openai-draft,anthropic-audit,dual-specialists,escalate-to-human"
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Plan Specialist Passes",
+                    Type = "AgentPlanStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "ollama",
+                        ["model"] = "llama3.2",
+                        ["objective"] = "Use {{Route Brief.Decision}} and {{Transcribe Brief.Output}} to produce an execution plan for the downstream specialist passes."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Specialist Passes",
+                    Type = "Parallel",
+                    Steps =
+                    [
+                        new StepDefinitionDto
+                        {
+                            Name = "Draft with OpenAI",
+                            Type = "LlmCallStep",
+                            Config = new Dictionary<string, string>
+                            {
+                                ["provider"] = "openai",
+                                ["model"] = "gpt-4o-mini",
+                                ["prompt"] = "Using {{Plan Specialist Passes.Plan}} and {{Transcribe Brief.Output}}, draft the primary deliverable."
+                            }
+                        },
+                        new StepDefinitionDto
+                        {
+                            Name = "Audit with Anthropic",
+                            Type = "LlmCallStep",
+                            Config = new Dictionary<string, string>
+                            {
+                                ["provider"] = "anthropic",
+                                ["model"] = "claude-sonnet-4-20250514",
+                                ["prompt"] = "Using {{Plan Specialist Passes.Plan}} and {{Transcribe Brief.Output}}, identify risks, missing context, and follow-up questions."
+                            }
+                        }
+                    ]
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Merge Specialist Outputs",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Combine {{Draft with OpenAI.Response}} with {{Audit with Anthropic.Response}} into a final package for approval."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "Review Package",
+                    Type = "HumanTaskStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["title"] = "Review specialist output package",
+                        ["instructions"] = "Review the merged draft, audit notes, and routing recommendation before publishing."
+                    }
+                }
+            ]
+        }
+    };
+
     // ── Voice & Audio ───────────────────────────────────────────
 
     private static WorkflowTemplate QuickTranscript() => new()
@@ -562,31 +676,125 @@ public sealed class InMemoryWorkflowTemplateLibrary : IWorkflowTemplateLibrary
     {
         Id = "blog-from-interview",
         Name = "Blog from Interview",
-        Description = "5-phase agentic workflow: record topic, generate questions via agent loop, record answers, synthesize blog post, and review.",
+        Description = "5-phase voice-first workflow: capture an interview topic, let a local agent shape questions, collect answers, draft a blog post with prompt wiring, and send it to human review.",
         Category = "Voice & Audio",
         Tags = ["voice", "agent", "blog", "interview", "compaction"],
         Difficulty = TemplateDifficulty.Advanced,
         StepCount = 10,
+        PreviewImageUrl = "/images/templates/blog-from-interview-preview.svg",
+        IsFeatured = true,
+        FeaturedReason = "A complete voice-to-draft sample with multimodal intake, local question generation, and downstream editorial drafting.",
         Definition = new WorkflowDefinitionDto
         {
             Name = "BlogInterview",
             Steps =
             [
                 // Phase 1
-                new StepDefinitionDto { Name = "RecordTopicIntro", Type = "Action" },
-                new StepDefinitionDto { Name = "TranscribeTopic", Type = "Action" },
-                new StepDefinitionDto { Name = "CleanupTopic", Type = "LlmCallStep" },
-                new StepDefinitionDto { Name = "ReviewTopic", Type = "HumanTaskStep" },
+                new StepDefinitionDto
+                {
+                    Name = "RecordTopicIntro",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Capture the topic briefing from {recordings} and any initial {transcript} notes."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "TranscribeTopic",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Normalize {recordings} into a clean transcript for the interview topic."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "CleanupTopic",
+                    Type = "LlmCallStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "ollama",
+                        ["model"] = "qwen2.5",
+                        ["prompt"] = "Clean up {{TranscribeTopic.Output}} into a concise topic brief with audience, angle, and must-cover themes."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "ReviewTopic",
+                    Type = "HumanTaskStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["assignee"] = "content-editor",
+                        ["description"] = "Review {{CleanupTopic.Response}} and confirm the interview direction before questions are generated.",
+                        ["priority"] = "High"
+                    }
+                },
                 // Phase 2
-                new StepDefinitionDto { Name = "GenerateQuestions", Type = "AgentLoopStep" },
-                new StepDefinitionDto { Name = "ParseQuestions", Type = "Action" },
+                new StepDefinitionDto
+                {
+                    Name = "GenerateQuestions",
+                    Type = "AgentLoopStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "ollama",
+                        ["model"] = "llama3.2",
+                        ["systemPrompt"] = "Using {{CleanupTopic.Response}} and any existing {questions}, generate a tight interview question set that will produce a publishable blog post.",
+                        ["maxIterations"] = "4"
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "ParseQuestions",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Convert {{GenerateQuestions.Iterations}} into an editor-friendly question plan and sync it with {questions}."
+                    }
+                },
                 // Phase 3
-                new StepDefinitionDto { Name = "RecordAnswers", Type = "Action" },
+                new StepDefinitionDto
+                {
+                    Name = "RecordAnswers",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Capture interview answers from {qaPairs}, {recordings}, and the active transcript."
+                    }
+                },
                 // Phase 4
-                new StepDefinitionDto { Name = "SynthesizeBlog", Type = "AgentLoopStep" },
-                new StepDefinitionDto { Name = "StoreBlogPost", Type = "Action" },
+                new StepDefinitionDto
+                {
+                    Name = "SynthesizeBlog",
+                    Type = "LlmCallStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["provider"] = "openai",
+                        ["model"] = "gpt-4o-mini",
+                        ["prompt"] = "Draft a blog post using {{CleanupTopic.Response}}, {qaPairs}, and {{ParseQuestions.Output}}. Keep the structure scannable and quote-ready."
+                    }
+                },
+                new StepDefinitionDto
+                {
+                    Name = "StoreBlogPost",
+                    Type = "Action",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["expression"] = "Persist {{SynthesizeBlog.Response}} as the working article draft."
+                    }
+                },
                 // Phase 5
-                new StepDefinitionDto { Name = "ReviewBlog", Type = "HumanTaskStep" }
+                new StepDefinitionDto
+                {
+                    Name = "ReviewBlog",
+                    Type = "HumanTaskStep",
+                    Config = new Dictionary<string, string>
+                    {
+                        ["assignee"] = "editorial-review",
+                        ["description"] = "Review {{SynthesizeBlog.Response}} and approve any final changes before publishing.",
+                        ["priority"] = "High"
+                    }
+                }
             ]
         }
     };

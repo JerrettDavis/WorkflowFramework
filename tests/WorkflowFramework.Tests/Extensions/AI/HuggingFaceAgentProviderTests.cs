@@ -79,6 +79,74 @@ public class HuggingFaceAgentProviderTests
     }
 
     [Fact]
+    public async Task CompleteAsync_WithTools_IncludesToolDescriptionsAndParsesToolCall()
+    {
+        string? capturedBody = null;
+        var response = new[]
+        {
+            new
+            {
+                generated_text = """{"tool_name":"search","arguments":{"query":"workflow"}}"""
+            }
+        };
+        using var provider = CreateProvider(JsonSerializer.Serialize(response), captureBody: body => capturedBody = body);
+
+        var result = await provider.CompleteAsync(new LlmRequest
+        {
+            Prompt = "Find workflow docs",
+            Tools =
+            {
+                new AgentTool
+                {
+                    Name = "search",
+                    Description = "Search documentation",
+                    ParametersSchema = """{"type":"object"}"""
+                }
+            }
+        });
+
+        capturedBody.Should().Contain("Available tools:");
+        capturedBody.Should().Contain("search");
+        capturedBody.Should().Contain("Search documentation");
+        result.ToolCalls.Should().ContainSingle();
+        result.ToolCalls[0].ToolName.Should().Be("search");
+        result.ToolCalls[0].Arguments.Should().Contain("workflow");
+    }
+
+    [Fact]
+    public async Task CompleteAsync_InvalidToolCallJson_IgnoresToolCall()
+    {
+        var response = new[] { new { generated_text = "{not-valid-json}" } };
+        using var provider = CreateProvider(JsonSerializer.Serialize(response));
+
+        var result = await provider.CompleteAsync(new LlmRequest { Prompt = "test" });
+
+        result.Content.Should().Be("{not-valid-json}");
+        result.ToolCalls.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CompleteAsync_UsesRequestModelAndGenerationOverrides()
+    {
+        string? capturedBody = null;
+        using var provider = CreateProvider(
+            JsonSerializer.Serialize(new[] { new { generated_text = "ok" } }),
+            captureBody: body => capturedBody = body);
+
+        await provider.CompleteAsync(new LlmRequest
+        {
+            Prompt = "test",
+            Model = "custom-model",
+            Temperature = 0.7,
+            MaxTokens = 42
+        });
+
+        capturedBody.Should().Contain("\"temperature\":0.7");
+        capturedBody.Should().Contain("\"max_new_tokens\":42");
+        capturedBody.Should().Contain("\"inputs\":\"test\"");
+    }
+
+    [Fact]
     public async Task DecideAsync_MatchesOption_CaseInsensitive()
     {
         var response = new[] { new { generated_text = "APPROVE" } };
@@ -125,11 +193,49 @@ public class HuggingFaceAgentProviderTests
     }
 
     [Fact]
+    public async Task DecideAsync_WithVariables_IncludesContextAndSkipsNullValues()
+    {
+        string? capturedBody = null;
+        var response = new[] { new { generated_text = "approve" } };
+        using var provider = CreateProvider(JsonSerializer.Serialize(response), captureBody: body => capturedBody = body);
+
+        await provider.DecideAsync(new AgentDecisionRequest
+        {
+            Prompt = "Choose",
+            Options = new List<string> { "approve", "reject" },
+            Variables = new Dictionary<string, object?>
+            {
+                ["priority"] = "high",
+                ["ignored"] = null
+            }
+        });
+
+        capturedBody.Should().Contain("Context:\\n- priority: high");
+        capturedBody.Should().NotContain("ignored");
+    }
+
+    [Fact]
     public async Task CompleteAsync_HttpError_Throws()
     {
         using var provider = CreateProvider("error", statusCode: HttpStatusCode.InternalServerError);
         var act = () => provider.CompleteAsync(new LlmRequest { Prompt = "test" });
         await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
+    [Fact]
+    public async Task Dispose_WithInjectedHttpClient_DoesNotDisposeSharedClient()
+    {
+        var handler = new FakeHttpHandler(
+            JsonSerializer.Serialize(new[] { new { generated_text = "ok" } }),
+            HttpStatusCode.OK);
+        var client = new HttpClient(handler);
+        var provider = new HuggingFaceAgentProvider(new HuggingFaceOptions { ApiKey = "test-key" }, client);
+
+        provider.Dispose();
+
+        var act = async () => await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, "https://example.test"));
+        await act.Should().NotThrowAsync();
+        client.Dispose();
     }
 
     private static HuggingFaceAgentProvider CreateProvider(

@@ -50,6 +50,7 @@ public sealed class SaveLoadSteps
             new PageWaitForSelectorOptions { Timeout = 15_000 });
         var item = Page.Locator("[data-testid='workflow-list-item']",
             new PageLocatorOptions { HasText = "My Test Workflow" }).First;
+        await item.ScrollIntoViewIfNeededAsync();
         await item.ClickAsync();
         await Page.WaitForSelectorAsync("[data-testid='workflow-list']",
             new PageWaitForSelectorOptions { State = WaitForSelectorState.Hidden, Timeout = 10_000 });
@@ -157,7 +158,6 @@ public sealed class SaveLoadSteps
         text.Should().NotBeNullOrEmpty("Properties panel should have configuration content");
     }
 
-    [When("I select the LlmCallStep")]
     public async Task WhenISelectTheLlmCallStep()
     {
         await WhenISelectTheFirstHttpStep(); // Same mechanism — click first node

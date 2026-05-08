@@ -165,6 +165,13 @@ public sealed class DashboardApiClient(HttpClient http)
         return await ReadValidationResultAsync(resp, ct);
     }
 
+    public async Task<ValidationResultDto?> ValidateWorkflowDraftAsync(string id, WorkflowDefinitionDto definition, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsJsonAsync($"/api/workflows/{id}/validate-draft", definition, ct);
+        resp.EnsureSuccessStatusCode();
+        return await ReadValidationResultAsync(resp, ct);
+    }
+
     public async Task<ValidationResultDto?> ValidateDefinitionAsync(WorkflowDefinitionDto definition, CancellationToken ct = default)
     {
         var resp = await http.PostAsJsonAsync("/api/workflows/validate", definition, ct);
@@ -219,19 +226,28 @@ public sealed class DashboardApiClient(HttpClient http)
     public async Task<DashboardSettingsDto?> GetSettingsAsync(CancellationToken ct = default)
         => await http.GetFromJsonAsync<DashboardSettingsDto>("/api/settings", ct);
 
-    public async Task<DashboardSettingsDto?> UpdateSettingsAsync(DashboardSettingsDto settings, CancellationToken ct = default)
+    public async Task<DashboardSettingsDto?> UpdateSettingsAsync(UpdateDashboardSettingsRequest settings, CancellationToken ct = default)
     {
         var resp = await http.PutAsJsonAsync("/api/settings", settings, ct);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<DashboardSettingsDto>(ct);
     }
 
-    public async Task<List<string>> GetProviderModelsAsync(string provider, CancellationToken ct = default)
-        => await http.GetFromJsonAsync<List<string>>($"/api/providers/{Uri.EscapeDataString(provider)}/models", ct) ?? [];
-
-    public async Task<OllamaTestResult?> TestOllamaConnectionAsync(CancellationToken ct = default)
+    public async Task<List<string>> GetProviderModelsAsync(string provider, string? ollamaUrl = null, CancellationToken ct = default)
     {
-        var resp = await http.PostAsync("/api/settings/test-ollama", null, ct);
+        var url = $"/api/providers/{Uri.EscapeDataString(provider)}/models";
+        if (!string.IsNullOrWhiteSpace(ollamaUrl))
+            url += $"?ollamaUrl={Uri.EscapeDataString(ollamaUrl)}";
+
+        return await http.GetFromJsonAsync<List<string>>(url, ct) ?? [];
+    }
+
+    public async Task<OllamaTestResult?> TestOllamaConnectionAsync(string? ollamaUrl = null, CancellationToken ct = default)
+    {
+        var resp = await http.PostAsJsonAsync("/api/settings/test-ollama", new TestOllamaConnectionRequest
+        {
+            OllamaUrl = ollamaUrl
+        }, ct);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<OllamaTestResult>(ct);
     }
@@ -304,6 +320,39 @@ public sealed class DashboardApiClient(HttpClient http)
         var resp = await http.PostAsync($"/api/workflows/{workflowId}/triggers/{triggerId}/test", null, ct);
         resp.EnsureSuccessStatusCode();
         return await resp.Content.ReadFromJsonAsync<RunSummary>(ct);
+    }
+
+    // History Graph
+    public async Task<List<HistoryNodeSummary>> GetHistoryNodesAsync(string? query = null, int limit = 50, CancellationToken ct = default)
+    {
+        var url = $"/api/history/nodes?limit={limit}";
+        if (!string.IsNullOrWhiteSpace(query))
+            url += $"&query={Uri.EscapeDataString(query)}";
+        return await http.GetFromJsonAsync<List<HistoryNodeSummary>>(url, ct) ?? [];
+    }
+
+    public async Task<List<HistoryEdgeSummary>> GetHistoryEdgesAsync(string? workflow = null, long minWeight = 1, CancellationToken ct = default)
+    {
+        var url = "/api/history/edges";
+        var q = new List<string>();
+        if (!string.IsNullOrWhiteSpace(workflow)) q.Add($"workflow={Uri.EscapeDataString(workflow)}");
+        if (q.Count > 0) url += "?" + string.Join("&", q);
+        var edges = await http.GetFromJsonAsync<List<HistoryEdgeSummary>>(url, ct) ?? [];
+        return minWeight > 1 ? edges.Where(e => e.Weight >= minWeight).ToList() : edges;
+    }
+
+    public async Task<string?> GetHistoryMermaidAsync(int maxNodes = 50, long minEdgeWeight = 1, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/api/history/mermaid?maxNodes={maxNodes}&minEdgeWeight={minEdgeWeight}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadAsStringAsync(ct);
+    }
+
+    public async Task<string?> GetHistoryMermaidSubgraphAsync(string fingerprint, int maxDepth = 5, CancellationToken ct = default)
+    {
+        var resp = await http.GetAsync($"/api/history/mermaid/{Uri.EscapeDataString(fingerprint)}?maxDepth={maxDepth}", ct);
+        if (!resp.IsSuccessStatusCode) return null;
+        return await resp.Content.ReadAsStringAsync(ct);
     }
 
     // Voice

@@ -18,9 +18,6 @@ Each time you save a workflow (Ctrl+S), a new version is created automatically. 
 
 Click the **Versions** button in the toolbar (or from the workflow's context menu) to view the full version history.
 
-![Version history panel](../../images/dashboard/version-history.png)
-*Version history showing all saves with timestamps and summaries.*
-
 Each version entry shows:
 - **Version number** — incremental (v1, v2, v3…)
 - **Timestamp** — when the version was saved
@@ -41,9 +38,6 @@ Click **Restore** on any version to revert the workflow to that point in time. R
 ## Version Diff
 
 Click **Diff** between any two versions to see what changed:
-
-![Version diff](../../images/dashboard/version-diff.png)
-*Diff view showing added, removed, and renamed steps between versions.*
 
 The diff shows:
 - **Added steps** — new steps in the newer version (green)

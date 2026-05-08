@@ -34,9 +34,6 @@ Each audit entry contains:
 
 Access the audit log from the **Audit** menu item or toolbar button.
 
-![Audit trail](../../images/dashboard/audit-trail.png)
-*The audit trail with filtering options.*
-
 ### Filtering
 
 Filter audit entries by:

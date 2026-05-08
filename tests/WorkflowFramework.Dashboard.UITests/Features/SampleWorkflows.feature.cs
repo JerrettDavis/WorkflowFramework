@@ -117,6 +117,7 @@ Feature: Sample Workflows
     Then I should see at least 10 sample workflows
     And I should see ""Hello World"" in the list
     And I should see ""TaskStream"" in the list
+    And I should see ""Local Ollama Smoke Test"" in the list
     And I should see ""Quick Transcript"" in the list
 
   Scenario: Open a sample workflow and see configured steps
@@ -148,100 +149,103 @@ Feature: Sample Workflows
         private static global::Io.Cucumber.Messages.Types.GherkinDocument GherkinDocumentFunc()
         {
             return new global::Io.Cucumber.Messages.Types.GherkinDocument("Features/SampleWorkflows.feature", new global::Io.Cucumber.Messages.Types.Feature(new global::Io.Cucumber.Messages.Types.Location(2, new System.Nullable<long>(1)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "36304fd54e45c857938c7562c97628e7")}), "en", "Feature", "Sample Workflows", "  Pre-loaded sample workflows are available and fully configured", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.FeatureChild>(new global::Io.Cucumber.Messages.Types.FeatureChild[] {
+                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "9d7e94ee5ccce257b86315591aff760b")}), "en", "Feature", "Sample Workflows", "  Pre-loaded sample workflows are available and fully configured", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.FeatureChild>(new global::Io.Cucumber.Messages.Types.FeatureChild[] {
                                 new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(5, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Sample workflows appear in workflow list", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(6, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "6d4b7872bf940451a0f9642dad5be45f"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the workflow list dialog", null, null, "901fa0ff3987225a996fc05b47b0cc74"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see at least 10 sample workflows", null, null, "67e285f1b90b3a50bbd06e039f093eca"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see \"Hello World\" in the list", null, null, "c777fd02037dac5c8f984a045b1e0c86"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see \"TaskStream\" in the list", null, null, "97b1bac473029b5b9e96447dc1b3e69e"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(11, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see \"Quick Transcript\" in the list", null, null, "ae2a6eb5fef6ae5b9de691cc36e9d054")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "302ffd5118169d5898fc98907ce1b5e3")),
-                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(13, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Open a sample workflow and see configured steps", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(14, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "966b915960d67d5591deaf7526ae97a4"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the workflow list dialog", null, null, "88b6bb8fb40cc35b928b2248d6023265"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(16, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I open the \"Hello World\" workflow", null, null, "9d4f824cd33f5a5198b34a13621fa2db"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(17, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the canvas should have nodes", null, null, "bd9480ef64cfb95d9afe528fdbe4d350"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(18, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the step list should show steps", null, null, "87ae88f3c932de509487572f4f16e1e9"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(19, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the workflow name should be \"Hello World\"", null, null, "4190fb6e67322a5281e48e7cecce3882")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "8415b6df50dfd154a7339a56e53c3312")),
-                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(21, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Open AI workflow and verify provider config", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(22, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "f4ccf877152ed459a2bc41d25e8c125c"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(23, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the workflow list dialog", null, null, "910a7675ecc0d75bb5fb7de416e55cbe"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(24, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I open the \"Quick Transcript\" workflow", null, null, "8d7c5dc3f86ca1558c57cf20801d290b"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(25, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click on a node of type \"LlmCallStep\"", null, null, "72ac0acfa68fc55b977edb53afb9547b"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(26, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the properties panel should show \"AI Provider\" configuration", null, null, "dfe5da11d9964b50ad86e6aed6ddea18"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(27, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the provider field should have a value", null, null, "23e4f96e9b36d757ac98438aea03d999")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "7588d94a16b0e55b9b4a614a810ab2c0")),
-                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(29, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Open HTTP workflow and verify URL config", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(30, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "b7397b8016606f59acb9b12959687b56"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(31, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the workflow list dialog", null, null, "cc778f29aadc145c9e4288e179765a2f"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(32, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I open the \"HTTP API Orchestration\" workflow", null, null, "613f53ad366df654bdefda6d76e3cf70"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(33, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click on a node of type \"HttpStep\"", null, null, "490e0cdec294c1549d30ffb8f15b8b6d"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(34, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the properties panel should show \"URL\" configuration", null, null, "92a33208b0e4105686ac737105ccbf74"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(35, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the url field should not be empty", null, null, "41da6bb41c6a0f56ae42d8dcd6bddaba")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "c81d2e3dca2de65d9e3671160468c487"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(6, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "deb19c37d1d87f53bba41ac0bf70f589"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the workflow list dialog", null, null, "aa60bb159c95f256ac29df4996e10fad"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see at least 10 sample workflows", null, null, "e2355b740cdd9650977d7ba705dfd0d1"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see \"Hello World\" in the list", null, null, "ff1a09292f70bc538488590cc572d5f8"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see \"TaskStream\" in the list", null, null, "251acebf8f2405558b1d14cd356a0068"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(11, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see \"Local Ollama Smoke Test\" in the list", null, null, "b907480bc5f5a55a8d328cc682ec1479"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(12, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see \"Quick Transcript\" in the list", null, null, "4670ea226ab9df52b0df550108bad73d")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "aff981ef38d4005e91b5a75f2e5755c1")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(14, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Open a sample workflow and see configured steps", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "cfe0b104ec04ba57a0f8c7bde10d1dc5"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(16, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the workflow list dialog", null, null, "7631ed803c2cc759b06c8fe2833a80c3"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(17, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I open the \"Hello World\" workflow", null, null, "9e95370666874250a76f76ec8f8aaae6"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(18, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the canvas should have nodes", null, null, "7c85018f1b1fdc59984abc588dcb51b4"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(19, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the step list should show steps", null, null, "644812e63d5efa5abca19575318c2342"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(20, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the workflow name should be \"Hello World\"", null, null, "6be3cfcd39404e56a7851657575c0f2b")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "c0d9a9d4f8fdbe5d9a1a98a849099803")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(22, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Open AI workflow and verify provider config", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(23, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "1d3482b9a06da0528ca9bd94ecd6974e"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(24, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the workflow list dialog", null, null, "4a497f9460994c598609ecd37866248b"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(25, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I open the \"Quick Transcript\" workflow", null, null, "7685261c81d1b753b33b7897f101a5ce"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(26, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click on a node of type \"LlmCallStep\"", null, null, "32d15987e96c6350818cd72d9939fa22"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(27, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the properties panel should show \"AI Provider\" configuration", null, null, "a462bf0295260b59bbbd506d02122e99"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(28, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the provider field should have a value", null, null, "f6f59d4190e4765cb84081b138859d3a")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "ab1fbdd619fd8a559a4fd47e14c2b7a1")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(30, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "Open HTTP workflow and verify URL config", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(31, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "a56fab9dbff87454b765a5589bca36fe"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(32, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I open the workflow list dialog", null, null, "1670c3797c785853bf3f541b0468f511"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(33, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I open the \"HTTP API Orchestration\" workflow", null, null, "800a8fbf217a0c59a5096790c4da1ce7"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(34, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I click on a node of type \"HttpStep\"", null, null, "ea39aef61507935c9f71d5e8c9cb1a3f"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(35, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the properties panel should show \"URL\" configuration", null, null, "7c82bd0c01f27556a5db5595b42e3d5c"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(36, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "the url field should not be empty", null, null, "6526e5f2f71b7259b9695cbb3433ef79")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "641f32cf48e8ae559740b5f0a63ed9f7"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
         }
         
         private static global::System.Collections.Generic.IEnumerable<Io.Cucumber.Messages.Types.Pickle> PicklesFunc()
         {
             return new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Pickle>(new global::Io.Cucumber.Messages.Types.Pickle[] {
-                        new global::Io.Cucumber.Messages.Types.Pickle("8e481494ea61065c894a5eb7e02898b4", "Features/SampleWorkflows.feature", "Sample workflows appear in workflow list", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                        new global::Io.Cucumber.Messages.Types.Pickle("6134f4c0da11845f87b0f95debfbb101", "Features/SampleWorkflows.feature", "Sample workflows appear in workflow list", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "6d4b7872bf940451a0f9642dad5be45f"}), "db8a44c71021565eb34c7ac58083bb8b", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "deb19c37d1d87f53bba41ac0bf70f589"}), "588c997202be96558f193c2690891344", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "901fa0ff3987225a996fc05b47b0cc74"}), "aecd92d1c46d7d5fbcc69566e6f42bbf", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the workflow list dialog"),
+                                                        "aa60bb159c95f256ac29df4996e10fad"}), "38170a4fc4d9c3549d7005f4bd9592a8", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the workflow list dialog"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "67e285f1b90b3a50bbd06e039f093eca"}), "a21430995c2b695ab2e186da4099f1f5", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see at least 10 sample workflows"),
+                                                        "e2355b740cdd9650977d7ba705dfd0d1"}), "1a0a995560ae125884593dbfc5262ab9", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see at least 10 sample workflows"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "c777fd02037dac5c8f984a045b1e0c86"}), "b06c60b358968b5d82c1b2ca6c0d509f", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see \"Hello World\" in the list"),
+                                                        "ff1a09292f70bc538488590cc572d5f8"}), "d04cd48883fd9458afe852593ed67320", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see \"Hello World\" in the list"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "97b1bac473029b5b9e96447dc1b3e69e"}), "87a7a1bc10481553bc4f9db54a117b88", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see \"TaskStream\" in the list"),
+                                                        "251acebf8f2405558b1d14cd356a0068"}), "af7d9bd4bf0ce3538d7321fa9f6a301e", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see \"TaskStream\" in the list"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "ae2a6eb5fef6ae5b9de691cc36e9d054"}), "e0b153983462885ab60187a1817162bf", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see \"Quick Transcript\" in the list")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "36304fd54e45c857938c7562c97628e7")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "302ffd5118169d5898fc98907ce1b5e3"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("188fbc425b1ed959bca76c7f4bfad384", "Features/SampleWorkflows.feature", "Open a sample workflow and see configured steps", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "b907480bc5f5a55a8d328cc682ec1479"}), "200454acde0251519867fb432f60deab", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see \"Local Ollama Smoke Test\" in the list"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "966b915960d67d5591deaf7526ae97a4"}), "ed422a058305e958a791a8e6c59deb30", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "4670ea226ab9df52b0df550108bad73d"}), "c969122d80ac415b8957a9c50e34094d", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see \"Quick Transcript\" in the list")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "9d7e94ee5ccce257b86315591aff760b")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "aff981ef38d4005e91b5a75f2e5755c1"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("e7ead3d5ccb7b35eb1c0389400b39f6f", "Features/SampleWorkflows.feature", "Open a sample workflow and see configured steps", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "88b6bb8fb40cc35b928b2248d6023265"}), "0260b8e01cbf335f99a8c433c99b960e", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the workflow list dialog"),
+                                                        "cfe0b104ec04ba57a0f8c7bde10d1dc5"}), "f449ff639c1e4853af86c703774e8692", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "9d4f824cd33f5a5198b34a13621fa2db"}), "f4ba4c6d5544b95f971a48cd4b8018d3", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the \"Hello World\" workflow"),
+                                                        "7631ed803c2cc759b06c8fe2833a80c3"}), "168a8f8d3512ff50885ec469cd4b00b4", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the workflow list dialog"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "bd9480ef64cfb95d9afe528fdbe4d350"}), "9d8e6e690973fa5a8db8ac10e8256822", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the canvas should have nodes"),
+                                                        "9e95370666874250a76f76ec8f8aaae6"}), "95c47c9fe3ea955a97f746c895fa7230", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the \"Hello World\" workflow"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "87ae88f3c932de509487572f4f16e1e9"}), "0296b8058f1d175299ff0a339949dea8", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the step list should show steps"),
+                                                        "7c85018f1b1fdc59984abc588dcb51b4"}), "88f1b6f6b0a1035cbcc8045b65584772", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the canvas should have nodes"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "4190fb6e67322a5281e48e7cecce3882"}), "84387c05b75c105d9f906e1ab6801e5a", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the workflow name should be \"Hello World\"")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "36304fd54e45c857938c7562c97628e7")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "8415b6df50dfd154a7339a56e53c3312"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("6d82a1785c03ce51acf789c064ad10b9", "Features/SampleWorkflows.feature", "Open AI workflow and verify provider config", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "644812e63d5efa5abca19575318c2342"}), "155b3798a1bfef53b658670be8366f3c", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the step list should show steps"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "f4ccf877152ed459a2bc41d25e8c125c"}), "cb5d24f1bae3f15d8aa5d962732de5b8", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "6be3cfcd39404e56a7851657575c0f2b"}), "e39d0221b3ab0a55b25e29874eb3fe01", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the workflow name should be \"Hello World\"")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "9d7e94ee5ccce257b86315591aff760b")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "c0d9a9d4f8fdbe5d9a1a98a849099803"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("77a2860399ca9352a24c8d03f1e60c09", "Features/SampleWorkflows.feature", "Open AI workflow and verify provider config", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "910a7675ecc0d75bb5fb7de416e55cbe"}), "2e42b2fedf14bb5ab263a76f9923a65e", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the workflow list dialog"),
+                                                        "1d3482b9a06da0528ca9bd94ecd6974e"}), "914cd46dcb18fd58b9b8cc493c5a822e", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "8d7c5dc3f86ca1558c57cf20801d290b"}), "8f7862434b464754b7736c8a3b69fdaa", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the \"Quick Transcript\" workflow"),
+                                                        "4a497f9460994c598609ecd37866248b"}), "1f8397373dc40b5b948a504caa9c54e7", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the workflow list dialog"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "72ac0acfa68fc55b977edb53afb9547b"}), "89d38e6299aef95eb5a2cb69f3c3c298", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click on a node of type \"LlmCallStep\""),
+                                                        "7685261c81d1b753b33b7897f101a5ce"}), "51c6e108092aa95292a82440ccd3ddeb", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the \"Quick Transcript\" workflow"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "dfe5da11d9964b50ad86e6aed6ddea18"}), "415aae79e7f9195d94587e43a9ba0211", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the properties panel should show \"AI Provider\" configuration"),
+                                                        "32d15987e96c6350818cd72d9939fa22"}), "1b5520e1d036265ebf7f49d9a2a17755", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click on a node of type \"LlmCallStep\""),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "23e4f96e9b36d757ac98438aea03d999"}), "20a55a8846766b5b8f98c9e49041c4a7", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the provider field should have a value")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "36304fd54e45c857938c7562c97628e7")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "7588d94a16b0e55b9b4a614a810ab2c0"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("109097ecc1f6f85880ec4cf668a37da7", "Features/SampleWorkflows.feature", "Open HTTP workflow and verify URL config", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "a462bf0295260b59bbbd506d02122e99"}), "b7d1a8fd5d9f5451abc1057f1027231e", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the properties panel should show \"AI Provider\" configuration"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "b7397b8016606f59acb9b12959687b56"}), "ef3b2f150410b156985e202f2ba92da4", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "f6f59d4190e4765cb84081b138859d3a"}), "02a8ab69d4e84d56a75f216bb56c9105", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the provider field should have a value")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "9d7e94ee5ccce257b86315591aff760b")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "ab1fbdd619fd8a559a4fd47e14c2b7a1"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("b897e680399d995abbff8269901b5b6a", "Features/SampleWorkflows.feature", "Open HTTP workflow and verify URL config", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "cc778f29aadc145c9e4288e179765a2f"}), "6a888562b17748539f82fb3c2e715ca3", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the workflow list dialog"),
+                                                        "a56fab9dbff87454b765a5589bca36fe"}), "63bfb4bd22b07c5bbbf61fde21a0229e", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "613f53ad366df654bdefda6d76e3cf70"}), "52a245f54697f8598e48269ac4113936", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the \"HTTP API Orchestration\" workflow"),
+                                                        "1670c3797c785853bf3f541b0468f511"}), "39a016e053666c58bbc30e01a5a2fbe1", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the workflow list dialog"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "490e0cdec294c1549d30ffb8f15b8b6d"}), "80b44badd4e769519d4f9861d60eb69f", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click on a node of type \"HttpStep\""),
+                                                        "800a8fbf217a0c59a5096790c4da1ce7"}), "3dbe23e5ea1d1c5793b6d561d6e2d5a5", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I open the \"HTTP API Orchestration\" workflow"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "92a33208b0e4105686ac737105ccbf74"}), "cf9f869dc312da56ac7c015a85b6d0ac", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the properties panel should show \"URL\" configuration"),
+                                                        "ea39aef61507935c9f71d5e8c9cb1a3f"}), "c9cb0b172eb8735aa02194379717df2c", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click on a node of type \"HttpStep\""),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "41da6bb41c6a0f56ae42d8dcd6bddaba"}), "d1334c43b665e9599e334e30fd2c8328", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the url field should not be empty")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "36304fd54e45c857938c7562c97628e7")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "c81d2e3dca2de65d9e3671160468c487"}))});
+                                                        "7c82bd0c01f27556a5db5595b42e3d5c"}), "7e4f7ad32f8d9b569c875e1a1dd368a3", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the properties panel should show \"URL\" configuration"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "6526e5f2f71b7259b9695cbb3433ef79"}), "0a2d482fd5e40a53aeff8353ad1832a9", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the url field should not be empty")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "9d7e94ee5ccce257b86315591aff760b")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "641f32cf48e8ae559740b5f0a63ed9f7"}))});
         }
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
@@ -311,6 +315,9 @@ Feature: Sample Workflows
     await testRunner.AndAsync("I should see \"TaskStream\" in the list", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
 #line 11
+    await testRunner.AndAsync("I should see \"Local Ollama Smoke Test\" in the list", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
+#line 12
     await testRunner.AndAsync("I should see \"Quick Transcript\" in the list", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -328,7 +335,7 @@ Feature: Sample Workflows
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Open a sample workflow and see configured steps", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 13
+#line 14
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -338,22 +345,22 @@ Feature: Sample Workflows
             else
             {
                 await this.ScenarioStartAsync();
-#line 14
+#line 15
     await testRunner.GivenAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 15
+#line 16
     await testRunner.WhenAsync("I open the workflow list dialog", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 16
+#line 17
     await testRunner.AndAsync("I open the \"Hello World\" workflow", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 17
+#line 18
     await testRunner.ThenAsync("the canvas should have nodes", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 18
+#line 19
     await testRunner.AndAsync("the step list should show steps", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 19
+#line 20
     await testRunner.AndAsync("the workflow name should be \"Hello World\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -371,7 +378,7 @@ Feature: Sample Workflows
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Open AI workflow and verify provider config", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 21
+#line 22
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -381,22 +388,22 @@ Feature: Sample Workflows
             else
             {
                 await this.ScenarioStartAsync();
-#line 22
+#line 23
     await testRunner.GivenAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 23
+#line 24
     await testRunner.WhenAsync("I open the workflow list dialog", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 24
+#line 25
     await testRunner.AndAsync("I open the \"Quick Transcript\" workflow", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 25
+#line 26
     await testRunner.AndAsync("I click on a node of type \"LlmCallStep\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 26
+#line 27
     await testRunner.ThenAsync("the properties panel should show \"AI Provider\" configuration", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 27
+#line 28
     await testRunner.AndAsync("the provider field should have a value", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }
@@ -414,7 +421,7 @@ Feature: Sample Workflows
             global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("Open HTTP workflow and verify URL config", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 29
+#line 30
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -424,22 +431,22 @@ Feature: Sample Workflows
             else
             {
                 await this.ScenarioStartAsync();
-#line 30
+#line 31
     await testRunner.GivenAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
-#line 31
+#line 32
     await testRunner.WhenAsync("I open the workflow list dialog", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
-#line 32
+#line 33
     await testRunner.AndAsync("I open the \"HTTP API Orchestration\" workflow", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 33
+#line 34
     await testRunner.AndAsync("I click on a node of type \"HttpStep\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
-#line 34
+#line 35
     await testRunner.ThenAsync("the properties panel should show \"URL\" configuration", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
-#line 35
+#line 36
     await testRunner.AndAsync("the url field should not be empty", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
 #line hidden
             }

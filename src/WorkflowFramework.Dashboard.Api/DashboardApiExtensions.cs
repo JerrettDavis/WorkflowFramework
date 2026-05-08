@@ -33,6 +33,7 @@ public static class DashboardApiExtensions
         services.AddSingleton(TriggerTypeRegistry.CreateDefault());
         services.AddSingleton<WorkflowSchedulerService>();
         services.AddSingleton<VoiceSubmissionStore>();
+        services.AddScoped<ProviderModelCatalogService>();
         services.AddHostedService(sp => sp.GetRequiredService<WorkflowSchedulerService>());
         services.AddHttpClient("OllamaClient");
         return services;
@@ -65,6 +66,7 @@ public static class DashboardApiExtensions
         MapScheduleEndpoints(endpoints);
         MapTriggerEndpoints(endpoints);
         MapVoiceEndpoints(endpoints);
+        endpoints.MapHistoryGraphEndpoints();
 
         // Merge plugin step types into the registry
         var pluginRegistry = endpoints.ServiceProvider.GetRequiredService<PluginRegistry>();
@@ -388,9 +390,19 @@ public static class DashboardApiExtensions
         {
             var workflow = await store.GetByIdAsync(id, ct);
             if (workflow is null) return Results.NotFound();
-            var result = validator.Validate(workflow.Definition);
+            var knownWorkflows = await store.GetAllAsync(ct);
+            var result = validator.Validate(workflow.Definition, knownWorkflows, id);
             return Results.Ok(result);
         }).WithTags("Validation").WithName("ValidateWorkflowById");
+
+        endpoints.MapPost("/api/workflows/{id}/validate-draft", async (string id, WorkflowDefinitionDto definition, WorkflowValidator validator, IWorkflowDefinitionStore store, CancellationToken ct) =>
+        {
+            var workflow = await store.GetByIdAsync(id, ct);
+            if (workflow is null) return Results.NotFound();
+            var knownWorkflows = await store.GetAllAsync(ct);
+            var result = validator.Validate(definition, knownWorkflows, id);
+            return Results.Ok(result);
+        }).WithTags("Validation").WithName("ValidateWorkflowDraft");
 
         // Validate a workflow definition without saving
         endpoints.MapPost("/api/workflows/validate", (WorkflowDefinitionDto definition, WorkflowValidator validator) =>
@@ -404,23 +416,34 @@ public static class DashboardApiExtensions
     {
         var group = endpoints.MapGroup("/api/settings").WithTags("Settings");
 
-        group.MapGet("/", (IDashboardSettingsService svc) => Results.Ok(svc.Get()))
+        group.MapGet("/", (IDashboardSettingsService svc) => Results.Ok(DashboardSettingsHttpMapper.ToResponse(svc.Get())))
             .WithName("GetSettings");
 
-        group.MapPut("/", (DashboardSettings settings, IDashboardSettingsService svc) =>
+        group.MapPut("/", (UpdateDashboardSettingsRequest request, IDashboardSettingsService svc) =>
         {
-            svc.Update(settings);
-            return Results.Ok(svc.Get());
+            if (!DashboardSettingsHttpMapper.TryValidateUpdate(request, out var error))
+                return Results.BadRequest(error);
+
+            var merged = DashboardSettingsHttpMapper.ApplyUpdate(svc.Get(), request);
+            svc.Update(merged);
+            return Results.Ok(DashboardSettingsHttpMapper.ToResponse(svc.Get()));
         }).WithName("UpdateSettings");
 
-        group.MapPost("/test-ollama", async (IDashboardSettingsService svc, IHttpClientFactory factory) =>
+        group.MapPost("/test-ollama", async (TestOllamaConnectionRequest? request, IDashboardSettingsService svc, IHttpClientFactory factory) =>
         {
             var settings = svc.Get();
+            var candidateUrl = string.IsNullOrWhiteSpace(request?.OllamaUrl)
+                ? settings.OllamaUrl
+                : request!.OllamaUrl;
+
+            if (!DashboardSettingsHttpMapper.TryCreateValidatedOllamaUri(candidateUrl, out var ollamaUri, out var validationError))
+                return Results.Ok(new { success = false, message = validationError });
+
             try
             {
                 var client = factory.CreateClient("OllamaClient");
                 client.Timeout = TimeSpan.FromSeconds(5);
-                var resp = await client.GetAsync($"{settings.OllamaUrl.TrimEnd('/')}/api/tags");
+                var resp = await client.GetAsync(ProviderModelCatalogService.BuildTagsUri(ollamaUri!));
                 return resp.IsSuccessStatusCode
                     ? Results.Ok(new { success = true, message = "Connected to Ollama" })
                     : Results.Ok(new { success = false, message = $"Ollama returned {resp.StatusCode}" });
@@ -431,43 +454,18 @@ public static class DashboardApiExtensions
             }
         }).WithName("TestOllamaConnection");
 
-        endpoints.MapGet("/api/providers/{provider}/models", async (string provider, IDashboardSettingsService svc, IHttpClientFactory factory) =>
+        endpoints.MapGet("/api/providers/{provider}/models", async (string provider, string? ollamaUrl, IDashboardSettingsService svc, ProviderModelCatalogService catalog, CancellationToken cancellationToken) =>
         {
             var settings = svc.Get();
             switch (provider.ToLowerInvariant())
             {
                 case "ollama":
-                    try
-                    {
-                        var client = factory.CreateClient("OllamaClient");
-                        client.Timeout = TimeSpan.FromSeconds(10);
-                        var resp = await client.GetAsync($"{settings.OllamaUrl.TrimEnd('/')}/api/tags");
-                        if (resp.IsSuccessStatusCode)
-                        {
-                            var json = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
-                            var models = new List<string>();
-                            if (json.TryGetProperty("models", out var arr))
-                            {
-                                foreach (var m in arr.EnumerateArray())
-                                {
-                                    if (m.TryGetProperty("name", out var n))
-                                        models.Add(n.GetString() ?? "");
-                                }
-                            }
-                            return Results.Ok(models);
-                        }
-                    }
-                    catch { }
-                    return Results.Ok(Array.Empty<string>());
+                    return Results.Ok(await catalog.GetModelsAsync(provider, ollamaUrl, settings, cancellationToken));
 
                 case "openai":
-                    return Results.Ok(new[] { "gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4", "gpt-3.5-turbo", "o1-preview", "o1-mini" });
-
                 case "anthropic":
-                    return Results.Ok(new[] { "claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-3-5-haiku-20241022", "claude-3-opus-20240229" });
-
                 case "huggingface":
-                    return Results.Ok(new[] { "meta-llama/Llama-3-70b-chat-hf", "mistralai/Mixtral-8x7B-Instruct-v0.1", "microsoft/Phi-3-mini-4k-instruct" });
+                    return Results.Ok(AiProviderCatalog.GetDefaultModels(provider));
 
                 default:
                     return Results.Ok(Array.Empty<string>());

@@ -19,6 +19,8 @@ public sealed class DashboardDbContext : DbContext
     public DbSet<AuditEntryEntity> AuditEntries => Set<AuditEntryEntity>();
     public DbSet<UserSettingEntity> UserSettings => Set<UserSettingEntity>();
     public DbSet<ApiKeyEntity> ApiKeys => Set<ApiKeyEntity>();
+    public DbSet<HistoryNodeEntity> HistoryNodes => Set<HistoryNodeEntity>();
+    public DbSet<HistoryEdgeEntity> HistoryEdges => Set<HistoryEdgeEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -92,6 +94,36 @@ public sealed class DashboardDbContext : DbContext
             e.HasIndex(k => k.UserId);
             e.HasIndex(k => k.KeyPrefix);
             e.HasOne(k => k.User).WithMany(u => u.ApiKeys).HasForeignKey(k => k.UserId);
+        });
+
+        // HistoryNodeEntity
+        modelBuilder.Entity<HistoryNodeEntity>(e =>
+        {
+            e.HasKey(n => n.Fingerprint);
+            e.Property(n => n.Fingerprint).HasMaxLength(16);
+            e.Property(n => n.Name).HasMaxLength(256);
+            e.Property(n => n.Kind).HasMaxLength(32);
+            e.Property(n => n.Target).HasMaxLength(512);
+            e.HasIndex(n => n.Name);
+            e.HasIndex(n => n.LastSeenAt);
+        });
+
+        // HistoryEdgeEntity
+        modelBuilder.Entity<HistoryEdgeEntity>(e =>
+        {
+            e.HasKey(edge => edge.Id);
+            e.HasIndex(edge => new { edge.SourceFingerprint, edge.TargetFingerprint, edge.Kind }).IsUnique();
+            e.Property(edge => edge.SourceFingerprint).HasMaxLength(16);
+            e.Property(edge => edge.TargetFingerprint).HasMaxLength(16);
+            e.Property(edge => edge.Kind).HasMaxLength(32);
+            e.HasOne(edge => edge.SourceNode)
+                .WithMany(n => n.OutgoingEdges)
+                .HasForeignKey(edge => edge.SourceFingerprint)
+                .OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(edge => edge.TargetNode)
+                .WithMany(n => n.IncomingEdges)
+                .HasForeignKey(edge => edge.TargetFingerprint)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

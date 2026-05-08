@@ -27,7 +27,7 @@ public sealed class PlaywrightFixture : IAsyncDisposable
     {
         var context = await Browser.NewContextAsync(new BrowserNewContextOptions
         {
-            ViewportSize = new ViewportSize { Width = 1400, Height = 900 },
+            ViewportSize = new ViewportSize { Width = 1920, Height = 1080 },
             IgnoreHTTPSErrors = true
         });
         return await context.NewPageAsync();

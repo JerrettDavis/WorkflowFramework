@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using FluentAssertions;
 using WorkflowFramework.Extensions.Agents;
@@ -97,5 +98,129 @@ public class CommandHookTests
         deserialized!.Decision.Should().Be(HookDecision.Modify);
         deserialized.ModifiedArgs.Should().Be("{\"modified\":true}");
         deserialized.Reason.Should().Be("changed args");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenCommandReturnsHookResult_DeserializesResponse()
+    {
+        var (command, args) = CreatePowerShellCommand(
+            "$null = [Console]::In.ReadToEnd(); [Console]::Out.Write('{\"Decision\":2,\"Reason\":\"rewritten\",\"ModifiedArgs\":\"{\\\"safe\\\":true}\"}')");
+        var hook = new CommandHook(command, args);
+
+        var result = await hook.ExecuteAsync(AgentHookEvent.PreToolCall, new HookContext
+        {
+            StepName = "Planner",
+            ToolName = "search",
+            ToolArgs = "{\"q\":\"incident\"}"
+        });
+
+        result.Decision.Should().Be(HookDecision.Modify);
+        result.Reason.Should().Be("rewritten");
+        result.ModifiedArgs.Should().Be("{\"safe\":true}");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenCommandExitsNonZero_ReturnsDeny()
+    {
+        var (command, args) = CreatePowerShellCommand("exit 7");
+        var hook = new CommandHook(command, args);
+
+        var result = await hook.ExecuteAsync(AgentHookEvent.PreToolCall, new HookContext());
+
+        result.Decision.Should().Be(HookDecision.Deny);
+        result.Reason.Should().Be("Command exited with code 7");
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_WhenCommandReturnsInvalidJson_ReturnsAllow()
+    {
+        var (command, args) = CreatePowerShellCommand(
+            "$null = [Console]::In.ReadToEnd(); [Console]::Out.Write('not-json')");
+        var hook = new CommandHook(command, args);
+
+        var result = await hook.ExecuteAsync(AgentHookEvent.PreToolCall, new HookContext());
+
+        result.Decision.Should().Be(HookDecision.Allow);
+    }
+
+    private static (string Command, string[] Args) CreatePowerShellCommand(string script)
+    {
+        var encodedCommand = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+        return (ResolvePowerShellExecutable(), ["-NoLogo", "-NoProfile", "-EncodedCommand", encodedCommand]);
+    }
+
+    private static string ResolvePowerShellExecutable()
+    {
+        if (TryFindExecutableOnPath("pwsh", out var pwshOnPath))
+        {
+            return pwshOnPath;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            var windowsCandidates = new[]
+            {
+                Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+                    "PowerShell",
+                    "7",
+                    "pwsh.exe"),
+                Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.System),
+                    "WindowsPowerShell",
+                    "v1.0",
+                    "powershell.exe")
+            };
+
+            var windowsExecutable = windowsCandidates.FirstOrDefault(File.Exists);
+            if (windowsExecutable != null)
+            {
+                return windowsExecutable;
+            }
+
+            if (TryFindExecutableOnPath("powershell", out var powershellOnPath))
+            {
+                return powershellOnPath;
+            }
+        }
+
+        var unixCandidates = new[] { "/usr/bin/pwsh", "/usr/local/bin/pwsh" };
+        var unixExecutable = unixCandidates.FirstOrDefault(File.Exists);
+        if (unixExecutable != null)
+        {
+            return unixExecutable;
+        }
+
+        throw new InvalidOperationException("PowerShell executable not found for command hook tests.");
+    }
+
+    private static bool TryFindExecutableOnPath(string executableName, out string executablePath)
+    {
+        var pathValue = Environment.GetEnvironmentVariable("PATH");
+        if (!string.IsNullOrWhiteSpace(pathValue))
+        {
+            foreach (var path in pathValue.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+            {
+                var candidate = Path.Combine(path, executableName);
+                if (File.Exists(candidate))
+                {
+                    executablePath = candidate;
+                    return true;
+                }
+
+                if (OperatingSystem.IsWindows())
+                {
+                    var candidateExe = candidate + ".exe";
+                    if (File.Exists(candidateExe))
+                    {
+                        executablePath = candidateExe;
+                        return true;
+                    }
+                }
+            }
+        }
+
+        executablePath = string.Empty;
+        return false;
     }
 }

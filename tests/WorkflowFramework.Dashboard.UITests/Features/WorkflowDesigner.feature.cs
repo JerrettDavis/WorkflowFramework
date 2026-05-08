@@ -107,121 +107,132 @@ namespace WorkflowFramework.Dashboard.UITests.Features
         
         private static global::Io.Cucumber.Messages.Types.Source SourceFunc()
         {
-            return new global::Io.Cucumber.Messages.Types.Source("Features/WorkflowDesigner.feature", @"@UI
-Feature: Workflow Designer
-  As a user I can visually design workflows using the drag-and-drop designer
-
-  @screenshot:designer-overview
-  Scenario: View empty designer on launch
-    Given the dashboard is running
-    When I navigate to the designer
-    Then I should see the step palette on the left
-    And I should see an empty canvas
-    And I should see the properties panel on the right
-
-  @screenshot:step-palette
-  Scenario: Search step palette
-    Given the dashboard is running
-    When I navigate to the designer
-    And I type ""conditional"" in the step search
-    Then I should see filtered steps containing ""conditional""
-
-  @screenshot:properties-panel
-  Scenario: Select a node and view properties
-    Given the dashboard is running
-    And I have a workflow with an action step
-    When I click on the action step node
-    Then the properties panel should show the step configuration
-
-  @screenshot:toolbar
-  Scenario: View toolbar
-    Given the dashboard is running
-    When I navigate to the designer
-    Then the toolbar should show save, run, validate, and settings buttons
-", global::Io.Cucumber.Messages.Types.SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN);
+            return new global::Io.Cucumber.Messages.Types.Source("Features/WorkflowDesigner.feature", "@UI\r\nFeature: Workflow Designer\r\n  As a user I can visually design workflows usin" +
+                    "g the drag-and-drop designer\r\n\r\n  @screenshot:designer-overview\r\n  Scenario: Vie" +
+                    "w empty designer on launch\r\n    Given the dashboard is running\r\n    When I navig" +
+                    "ate to the designer\r\n    Then I should see the step palette on the left\r\n    And" +
+                    " I should see an empty canvas\r\n    And I should see the properties panel on the " +
+                    "right\r\n\r\n  @screenshot:step-palette\r\n  Scenario: Search step palette\r\n    Given " +
+                    "the dashboard is running\r\n    When I navigate to the designer\r\n    And I type \"c" +
+                    "onditional\" in the step search\r\n    Then I should see filtered steps containing " +
+                    "\"conditional\"\r\n\r\n  @screenshot:properties-panel\r\n  Scenario: Select a node and v" +
+                    "iew properties\r\n    Given the dashboard is running\r\n    And I have a workflow wi" +
+                    "th an action step\r\n    When I click on the action step node\r\n    Then the proper" +
+                    "ties panel should show the step configuration\r\n\r\n  Scenario: SubWorkflow step sh" +
+                    "ows saved workflow suggestions\r\n    Given the dashboard is running\r\n    And I ha" +
+                    "ve a workflow with a SubWorkflow step\r\n    When I select the SubWorkflow step\r\n " +
+                    "   Then the properties panel should show saved workflow suggestions including \"C" +
+                    "hild Flow\"\r\n    When I choose saved workflow \"Child Flow\"\r\n    Then the SubWorkf" +
+                    "low reference should be \"Child Flow\"\r\n\r\n  @screenshot:toolbar\r\n  Scenario: View " +
+                    "toolbar\r\n    Given the dashboard is running\r\n    When I navigate to the designer" +
+                    "\r\n    Then the toolbar should show save, run, validate, and settings buttons\r\n", global::Io.Cucumber.Messages.Types.SourceMediaType.TEXT_X_CUCUMBER_GHERKIN_PLAIN);
         }
         
         private static global::Io.Cucumber.Messages.Types.GherkinDocument GherkinDocumentFunc()
         {
             return new global::Io.Cucumber.Messages.Types.GherkinDocument("Features/WorkflowDesigner.feature", new global::Io.Cucumber.Messages.Types.Feature(new global::Io.Cucumber.Messages.Types.Location(2, new System.Nullable<long>(1)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "aeb68171548c3154bd8fbe86bcfcf354")}), "en", "Feature", "Workflow Designer", "  As a user I can visually design workflows using the drag-and-drop designer", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.FeatureChild>(new global::Io.Cucumber.Messages.Types.FeatureChild[] {
+                                new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(1, new System.Nullable<long>(1)), "@UI", "5077795886aa815999c714bbac21d117")}), "en", "Feature", "Workflow Designer", "  As a user I can visually design workflows using the drag-and-drop designer", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.FeatureChild>(new global::Io.Cucumber.Messages.Types.FeatureChild[] {
                                 new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(6, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(5, new System.Nullable<long>(3)), "@screenshot:designer-overview", "631e35929450fa5c938735019660cb5c")}), "Scenario", "View empty designer on launch", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "82438f2bb50101539bb4df70acba9d8a"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I navigate to the designer", null, null, "b52f567708081d5aa7c2dfe81305ce94"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see the step palette on the left", null, null, "75ceb80ed5cad659ab6b92afcb802a7e"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see an empty canvas", null, null, "128ddc9c14c6785c8789083fbe6d08ae"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(11, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see the properties panel on the right", null, null, "1b3abeda8dff8153b56dc4db375b79cb")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "7e5a02e106ffbd53b6c363932131de37")),
+                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(5, new System.Nullable<long>(3)), "@screenshot:designer-overview", "86301e5a71900f5286a466cefe5f0cad")}), "Scenario", "View empty designer on launch", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(7, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "bfb2e2a5f3a4985298e293504aa916b2"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(8, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I navigate to the designer", null, null, "c944185f85521851a0111d5d7ef298b4"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(9, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see the step palette on the left", null, null, "4e554c9b6e37685bbfcbb67c523aa99b"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(10, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see an empty canvas", null, null, "8bfcbec6ab15dc5fb53f5ca62832dad1"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(11, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I should see the properties panel on the right", null, null, "f041f8ff9fe3db5a9d608abf9313f3cb")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "f734b9708789ac53b825740d69076aee")),
                                 new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(14, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(13, new System.Nullable<long>(3)), "@screenshot:step-palette", "0c236e0be963e65e80ef871749caca5a")}), "Scenario", "Search step palette", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "296468f6cf711d5eba68d096f540a8ea"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(16, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I navigate to the designer", null, null, "7c72b95d91a2d2558839bbf547ec154d"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(17, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I type \"conditional\" in the step search", null, null, "efce6ffe8a493756a150b09846157f9c"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(18, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see filtered steps containing \"conditional\"", null, null, "33f12c6688fca15d8aa8fc41b8a7cf6d")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "0b7f36732f0c1e5d8424b7545fc7873e")),
+                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(13, new System.Nullable<long>(3)), "@screenshot:step-palette", "1ca4b7a55237ae54917e070670cec299")}), "Scenario", "Search step palette", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(15, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "153926eab3b6a85b9fabb62c7a40840f"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(16, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I navigate to the designer", null, null, "ff2a7898adc8f05c97190acc0415e40e"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(17, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I type \"conditional\" in the step search", null, null, "181112cbb9a13150962cd9ce530d9efb"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(18, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "I should see filtered steps containing \"conditional\"", null, null, "06e9d466cd62255baa9be9441ad3ad49")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "4e8fa8d0ace62e57873a97a378c1b796")),
                                 new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(21, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(20, new System.Nullable<long>(3)), "@screenshot:properties-panel", "d1ac9b061d3029519ac5e4f791223d30")}), "Scenario", "Select a node and view properties", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(22, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "fbdc82a3b7403d55a6f092ab35f85132"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(23, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I have a workflow with an action step", null, null, "8fb9b4797907bc5ea4883b152d6632a6"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(24, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I click on the action step node", null, null, "538e0a6339a21f53acfddeb3e8490296"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(25, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the properties panel should show the step configuration", null, null, "6117380cb9121c5c9ca46bdf62d95e7a")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "a16b10afde34a75ca26b214f4d2189ba")),
-                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(28, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
-                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(27, new System.Nullable<long>(3)), "@screenshot:toolbar", "ee5696cbf0daa55b82cfa1c8bab29130")}), "Scenario", "View toolbar", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(29, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "f49f7bc87eaaf95998d6c072ea87f15e"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(30, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I navigate to the designer", null, null, "4fcc4cfe1c0afd5489eb3a8195420131"),
-                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(31, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the toolbar should show save, run, validate, and settings buttons", null, null, "610037b879cdeb5ba38200da738835ca")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "f72ac9177edfcf548b3e84317e9001e5"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
+                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(20, new System.Nullable<long>(3)), "@screenshot:properties-panel", "cc5a026595eaad57b43884e59a18cb5c")}), "Scenario", "Select a node and view properties", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(22, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "d4925314f3dfe75c82b9593a7eb05973"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(23, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I have a workflow with an action step", null, null, "799f3356cb984c58b1932c3b89093279"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(24, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I click on the action step node", null, null, "8bc3434059dfb451acaa031adc239536"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(25, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the properties panel should show the step configuration", null, null, "41b7f57a935ae75ab3eab36a7f302282")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "255b4e2cfbb2335c8f07b84290cf9ef9")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(27, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[0]), "Scenario", "SubWorkflow step shows saved workflow suggestions", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(28, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "0a0b84cc33092d599dfdee7b3ada4ad0"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(29, new System.Nullable<long>(5)), "And ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONJUNCTION, "I have a workflow with a SubWorkflow step", null, null, "4c70be0bfb92ef598f42cc7c2ddad7ed"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(30, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I select the SubWorkflow step", null, null, "1833bf9553841f55af7dd82ec001ef4e"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(31, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the properties panel should show saved workflow suggestions including \"Child Flow" +
+                                                            "\"", null, null, "d9e7d8a53315b95e8cf6b1029a975434"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(32, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I choose saved workflow \"Child Flow\"", null, null, "3ede92de8c3f2658959d7ce0b5041075"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(33, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the SubWorkflow reference should be \"Child Flow\"", null, null, "02b9101ca6c3ba5297db7378d85209fe")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "e129b1a85b859c5e81343525218f0325")),
+                                new global::Io.Cucumber.Messages.Types.FeatureChild(null, null, new global::Io.Cucumber.Messages.Types.Scenario(new global::Io.Cucumber.Messages.Types.Location(36, new System.Nullable<long>(3)), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Tag>(new global::Io.Cucumber.Messages.Types.Tag[] {
+                                                    new global::Io.Cucumber.Messages.Types.Tag(new global::Io.Cucumber.Messages.Types.Location(35, new System.Nullable<long>(3)), "@screenshot:toolbar", "1c151db2e7dc3c59ba53247790dd45d9")}), "Scenario", "View toolbar", "", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Step>(new global::Io.Cucumber.Messages.Types.Step[] {
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(37, new System.Nullable<long>(5)), "Given ", global::Io.Cucumber.Messages.Types.StepKeywordType.CONTEXT, "the dashboard is running", null, null, "b6895791d0fe4a5da769ad3954accbb5"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(38, new System.Nullable<long>(5)), "When ", global::Io.Cucumber.Messages.Types.StepKeywordType.ACTION, "I navigate to the designer", null, null, "01c3739309bc435d8f167a017cb10336"),
+                                                    new global::Io.Cucumber.Messages.Types.Step(new global::Io.Cucumber.Messages.Types.Location(39, new System.Nullable<long>(5)), "Then ", global::Io.Cucumber.Messages.Types.StepKeywordType.OUTCOME, "the toolbar should show save, run, validate, and settings buttons", null, null, "78ade72c7a1d6251b0f5e6efdc960bb8")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Examples>(new global::Io.Cucumber.Messages.Types.Examples[0]), "70bb9893ba216559a27ba0b5dee71d57"))})), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Comment>(new global::Io.Cucumber.Messages.Types.Comment[0]));
         }
         
         private static global::System.Collections.Generic.IEnumerable<Io.Cucumber.Messages.Types.Pickle> PicklesFunc()
         {
             return new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.Pickle>(new global::Io.Cucumber.Messages.Types.Pickle[] {
-                        new global::Io.Cucumber.Messages.Types.Pickle("70348bbb0e2a6a55b230ef6e5de9f6f7", "Features/WorkflowDesigner.feature", "View empty designer on launch", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                        new global::Io.Cucumber.Messages.Types.Pickle("03ddad326dab2a5181da01e1e97dc8cf", "Features/WorkflowDesigner.feature", "View empty designer on launch", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "82438f2bb50101539bb4df70acba9d8a"}), "a1e98f50c5c56c588ba607e1eacee603", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "bfb2e2a5f3a4985298e293504aa916b2"}), "4b181d993827a95ba244c56eb07ccdbd", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "b52f567708081d5aa7c2dfe81305ce94"}), "b6e00ee1a5835a54bfa2d24fff2c564a", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I navigate to the designer"),
+                                                        "c944185f85521851a0111d5d7ef298b4"}), "02a5d3669cb879529e9f9ac889aedf32", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I navigate to the designer"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "75ceb80ed5cad659ab6b92afcb802a7e"}), "3a15f48e8d82aa5296809fff0af53f2a", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the step palette on the left"),
+                                                        "4e554c9b6e37685bbfcbb67c523aa99b"}), "21820eccd5636959bb6728f97dd6608b", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the step palette on the left"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "128ddc9c14c6785c8789083fbe6d08ae"}), "ccfb0f8a645284539ff3cb4836832035", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see an empty canvas"),
+                                                        "8bfcbec6ab15dc5fb53f5ca62832dad1"}), "b94da4127ed467518c235a1dddf9689b", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see an empty canvas"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "1b3abeda8dff8153b56dc4db375b79cb"}), "7c7e8ad7f67ca9559ee845934b206f95", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the properties panel on the right")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "aeb68171548c3154bd8fbe86bcfcf354"),
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:designer-overview", "631e35929450fa5c938735019660cb5c")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "7e5a02e106ffbd53b6c363932131de37"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("aa799553883b3a508f62daa6ead1ab59", "Features/WorkflowDesigner.feature", "Search step palette", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "f041f8ff9fe3db5a9d608abf9313f3cb"}), "f12088596c22f157a93e9edea7391a87", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see the properties panel on the right")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "5077795886aa815999c714bbac21d117"),
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:designer-overview", "86301e5a71900f5286a466cefe5f0cad")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "f734b9708789ac53b825740d69076aee"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("6ac818c315e24f5c9bc2e26428794944", "Features/WorkflowDesigner.feature", "Search step palette", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "296468f6cf711d5eba68d096f540a8ea"}), "e74f8b8bf9a91b51855549a3e8befd93", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "153926eab3b6a85b9fabb62c7a40840f"}), "64440775282d9d5aac86bd79788e90d2", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "7c72b95d91a2d2558839bbf547ec154d"}), "b11e1fa48a2e2259bc6fdfaf22ccbae8", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I navigate to the designer"),
+                                                        "ff2a7898adc8f05c97190acc0415e40e"}), "518bf60d3a00af53aa93bccda0005e0b", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I navigate to the designer"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "efce6ffe8a493756a150b09846157f9c"}), "3c623cda3cac005aa981c332a9a12ec7", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I type \"conditional\" in the step search"),
+                                                        "181112cbb9a13150962cd9ce530d9efb"}), "2c5ce00e4597195fa2ce78d39bc696f8", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I type \"conditional\" in the step search"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "33f12c6688fca15d8aa8fc41b8a7cf6d"}), "69bcefeabbb7035c8de04b15fdd4317f", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see filtered steps containing \"conditional\"")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "aeb68171548c3154bd8fbe86bcfcf354"),
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:step-palette", "0c236e0be963e65e80ef871749caca5a")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "0b7f36732f0c1e5d8424b7545fc7873e"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("cd2ba321b619a55fb536c72fbe274b4e", "Features/WorkflowDesigner.feature", "Select a node and view properties", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "06e9d466cd62255baa9be9441ad3ad49"}), "847481c28452605a818aae573bae7ed3", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "I should see filtered steps containing \"conditional\"")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "5077795886aa815999c714bbac21d117"),
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:step-palette", "1ca4b7a55237ae54917e070670cec299")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "4e8fa8d0ace62e57873a97a378c1b796"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("ea5a6c3be15fd351b20809e6a7a98c87", "Features/WorkflowDesigner.feature", "Select a node and view properties", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "fbdc82a3b7403d55a6f092ab35f85132"}), "15d1669845b0bd529042e51a590c9f43", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "d4925314f3dfe75c82b9593a7eb05973"}), "c781966b4f9d2653bc14577b3e54b4ab", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "8fb9b4797907bc5ea4883b152d6632a6"}), "1bddf98ff1cd055d96b0511c70812ea4", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I have a workflow with an action step"),
+                                                        "799f3356cb984c58b1932c3b89093279"}), "c7abb84d82c5c950b61554c835882c28", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I have a workflow with an action step"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "538e0a6339a21f53acfddeb3e8490296"}), "c2dfb3f40770b358b9a78e5860510f77", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click on the action step node"),
+                                                        "8bc3434059dfb451acaa031adc239536"}), "71316ce5bb6e7c50af863efb8c700a28", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I click on the action step node"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "6117380cb9121c5c9ca46bdf62d95e7a"}), "579ac21cf20bd65d8eb8b6e456a12daa", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the properties panel should show the step configuration")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "aeb68171548c3154bd8fbe86bcfcf354"),
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:properties-panel", "d1ac9b061d3029519ac5e4f791223d30")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "a16b10afde34a75ca26b214f4d2189ba"})),
-                        new global::Io.Cucumber.Messages.Types.Pickle("deb054f8ebb96f5fa9aa50cc052978fc", "Features/WorkflowDesigner.feature", "View toolbar", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                                        "41b7f57a935ae75ab3eab36a7f302282"}), "45cf814f8318b354954a6f8d38977fad", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the properties panel should show the step configuration")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "5077795886aa815999c714bbac21d117"),
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:properties-panel", "cc5a026595eaad57b43884e59a18cb5c")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "255b4e2cfbb2335c8f07b84290cf9ef9"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("d0ee74788f9fb25781ff15536c52cfe8", "Features/WorkflowDesigner.feature", "SubWorkflow step shows saved workflow suggestions", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "f49f7bc87eaaf95998d6c072ea87f15e"}), "2d8c863ac0c8585fbb0b48da6934432c", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                                        "0a0b84cc33092d599dfdee7b3ada4ad0"}), "95da292353b648598a70384878d75ad9", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "4fcc4cfe1c0afd5489eb3a8195420131"}), "ab904843836d6159a94b16c69190d955", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I navigate to the designer"),
+                                                        "4c70be0bfb92ef598f42cc7c2ddad7ed"}), "f064eabc2e4fd2529b7fb94df82ca20f", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "I have a workflow with a SubWorkflow step"),
                                         new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
-                                                        "610037b879cdeb5ba38200da738835ca"}), "dc40e493e8965350ad9f89bedb1f2f68", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the toolbar should show save, run, validate, and settings buttons")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "aeb68171548c3154bd8fbe86bcfcf354"),
-                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:toolbar", "ee5696cbf0daa55b82cfa1c8bab29130")}), new System.Collections.Generic.List<string>(new string[] {
-                                        "f72ac9177edfcf548b3e84317e9001e5"}))});
+                                                        "1833bf9553841f55af7dd82ec001ef4e"}), "644ea6ec348ac153ab058b567ba1840f", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I select the SubWorkflow step"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "d9e7d8a53315b95e8cf6b1029a975434"}), "3fe64fc703beb057ba640fa3716beae3", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the properties panel should show saved workflow suggestions including \"Child Flow" +
+                                                "\""),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "3ede92de8c3f2658959d7ce0b5041075"}), "bb71b3430e3e3f578d58739d5900982b", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I choose saved workflow \"Child Flow\""),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "02b9101ca6c3ba5297db7378d85209fe"}), "17ebdd9bc9b47658b7bbc14bcdaf5bd5", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the SubWorkflow reference should be \"Child Flow\"")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "5077795886aa815999c714bbac21d117")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "e129b1a85b859c5e81343525218f0325"})),
+                        new global::Io.Cucumber.Messages.Types.Pickle("ead7fb3a365807559894e28b931a479f", "Features/WorkflowDesigner.feature", "View toolbar", "en", new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleStep>(new global::Io.Cucumber.Messages.Types.PickleStep[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "b6895791d0fe4a5da769ad3954accbb5"}), "77c2fe0b70e34750afb5a005ff352877", global::Io.Cucumber.Messages.Types.PickleStepType.CONTEXT, "the dashboard is running"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "01c3739309bc435d8f167a017cb10336"}), "5d5f17df40cc5a59834862ff2c72f3ec", global::Io.Cucumber.Messages.Types.PickleStepType.ACTION, "I navigate to the designer"),
+                                        new global::Io.Cucumber.Messages.Types.PickleStep(null, new System.Collections.Generic.List<string>(new string[] {
+                                                        "78ade72c7a1d6251b0f5e6efdc960bb8"}), "55cb2f3f1968b05f9e144ba7e9272092", global::Io.Cucumber.Messages.Types.PickleStepType.OUTCOME, "the toolbar should show save, run, validate, and settings buttons")}), new System.Collections.Generic.List<global::Io.Cucumber.Messages.Types.PickleTag>(new global::Io.Cucumber.Messages.Types.PickleTag[] {
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@UI", "5077795886aa815999c714bbac21d117"),
+                                        new global::Io.Cucumber.Messages.Types.PickleTag("@screenshot:toolbar", "1c151db2e7dc3c59ba53247790dd45d9")}), new System.Collections.Generic.List<string>(new string[] {
+                                        "70bb9893ba216559a27ba0b5dee71d57"}))});
         }
         
         private static global::Reqnroll.Formatters.RuntimeSupport.FeatureLevelCucumberMessages InitializeCucumberMessages()
@@ -374,20 +385,18 @@ Feature: Workflow Designer
             await this.ScenarioCleanupAsync();
         }
         
-        [global::Xunit.SkippableFactAttribute(DisplayName="View toolbar")]
+        [global::Xunit.SkippableFactAttribute(DisplayName="SubWorkflow step shows saved workflow suggestions")]
         [global::Xunit.TraitAttribute("FeatureTitle", "Workflow Designer")]
-        [global::Xunit.TraitAttribute("Description", "View toolbar")]
-        [global::Xunit.TraitAttribute("Category", "screenshot:toolbar")]
-        public async global::System.Threading.Tasks.Task ViewToolbar()
+        [global::Xunit.TraitAttribute("Description", "SubWorkflow step shows saved workflow suggestions")]
+        public async global::System.Threading.Tasks.Task SubWorkflowStepShowsSavedWorkflowSuggestions()
         {
-            string[] tagsOfScenario = new string[] {
-                    "screenshot:toolbar"};
+            string[] tagsOfScenario = ((string[])(null));
             global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
             string pickleIndex = "3";
-            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("View toolbar", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("SubWorkflow step shows saved workflow suggestions", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
             string[] tagsOfRule = ((string[])(null));
             global::Reqnroll.RuleInfo ruleInfo = null;
-#line 28
+#line 27
   this.ScenarioInitialize(scenarioInfo, ruleInfo);
 #line hidden
             if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
@@ -397,13 +406,59 @@ Feature: Workflow Designer
             else
             {
                 await this.ScenarioStartAsync();
-#line 29
+#line 28
     await testRunner.GivenAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
 #line hidden
+#line 29
+    await testRunner.AndAsync("I have a workflow with a SubWorkflow step", ((string)(null)), ((global::Reqnroll.Table)(null)), "And ");
+#line hidden
 #line 30
-    await testRunner.WhenAsync("I navigate to the designer", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+    await testRunner.WhenAsync("I select the SubWorkflow step", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
 #line hidden
 #line 31
+    await testRunner.ThenAsync("the properties panel should show saved workflow suggestions including \"Child Flow" +
+                        "\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+#line 32
+    await testRunner.WhenAsync("I choose saved workflow \"Child Flow\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 33
+    await testRunner.ThenAsync("the SubWorkflow reference should be \"Child Flow\"", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
+#line hidden
+            }
+            await this.ScenarioCleanupAsync();
+        }
+        
+        [global::Xunit.SkippableFactAttribute(DisplayName="View toolbar")]
+        [global::Xunit.TraitAttribute("FeatureTitle", "Workflow Designer")]
+        [global::Xunit.TraitAttribute("Description", "View toolbar")]
+        [global::Xunit.TraitAttribute("Category", "screenshot:toolbar")]
+        public async global::System.Threading.Tasks.Task ViewToolbar()
+        {
+            string[] tagsOfScenario = new string[] {
+                    "screenshot:toolbar"};
+            global::System.Collections.Specialized.OrderedDictionary argumentsOfScenario = new global::System.Collections.Specialized.OrderedDictionary();
+            string pickleIndex = "4";
+            global::Reqnroll.ScenarioInfo scenarioInfo = new global::Reqnroll.ScenarioInfo("View toolbar", null, tagsOfScenario, argumentsOfScenario, featureTags, pickleIndex);
+            string[] tagsOfRule = ((string[])(null));
+            global::Reqnroll.RuleInfo ruleInfo = null;
+#line 36
+  this.ScenarioInitialize(scenarioInfo, ruleInfo);
+#line hidden
+            if ((global::Reqnroll.TagHelper.ContainsIgnoreTag(scenarioInfo.CombinedTags) || global::Reqnroll.TagHelper.ContainsIgnoreTag(featureTags)))
+            {
+                await testRunner.SkipScenarioAsync();
+            }
+            else
+            {
+                await this.ScenarioStartAsync();
+#line 37
+    await testRunner.GivenAsync("the dashboard is running", ((string)(null)), ((global::Reqnroll.Table)(null)), "Given ");
+#line hidden
+#line 38
+    await testRunner.WhenAsync("I navigate to the designer", ((string)(null)), ((global::Reqnroll.Table)(null)), "When ");
+#line hidden
+#line 39
     await testRunner.ThenAsync("the toolbar should show save, run, validate, and settings buttons", ((string)(null)), ((global::Reqnroll.Table)(null)), "Then ");
 #line hidden
             }

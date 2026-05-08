@@ -24,6 +24,14 @@ Feature: Workflow Designer
     When I click on the action step node
     Then the properties panel should show the step configuration
 
+  Scenario: SubWorkflow step shows saved workflow suggestions
+    Given the dashboard is running
+    And I have a workflow with a SubWorkflow step
+    When I select the SubWorkflow step
+    Then the properties panel should show saved workflow suggestions including "Child Flow"
+    When I choose saved workflow "Child Flow"
+    Then the SubWorkflow reference should be "Child Flow"
+
   @screenshot:toolbar
   Scenario: View toolbar
     Given the dashboard is running

@@ -248,6 +248,31 @@ public class AgentLoopStepTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_InitialUserMessageTemplateIncluded()
+    {
+        var provider = Substitute.For<IAgentProvider>();
+        string? capturedPrompt = null;
+        provider.CompleteAsync(Arg.Any<LlmRequest>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedPrompt = callInfo.Arg<LlmRequest>().Prompt;
+                return new LlmResponse { Content = "ok" };
+            });
+
+        var context = new WorkflowContext();
+        context.Properties["Task"] = "Summarize the incident";
+
+        var step = new AgentLoopStep(provider, new ToolRegistry(), new AgentLoopOptions
+        {
+            InitialUserMessageTemplate = "User task: {Task}"
+        });
+
+        await step.ExecuteAsync(context);
+
+        capturedPrompt.Should().Contain("User task: Summarize the incident");
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ToolDefsPassedToLlm()
     {
         var provider = Substitute.For<IAgentProvider>();

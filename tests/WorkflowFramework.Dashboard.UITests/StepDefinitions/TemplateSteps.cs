@@ -31,18 +31,49 @@ public sealed class TemplateSteps
     [Then("I should see template categories")]
     public async Task ThenIShouldSeeTemplateCategories()
     {
-        // Categories may or may not be loaded depending on API availability
+        await Page.WaitForFunctionAsync(
+            "() => document.querySelectorAll(\"[data-testid='template-category']\").length > 0",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
         var categories = Page.Locator("[data-testid='template-category']");
         var count = await categories.CountAsync();
-        count.Should().BeGreaterThanOrEqualTo(0, "Template categories should be present");
+        count.Should().BeGreaterThan(0, "Template categories should be present");
     }
 
     [Then("I should see templates with difficulty badges")]
     public async Task ThenIShouldSeeTemplatesWithDifficultyBadges()
     {
+        await Page.WaitForFunctionAsync(
+            "() => document.querySelectorAll(\"[data-testid='template-card']\").length > 0",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
         var templates = Page.Locator("[data-testid='template-card']");
         var count = await templates.CountAsync();
-        count.Should().BeGreaterThanOrEqualTo(0, "Templates should be present");
+        count.Should().BeGreaterThan(0, "Templates should be present");
+    }
+
+    [Then("I should see featured starter workflows")]
+    public async Task ThenIShouldSeeFeaturedStarterWorkflows()
+    {
+        await Page.WaitForFunctionAsync(
+            "() => document.querySelectorAll(\"[data-testid='template-featured-badge']\").length > 0",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
+        var featured = Page.Locator("[data-testid='template-featured-badge']");
+        var count = await featured.CountAsync();
+        count.Should().BeGreaterThan(0, "At least one featured starter workflow should be highlighted");
+    }
+
+    [Then("I should see starter preview images")]
+    public async Task ThenIShouldSeeStarterPreviewImages()
+    {
+        await Page.WaitForFunctionAsync(
+            "() => document.querySelectorAll(\"[data-testid='template-preview-image']\").length > 0",
+            null,
+            new PageWaitForFunctionOptions { Timeout = 15_000 });
+        var previews = Page.Locator("[data-testid='template-preview-image']");
+        var count = await previews.CountAsync();
+        count.Should().BeGreaterThan(0, "Starter templates with preview metadata should render preview images");
     }
 
     [When("I select a template")]
@@ -51,6 +82,14 @@ public sealed class TemplateSteps
         // Use JS click to bypass viewport issues with modal overlays
         var template = Page.Locator("[data-testid='template-card']").First;
         await template.EvaluateAsync("el => el.click()");
+    }
+
+    [When("I search templates for {string}")]
+    public async Task WhenISearchTemplatesFor(string searchTerm)
+    {
+        var search = Page.Locator("[data-testid='template-search']");
+        await search.FillAsync(searchTerm);
+        await Page.WaitForTimeoutAsync(250);
     }
 
     [When("I click {string}")]
@@ -67,6 +106,21 @@ public sealed class TemplateSteps
     {
         var canvas = Page.Locator("#workflow-canvas");
         await canvas.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+    }
+
+    [Then("I should only see template results matching {string}")]
+    public async Task ThenIShouldOnlySeeTemplateResultsMatching(string searchTerm)
+    {
+        var templates = Page.Locator("[data-testid='template-card']");
+        var count = await templates.CountAsync();
+        count.Should().BeGreaterThan(0);
+
+        var loweredSearchTerm = searchTerm.ToLowerInvariant();
+        for (var index = 0; index < count; index++)
+        {
+            var text = (await templates.Nth(index).InnerTextAsync()).ToLowerInvariant();
+            text.Should().Contain(loweredSearchTerm);
+        }
     }
 }
 

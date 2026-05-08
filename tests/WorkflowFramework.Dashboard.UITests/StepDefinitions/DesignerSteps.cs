@@ -91,20 +91,22 @@ public sealed class DesignerSteps
         // Click on the workflow in the list
         var workflowItem = Page.Locator("[data-testid='workflow-list']").Locator("text=Action Test Workflow").First;
         if (await workflowItem.IsVisibleAsync())
+        {
+            await workflowItem.ScrollIntoViewIfNeededAsync();
             await workflowItem.ClickAsync();
+        }
         await Page.WaitForTimeoutAsync(1000);
     }
 
     [When("I click on the action step node")]
     public async Task WhenIClickOnTheActionStepNode()
     {
-        // React Flow nodes have class .react-flow__node
-        var node = Page.Locator(".react-flow__node").First;
-        if (await node.IsVisibleAsync())
-        {
-            await node.ClickAsync();
-            await Page.WaitForTimeoutAsync(500);
-        }
+        var node = Page.Locator("[data-node-type='action'], [data-node-type='Action']").First;
+        await node.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        await node.ClickAsync();
+        var stepName = Page.Locator("[data-testid='properties-step-name']");
+        await stepName.WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        (await stepName.InputValueAsync()).Should().BeOneOf("My Action Step", "ActionStep");
     }
 
     [Then("the properties panel should show the step configuration")]
@@ -124,6 +126,7 @@ public sealed class DesignerSteps
         await (Page.Locator("[data-testid='btn-save']")).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         await (Page.Locator("[data-testid='btn-run']")).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
         await (Page.Locator("[data-testid='btn-validate']")).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
+        await (Page.Locator("[data-testid='btn-settings']")).WaitForAsync(new LocatorWaitForOptions { Timeout = 10_000 });
     }
 }
 

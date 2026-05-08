@@ -55,6 +55,137 @@
         'Human Tasks': '👤',
     };
 
+    function isSyntheticNodeData(data) {
+        return data?.config?.__syntheticKind === 'container-exit';
+    }
+
+    function getSemanticEdgeKind(edge) {
+        return edge?.sourceHandle ?? edge?.kind ?? edge?.data?.kind ?? null;
+    }
+
+    function getEdgeDisplayLabel(kind, explicitLabel) {
+        if (explicitLabel) return explicitLabel;
+        if (!kind || kind === 'output' || kind === 'input' || kind.startsWith('output-')) return null;
+        return kind;
+    }
+
+    function createHandle(type, position, id, style, key) {
+        return h(Handle, {
+            key,
+            type,
+            position,
+            id,
+            style,
+        });
+    }
+
+    function createHandleLabel(key, text, style) {
+        return h('div', { key, style }, text);
+    }
+
+    function toReactFlowNode(node) {
+        const synthetic = isSyntheticNodeData({ config: node.config || {}, type: node.type });
+        return {
+            id: node.id,
+            type: 'workflowNode',
+            position: { x: node.x || 0, y: node.y || 0 },
+            selectable: !synthetic,
+            draggable: !synthetic,
+            deletable: !synthetic,
+            connectable: !synthetic,
+            focusable: !synthetic,
+            data: {
+                type: node.type,
+                label: node.label,
+                icon: node.icon,
+                category: node.category,
+                color: node.color,
+                config: node.config || {},
+                runStatus: node.runStatus || 'idle',
+            },
+        };
+    }
+
+    function toReactFlowEdge(edge) {
+        const kind = getSemanticEdgeKind(edge);
+        return {
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            sourceHandle: kind || 'output',
+            targetHandle: edge.targetHandle || 'input',
+            type: 'workflowEdge',
+            markerEnd: { type: MarkerType.ArrowClosed, color: '#6b7280' },
+            data: {
+                label: getEdgeDisplayLabel(kind, edge.label || ''),
+                kind,
+                animated: edge.animated || false,
+            },
+        };
+    }
+
+    function reseedNextNodeId(nodes) {
+        return (nodes || []).reduce((max, node) => {
+            const match = /^node_(\d+)$/i.exec(node?.id || '');
+            return match ? Math.max(max, Number(match[1])) : max;
+        }, 0) + 1;
+    }
+
+    function allowsMultipleOutputs(nodeType, handleId) {
+        return nodeType === 'parallel' && typeof handleId === 'string' && handleId.startsWith('output-');
+    }
+
+    function normalizeNodeType(nodeType) {
+        return (nodeType || '').trim().toLowerCase();
+    }
+
+    function normalizeHandleId(handleId) {
+        return handleId && String(handleId).trim() ? String(handleId).trim() : 'output';
+    }
+
+    function isParallelBranchHandle(handleId) {
+        return /^output-\d+$/i.test(handleId || '');
+    }
+
+    function getNodeDisplayLabel(data) {
+        return data?.config?.label || data?.label || data?.type || 'Step';
+    }
+
+    function getNodeConfigValue(data, key) {
+        const value = data?.config?.[key];
+        return typeof value === 'string' ? value : value == null ? '' : String(value);
+    }
+
+    function summarizeInlineText(value, fallbackText, maxLength = 120) {
+        const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+        if (!normalized) return fallbackText;
+        return normalized.length <= maxLength ? normalized : `${normalized.slice(0, maxLength - 1)}…`;
+    }
+
+    function isSupportedSourceHandle(nodeData, handleId) {
+        const normalizedType = normalizeNodeType(nodeData?.type);
+        const normalizedHandle = normalizeHandleId(handleId).toLowerCase();
+
+        switch (normalizedType) {
+            case 'conditional':
+                return normalizedHandle === 'then' || normalizedHandle === 'else' || normalizedHandle === 'continue';
+            case 'trycatch':
+                return normalizedHandle === 'try' || normalizedHandle === 'finally' || normalizedHandle === 'continue';
+            case 'timeout':
+                return normalizedHandle === 'inner' || normalizedHandle === 'continue';
+            case 'retry':
+            case 'foreach':
+            case 'while':
+            case 'dowhile':
+            case 'saga':
+                return normalizedHandle === 'body' || normalizedHandle === 'continue';
+            case 'parallel':
+                return normalizedHandle === 'continue' || isParallelBranchHandle(normalizedHandle);
+            default:
+                return normalizedHandle === 'output';
+        }
+    }
+
     // ─── Dagre Layout ─────────────────────────────────────────────
     function autoLayoutNodes(nodes, edges) {
         if (typeof dagre === 'undefined' || nodes.length === 0) return nodes;
@@ -99,15 +230,27 @@
         const status = data.runStatus || 'idle';
         const statusColor = STATUS_COLORS[status];
         const icon = data.icon || CATEGORY_ICONS[data.category] || '📦';
-        const isConditional = data.type === 'IfCondition' || data.type === 'Switch';
-        const isParallel = data.type === 'Parallel' || data.type === 'ForEach';
+        const type = (data.type || '').toLowerCase();
+        const isSynthetic = isSyntheticNodeData(data);
+        const displayLabel = getNodeDisplayLabel(data);
+        const actionExpression = getNodeConfigValue(data, 'expression');
+        const [quickName, setQuickName] = useState(displayLabel);
+        const [quickExpression, setQuickExpression] = useState(actionExpression);
+
+        useEffect(() => {
+            setQuickName(displayLabel);
+        }, [displayLabel, id]);
+
+        useEffect(() => {
+            setQuickExpression(actionExpression);
+        }, [actionExpression, id]);
 
         const nodeStyle = {
             background: colors.bg,
             border: `2px solid ${selected ? '#fff' : colors.border}`,
             borderRadius: '10px',
             padding: '10px 14px',
-            minWidth: '180px',
+            minWidth: type === 'action' && selected ? '240px' : '180px',
             color: '#f3f4f6',
             fontFamily: 'Inter, system-ui, sans-serif',
             position: 'relative',
@@ -116,6 +259,12 @@
                 : '0 2px 8px rgba(0,0,0,0.3)',
             transition: 'box-shadow 0.2s, border-color 0.2s',
         };
+
+        if (isSynthetic) {
+            nodeStyle.minWidth = '120px';
+            nodeStyle.opacity = 0.7;
+            nodeStyle.pointerEvents = 'none';
+        }
 
         if (status === 'running') {
             nodeStyle.animation = 'wf-pulse 1.5s ease-in-out infinite';
@@ -152,60 +301,208 @@
 
         const header = h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' } },
             h('span', { style: { fontSize: '16px' } }, icon),
-            h('div', { style: { fontSize: '12px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '130px' } },
-                data.config?.label || data.label || data.type),
+            h('div', { style: { fontSize: '12px', fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '160px' } },
+                displayLabel),
         );
 
         const subtitle = h('div', {
             style: { fontSize: '10px', color: '#9ca3af', marginLeft: '26px' }
         }, data.type);
 
-        const configSummary = data.config && Object.keys(data.config).length > 0
+        const configSummary = type !== 'action' && data.config && Object.keys(data.config).length > 0
             ? h('div', { style: { fontSize: '9px', color: '#6b7280', marginLeft: '26px', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '150px' } },
                 Object.entries(data.config).filter(([k]) => k !== 'label').map(([k, v]) => `${k}: ${v}`).join(', ').substring(0, 40))
+            : null;
+
+        const commitInlineConfig = useCallback((partialConfig) => {
+            if (!partialConfig || !window.workflowEditor || typeof window.workflowEditor.commitNodeConfig !== 'function') return;
+            window.workflowEditor.commitNodeConfig(id, partialConfig);
+        }, [id]);
+
+        const inlineNameChanged = quickName !== displayLabel;
+        const inlineExpressionChanged = quickExpression !== actionExpression;
+
+        const actionSummary = !isSynthetic && type === 'action'
+            ? h('div', {
+                style: {
+                    marginLeft: '26px',
+                    marginTop: '6px',
+                    padding: '6px 8px',
+                    borderRadius: '8px',
+                    background: selected ? 'rgba(15, 23, 42, 0.85)' : 'rgba(15, 23, 42, 0.55)',
+                    border: '1px solid rgba(59, 130, 246, 0.18)',
+                },
+                'data-testid': 'node-action-summary'
+            },
+            h('div', {
+                style: {
+                    fontSize: '9px',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: '#93c5fd',
+                    marginBottom: '3px',
+                }
+            }, 'Expression'),
+            h('div', {
+                style: {
+                    fontSize: '10px',
+                    color: actionExpression ? '#e5e7eb' : '#94a3b8',
+                    lineHeight: '1.35',
+                    display: '-webkit-box',
+                    WebkitLineClamp: selected ? 3 : 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    wordBreak: 'break-word',
+                }
+            }, summarizeInlineText(actionExpression, 'Add an expression to describe what this action does.')))
+            : null;
+
+        const stopInlineEvent = (event) => {
+            event.stopPropagation();
+        };
+
+        const actionQuickEditor = !isSynthetic && type === 'action' && selected
+            ? h('div', {
+                style: {
+                    marginLeft: '26px',
+                    marginTop: '8px',
+                    padding: '8px',
+                    borderRadius: '8px',
+                    background: 'rgba(2, 6, 23, 0.78)',
+                    border: '1px solid rgba(96, 165, 250, 0.25)',
+                },
+                className: 'nodrag nowheel',
+                onMouseDown: stopInlineEvent,
+                onClick: stopInlineEvent,
+                'data-testid': 'node-action-inline-editor'
+            },
+            h('div', {
+                style: {
+                    fontSize: '9px',
+                    fontWeight: '700',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: '#93c5fd',
+                    marginBottom: '6px',
+                }
+            }, 'Quick edit'),
+            h('label', { style: { display: 'block', fontSize: '9px', color: '#94a3b8', marginBottom: '4px' } }, 'Step Name'),
+            h('input', {
+                type: 'text',
+                value: quickName,
+                className: 'nodrag nowheel',
+                'data-testid': 'node-inline-name',
+                style: {
+                    width: '100%',
+                    borderRadius: '6px',
+                    border: inlineNameChanged ? '1px solid rgba(96, 165, 250, 0.9)' : '1px solid rgba(71, 85, 105, 0.9)',
+                    background: '#111827',
+                    color: '#f9fafb',
+                    fontSize: '11px',
+                    padding: '6px 8px',
+                    marginBottom: '8px',
+                },
+                onMouseDown: stopInlineEvent,
+                onClick: stopInlineEvent,
+                onChange: (event) => setQuickName(event.target.value),
+                onBlur: () => {
+                    if (inlineNameChanged) commitInlineConfig({ label: quickName });
+                },
+                onKeyDown: (event) => {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        event.currentTarget.blur();
+                    }
+                }
+            }),
+            h('label', { style: { display: 'block', fontSize: '9px', color: '#94a3b8', marginBottom: '4px' } }, 'Expression'),
+            h('textarea', {
+                rows: 3,
+                value: quickExpression,
+                className: 'nodrag nowheel',
+                'data-testid': 'node-inline-expression',
+                placeholder: 'Describe the action logic or expression...',
+                style: {
+                    width: '100%',
+                    borderRadius: '6px',
+                    border: inlineExpressionChanged ? '1px solid rgba(96, 165, 250, 0.9)' : '1px solid rgba(71, 85, 105, 0.9)',
+                    background: '#111827',
+                    color: '#f9fafb',
+                    fontSize: '11px',
+                    lineHeight: '1.35',
+                    padding: '6px 8px',
+                    resize: 'vertical',
+                    minHeight: '64px',
+                },
+                onMouseDown: stopInlineEvent,
+                onClick: stopInlineEvent,
+                onChange: (event) => setQuickExpression(event.target.value),
+                onBlur: () => {
+                    if (inlineExpressionChanged) commitInlineConfig({ expression: quickExpression });
+                }
+            }),
+            h('div', {
+                style: {
+                    marginTop: '6px',
+                    fontSize: '9px',
+                    color: '#64748b',
+                }
+            }, 'Use the sidebar for full properties and notes.'))
             : null;
 
         // Handles
         const inputHandle = h(Handle, {
             type: 'target', position: Position.Top, id: 'input',
+            isConnectable: !isSynthetic,
             style: { background: '#6b7280', border: '2px solid #374151', width: '10px', height: '10px' },
         });
 
         const handles = [inputHandle];
-        if (isConditional) {
-            handles.push(h(Handle, {
-                type: 'source', position: Position.Bottom, id: 'then',
-                style: { background: '#22c55e', border: '2px solid #374151', width: '10px', height: '10px', left: '35%' },
-            }));
-            handles.push(h(Handle, {
-                type: 'source', position: Position.Bottom, id: 'else',
-                style: { background: '#ef4444', border: '2px solid #374151', width: '10px', height: '10px', left: '65%' },
-            }));
-            // Labels for then/else
-            handles.push(h('div', { style: { position: 'absolute', bottom: '-16px', left: '25%', fontSize: '8px', color: '#22c55e' } }, 'then'));
-            handles.push(h('div', { style: { position: 'absolute', bottom: '-16px', left: '57%', fontSize: '8px', color: '#ef4444' } }, 'else'));
-        } else if (isParallel) {
-            handles.push(h(Handle, {
-                type: 'source', position: Position.Bottom, id: 'output-1',
-                style: { background: colors.border, border: '2px solid #374151', width: '10px', height: '10px', left: '25%' },
-            }));
-            handles.push(h(Handle, {
-                type: 'source', position: Position.Bottom, id: 'output-2',
-                style: { background: colors.border, border: '2px solid #374151', width: '10px', height: '10px', left: '50%' },
-            }));
-            handles.push(h(Handle, {
-                type: 'source', position: Position.Bottom, id: 'output-3',
-                style: { background: colors.border, border: '2px solid #374151', width: '10px', height: '10px', left: '75%' },
-            }));
+        const sourceHandleStyle = { border: '2px solid #374151', width: '10px', height: '10px' };
+        if (isSynthetic) {
+            handles.push(createHandle('source', Position.Bottom, 'output', { ...sourceHandleStyle, background: '#6b7280' }, 'source-output'));
+        } else if (type === 'conditional') {
+            handles.push(createHandle('source', Position.Bottom, 'then', { ...sourceHandleStyle, background: '#22c55e', left: '25%' }, 'source-then'));
+            handles.push(createHandle('source', Position.Bottom, 'continue', { ...sourceHandleStyle, background: '#9ca3af', left: '50%' }, 'source-continue'));
+            handles.push(createHandle('source', Position.Bottom, 'else', { ...sourceHandleStyle, background: '#ef4444', left: '75%' }, 'source-else'));
+            handles.push(createHandleLabel('label-then', 'then', { position: 'absolute', bottom: '-16px', left: '15%', fontSize: '8px', color: '#22c55e' }));
+            handles.push(createHandleLabel('label-continue', 'continue', { position: 'absolute', bottom: '-16px', left: '38%', fontSize: '8px', color: '#9ca3af' }));
+            handles.push(createHandleLabel('label-else', 'else', { position: 'absolute', bottom: '-16px', left: '68%', fontSize: '8px', color: '#ef4444' }));
+        } else if (type === 'trycatch') {
+            handles.push(createHandle('source', Position.Bottom, 'try', { ...sourceHandleStyle, background: '#22c55e', left: '25%' }, 'source-try'));
+            handles.push(createHandle('source', Position.Bottom, 'continue', { ...sourceHandleStyle, background: '#9ca3af', left: '50%' }, 'source-continue'));
+            handles.push(createHandle('source', Position.Bottom, 'finally', { ...sourceHandleStyle, background: '#f59e0b', left: '75%' }, 'source-finally'));
+            handles.push(createHandleLabel('label-try', 'try', { position: 'absolute', bottom: '-16px', left: '17%', fontSize: '8px', color: '#22c55e' }));
+            handles.push(createHandleLabel('label-continue', 'continue', { position: 'absolute', bottom: '-16px', left: '38%', fontSize: '8px', color: '#9ca3af' }));
+            handles.push(createHandleLabel('label-finally', 'finally', { position: 'absolute', bottom: '-16px', left: '66%', fontSize: '8px', color: '#f59e0b' }));
+        } else if (type === 'timeout') {
+            handles.push(createHandle('source', Position.Bottom, 'inner', { ...sourceHandleStyle, background: '#22c55e', left: '35%' }, 'source-inner'));
+            handles.push(createHandle('source', Position.Bottom, 'continue', { ...sourceHandleStyle, background: '#9ca3af', left: '65%' }, 'source-continue'));
+            handles.push(createHandleLabel('label-inner', 'inner', { position: 'absolute', bottom: '-16px', left: '25%', fontSize: '8px', color: '#22c55e' }));
+            handles.push(createHandleLabel('label-continue', 'continue', { position: 'absolute', bottom: '-16px', left: '53%', fontSize: '8px', color: '#9ca3af' }));
+        } else if (['retry', 'foreach', 'while', 'dowhile', 'saga'].includes(type)) {
+            handles.push(createHandle('source', Position.Bottom, 'body', { ...sourceHandleStyle, background: '#22c55e', left: '35%' }, 'source-body'));
+            handles.push(createHandle('source', Position.Bottom, 'continue', { ...sourceHandleStyle, background: '#9ca3af', left: '65%' }, 'source-continue'));
+            handles.push(createHandleLabel('label-body', 'body', { position: 'absolute', bottom: '-16px', left: '26%', fontSize: '8px', color: '#22c55e' }));
+            handles.push(createHandleLabel('label-continue', 'continue', { position: 'absolute', bottom: '-16px', left: '53%', fontSize: '8px', color: '#9ca3af' }));
+        } else if (type === 'parallel') {
+            const branchCount = Math.max(1, Number.parseInt(data.config?.__parallelBranchCount || '3', 10) || 3);
+            for (let branchIndex = 0; branchIndex < branchCount; branchIndex++) {
+                const left = branchCount === 1
+                    ? 40
+                    : 12 + ((66 * branchIndex) / Math.max(1, branchCount - 1));
+                const handleId = `output-${branchIndex + 1}`;
+                handles.push(createHandle('source', Position.Bottom, handleId, { ...sourceHandleStyle, background: colors.border, left: `${left}%` }, `source-${handleId}`));
+            }
+            handles.push(createHandle('source', Position.Bottom, 'continue', { ...sourceHandleStyle, background: '#9ca3af', left: '88%' }, 'source-continue'));
+            handles.push(createHandleLabel('label-continue', 'continue', { position: 'absolute', bottom: '-16px', left: '68%', fontSize: '8px', color: '#9ca3af' }));
         } else {
-            handles.push(h(Handle, {
-                type: 'source', position: Position.Bottom, id: 'output',
-                style: { background: colors.border, border: '2px solid #374151', width: '10px', height: '10px' },
-            }));
+            handles.push(createHandle('source', Position.Bottom, 'output', { ...sourceHandleStyle, background: colors.border }, 'source-output'));
         }
 
-        return h('div', { style: nodeStyle },
-            accentBar, statusIndicator, successBadge, header, subtitle, configSummary, ...handles
+        return h('div', { style: nodeStyle, 'data-node-id': id, 'data-node-type': data.type, 'data-node-synthetic': isSynthetic ? 'true' : 'false' },
+            accentBar, statusIndicator, successBadge, header, subtitle, configSummary, actionSummary, actionQuickEditor, ...handles
         );
     }
 
@@ -281,6 +578,7 @@
                 clipboardRef,
                 nextIdRef,
                 dotNetRefRef,
+                commitNodeConfig,
             };
             return () => { _editorInstance = null; };
         });
@@ -291,6 +589,7 @@
         // Push initial state to history
         useEffect(() => {
             historyRef.current.push({ nodes: initialNodes, edges: initialEdges });
+            nextIdRef.current = reseedNextNodeId(initialNodes);
         }, []);
 
         // Debounced canvas change notification
@@ -307,21 +606,65 @@
             notifyCanvasChanged();
         }, [notifyCanvasChanged]);
 
+        const commitNodeConfig = useCallback((nodeId, partialConfig) => {
+            if (!nodeId || !partialConfig) return;
+
+            setNodes(nds => {
+                let updatedNode = null;
+                const updated = nds.map(n => {
+                    if (n.id !== nodeId) return n;
+
+                    updatedNode = {
+                        ...n,
+                        data: {
+                            ...n.data,
+                            label: partialConfig?.label || n.data.label,
+                            config: {
+                                ...n.data.config,
+                                ...partialConfig,
+                            },
+                        },
+                    };
+
+                    return updatedNode;
+                });
+
+                if (updatedNode) {
+                    setTimeout(() => {
+                        invokeDotNet('OnCanvasChanged');
+                        pushHistory(updated, edges);
+                        invokeDotNet('OnNodeSelected', updatedNode.id, updatedNode.data?.type || null, updatedNode.data?.config || null);
+                    }, 0);
+                }
+
+                return updated;
+            });
+        }, [edges, invokeDotNet, pushHistory, setNodes]);
+
         const onConnect = useCallback((connection) => {
             // Connection validation: prevent connecting output to output or input to input
             const edgeId = 'edge_' + Date.now();
+            const kind = connection.sourceHandle || null;
+            const sourceNode = nodes.find(n => n.id === connection.source);
+            const sourceType = (sourceNode?.data?.type || '').toLowerCase();
+            const handleId = kind || 'output';
             const newEdge = {
                 id: edgeId,
                 source: connection.source,
                 target: connection.target,
-                sourceHandle: connection.sourceHandle,
+                sourceHandle: handleId,
                 targetHandle: connection.targetHandle,
                 type: 'workflowEdge',
                 markerEnd: { type: MarkerType.ArrowClosed, color: '#6b7280' },
-                data: {},
+                data: { label: getEdgeDisplayLabel(kind, null), kind },
             };
             setEdges(eds => {
-                const updated = [...eds, newEdge];
+                const updated = allowsMultipleOutputs(sourceType, handleId)
+                    ? [...eds, newEdge]
+                    : [
+                        ...eds.filter(e => !(e.source === connection.source && ((e.sourceHandle || 'output') === handleId))),
+                        newEdge
+                    ];
                 setTimeout(() => pushHistory(nodes, updated), 0);
                 return updated;
             });
@@ -410,6 +753,11 @@
         // Keyboard shortcuts
         useEffect(() => {
             const handler = (e) => {
+                const tagName = e.target?.tagName;
+                if (tagName === 'INPUT' || tagName === 'TEXTAREA' || e.target?.isContentEditable) {
+                    return;
+                }
+
                 if (e.ctrlKey && e.key === 'z' && !e.shiftKey) {
                     e.preventDefault();
                     window.workflowEditor.undo();
@@ -428,10 +776,21 @@
 
         // Connection validation
         const isValidConnection = useCallback((connection) => {
-            // Prevent self-connections
             if (connection.source === connection.target) return false;
+
+            const sourceNode = nodes.find(n => n.id === connection.source);
+            const targetNode = nodes.find(n => n.id === connection.target);
+            if (!sourceNode || !targetNode) return false;
+            if (isSyntheticNodeData(sourceNode.data) || isSyntheticNodeData(targetNode.data)) return false;
+
+            const handleId = normalizeHandleId(connection.sourceHandle);
+            if (!isSupportedSourceHandle(sourceNode.data, handleId)) return false;
+
+            const targetAlreadyConnected = edges.some(e => e.target === connection.target);
+            if (targetAlreadyConnected) return false;
+
             return true;
-        }, []);
+        }, [edges, nodes]);
 
         const defaultEdgeOptions = useMemo(() => ({
             type: 'workflowEdge',
@@ -496,31 +855,8 @@
         container.style.height = '100%';
 
         // Map raw node data to React Flow format
-        const rfNodes = (initialNodes || []).map(n => ({
-            id: n.id,
-            type: 'workflowNode',
-            position: { x: n.x || 0, y: n.y || 0 },
-            data: {
-                type: n.type,
-                label: n.label,
-                icon: n.icon,
-                category: n.category,
-                color: n.color,
-                config: n.config || {},
-                runStatus: n.runStatus || 'idle',
-            },
-        }));
-
-        const rfEdges = (initialEdges || []).map(e => ({
-            id: e.id,
-            source: e.source,
-            target: e.target,
-            sourceHandle: e.sourceHandle || 'output',
-            targetHandle: e.targetHandle || 'input',
-            type: 'workflowEdge',
-            markerEnd: { type: MarkerType.ArrowClosed, color: '#6b7280' },
-            data: { label: e.label || '', animated: e.animated || false },
-        }));
+        const rfNodes = (initialNodes || []).map(toReactFlowNode);
+        const rfEdges = (initialEdges || []).map(toReactFlowEdge);
 
         const app = h(ReactFlowProvider, null,
             h(WorkflowEditor, { initialNodes: rfNodes, initialEdges: rfEdges, dotNetRef, containerId })
@@ -575,6 +911,8 @@
 
         removeNode(nodeId) {
             if (!_editorInstance) return;
+            const node = _editorInstance.reactFlowInstance.getNodes().find(n => n.id === nodeId);
+            if (node && isSyntheticNodeData(node.data)) return;
             _editorInstance.setNodes(nds => nds.filter(n => n.id !== nodeId));
             _editorInstance.setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
         },
@@ -582,8 +920,22 @@
         updateNode(nodeId, config) {
             if (!_editorInstance) return;
             _editorInstance.setNodes(nds => nds.map(n =>
-                n.id === nodeId ? { ...n, data: { ...n.data, config: { ...n.data.config, ...config } } } : n
+                n.id === nodeId
+                    ? {
+                        ...n,
+                        data: {
+                            ...n.data,
+                            label: config?.label || n.data.label,
+                            config: { ...n.data.config, ...config }
+                        }
+                    }
+                    : n
             ));
+        },
+
+        commitNodeConfig(nodeId, config) {
+            if (!_editorInstance || typeof _editorInstance.commitNodeConfig !== 'function') return;
+            _editorInstance.commitNodeConfig(nodeId, config);
         },
 
         getWorkflowDefinition() {
@@ -592,7 +944,7 @@
             const nodes = inst.getNodes().map(n => ({
                 id: n.id,
                 type: n.data.type,
-                label: n.data.label,
+                label: n.data?.config?.label || n.data.label,
                 icon: n.data.icon,
                 category: n.data.category,
                 color: n.data.color,
@@ -604,35 +956,51 @@
                 id: e.id,
                 source: e.source,
                 target: e.target,
-                sourceHandle: e.sourceHandle,
+                sourceHandle: e.sourceHandle ?? null,
+                kind: getSemanticEdgeKind(e),
                 label: e.data?.label || '',
             }));
             return { nodes, edges };
         },
 
+        getAllNodes() {
+            if (!_editorInstance) return [];
+            return _editorInstance.reactFlowInstance.getNodes()
+                .filter(n => !isSyntheticNodeData(n.data))
+                .map(n => ({
+                    id: n.id,
+                    type: n.data.type,
+                    label: n.data?.config?.label || n.data.label || '',
+                    icon: n.data.icon || '⬡',
+                    category: n.data.category || '',
+                    color: n.data.color || '#4b5563',
+                }));
+        },
+
+        getAllEdges() {
+            if (!_editorInstance) return [];
+            const nodes = _editorInstance.reactFlowInstance.getNodes();
+            return _editorInstance.reactFlowInstance.getEdges()
+                .filter(e => {
+                    const sourceNode = nodes.find(n => n.id === e.source);
+                    const targetNode = nodes.find(n => n.id === e.target);
+                    return !isSyntheticNodeData(sourceNode?.data) && !isSyntheticNodeData(targetNode?.data);
+                })
+                .map(e => ({
+                    id: e.id,
+                    source: e.source,
+                    target: e.target,
+                    label: e.data?.label || getSemanticEdgeKind(e) || null,
+                }));
+        },
+
         setWorkflowDefinition(newNodes, newEdges) {
             if (!_editorInstance) return;
-            const rfNodes = (newNodes || []).map(n => ({
-                id: n.id,
-                type: 'workflowNode',
-                position: { x: n.x || 0, y: n.y || 0 },
-                data: {
-                    type: n.type, label: n.label, icon: n.icon,
-                    category: n.category, color: n.color,
-                    config: n.config || {}, runStatus: 'idle',
-                },
-            }));
-            const rfEdges = (newEdges || []).map(e => ({
-                id: e.id,
-                source: e.source, target: e.target,
-                sourceHandle: e.sourceHandle || 'output',
-                targetHandle: e.targetHandle || 'input',
-                type: 'workflowEdge',
-                markerEnd: { type: MarkerType.ArrowClosed, color: '#6b7280' },
-                data: { label: e.label || '', animated: false },
-            }));
+            const rfNodes = (newNodes || []).map(toReactFlowNode);
+            const rfEdges = (newEdges || []).map(toReactFlowEdge);
             _editorInstance.setNodes(rfNodes);
             _editorInstance.setEdges(rfEdges);
+            _editorInstance.nextIdRef.current = reseedNextNodeId(rfNodes);
             _editorInstance.historyRef.current = new HistoryManager();
             _editorInstance.historyRef.current.push({ nodes: rfNodes, edges: rfEdges });
         },
@@ -658,6 +1026,22 @@
                     e.source === nodeId ? { ...e, data: { ...e.data, animated: false } } : e
                 ));
             }
+        },
+
+        updateNodeStatus(stepName, status) {
+            if (!_editorInstance) return;
+            const normalizedStatus = status === 'Running'
+                ? 'running'
+                : status === 'Completed'
+                    ? 'success'
+                    : status === 'Failed'
+                        ? 'error'
+                        : 'idle';
+            _editorInstance.setNodes(nds => nds.map(n =>
+                (n.data?.config?.label || n.data?.label) === stepName
+                    ? { ...n, data: { ...n.data, runStatus: normalizedStatus } }
+                    : n
+            ));
         },
 
         undo() {
@@ -721,6 +1105,90 @@
 
         zoomToFit() {
             this.fitView();
+        },
+
+        deleteSelected() {
+            if (!_editorInstance) return;
+            const selectedNodeIds = _editorInstance.reactFlowInstance
+                .getNodes()
+                .filter(n => n.selected && !isSyntheticNodeData(n.data))
+                .map(n => n.id);
+            if (selectedNodeIds.length === 0) return;
+
+            _editorInstance.setNodes(nds => nds.filter(n => !selectedNodeIds.includes(n.id)));
+            _editorInstance.setEdges(eds => eds.filter(e => !selectedNodeIds.includes(e.source) && !selectedNodeIds.includes(e.target)));
+            selectedNodeIds.forEach(nodeId => {
+                const ref = _editorInstance.dotNetRefRef.current;
+                if (ref) {
+                    try { ref.invokeMethodAsync('OnNodeRemoved', nodeId); } catch { }
+                }
+            });
+        },
+
+        focusNode(nodeId) {
+            if (!_editorInstance) return;
+            const inst = _editorInstance.reactFlowInstance;
+            const node = inst.getNodes().find(n => n.id === nodeId && !isSyntheticNodeData(n.data));
+            if (!node) return;
+
+            _editorInstance.setNodes(nds => nds.map(n => ({ ...n, selected: n.id === nodeId })));
+            if (typeof inst.setCenter === 'function') {
+                inst.setCenter(node.position.x + 100, node.position.y + 35, { zoom: 1.1, duration: 300 });
+            } else if (typeof inst.fitView === 'function') {
+                setTimeout(() => inst.fitView({ padding: 0.4, duration: 300 }), 0);
+            }
+
+            const ref = _editorInstance.dotNetRefRef.current;
+            if (ref) {
+                try { ref.invokeMethodAsync('OnNodeSelected', node.id, node.data?.type || null, node.data?.config || null); } catch { }
+            }
+        },
+
+        selectNodeByName(name) {
+            if (!_editorInstance) return;
+            const node = _editorInstance.reactFlowInstance
+                .getNodes()
+                .find(n => !isSyntheticNodeData(n.data) && (n.data?.config?.label || n.data?.label) === name);
+            if (node) {
+                this.focusNode(node.id);
+            }
+        },
+
+        getNodeConnections(nodeId) {
+            if (!_editorInstance) return { inputs: [], outputs: [] };
+            const inst = _editorInstance.reactFlowInstance;
+            const nodes = inst.getNodes();
+            const edges = inst.getEdges();
+
+            const inputs = edges
+                .filter(e => e.target === nodeId)
+                .map(e => {
+                    const sourceNode = nodes.find(n => n.id === e.source);
+                    if (!sourceNode || isSyntheticNodeData(sourceNode.data)) return null;
+                    const kind = getSemanticEdgeKind(e);
+                    return {
+                        id: e.source,
+                        label: sourceNode.data?.config?.label || sourceNode.data?.label || e.source,
+                        edgeLabel: e.data?.label || kind || null,
+                    };
+                })
+                .filter(Boolean);
+
+            const outputs = edges
+                .filter(e => e.source === nodeId)
+                .map(e => {
+                    const targetNode = nodes.find(n => n.id === e.target);
+                    if (!targetNode || isSyntheticNodeData(targetNode.data)) return null;
+                    const kind = getSemanticEdgeKind(e);
+                    return {
+                        id: e.target,
+                        label: targetNode.data?.config?.label || targetNode.data?.label || e.target,
+                        edgeLabel: e.data?.label || kind || null,
+                    };
+                })
+                .filter(Boolean);
+
+            return { inputs, outputs };
         },
 
         destroy() {

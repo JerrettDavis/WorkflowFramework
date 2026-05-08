@@ -1,0 +1,366 @@
+@page "/history-graph"
+@inject DashboardApiClient Api
+@inject IJSRuntime JS
+
+<div class="min-h-screen bg-gray-950 text-gray-100 p-6" data-testid="history-graph-page">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <!-- Header -->
+        <div class="flex items-center gap-3">
+            <a href="/" class="text-gray-400 hover:text-white transition" data-testid="history-graph-back">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+            </a>
+            <h1 class="text-2xl font-bold">Workflow History Graph</h1>
+        </div>
+
+        <!-- Controls -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-wrap gap-4 items-end" data-testid="history-graph-controls">
+            <div class="flex-1 min-w-48">
+                <label class="block text-xs text-gray-400 mb-1">Filter nodes by name</label>
+                <input type="text"
+                       @bind="_searchQuery"
+                       @bind:event="oninput"
+                       @onkeydown="OnSearchKeyDown"
+                       placeholder="Search step names..."
+                       data-testid="history-graph-search"
+                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+            </div>
+            <div class="w-28">
+                <label class="block text-xs text-gray-400 mb-1">Max nodes</label>
+                <input type="number"
+                       @bind="_maxNodes"
+                       min="5" max="500"
+                       data-testid="history-graph-max-nodes"
+                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+            </div>
+            <div class="w-32">
+                <label class="block text-xs text-gray-400 mb-1">Min edge weight</label>
+                <input type="number"
+                       @bind="_minEdgeWeight"
+                       min="1"
+                       data-testid="history-graph-min-weight"
+                       class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:border-purple-500 focus:outline-none" />
+            </div>
+            <div class="flex gap-2">
+                <button @onclick="LoadFullGraphAsync"
+                        disabled="@_loading"
+                        data-testid="history-graph-load-btn"
+                        class="px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm font-semibold transition disabled:opacity-50">
+                    @(_loading ? "Loading..." : "Load Graph")
+                </button>
+                @if (_subgraphRoot is not null)
+                {
+                    <button @onclick="ClearSubgraph"
+                            data-testid="history-graph-clear-subgraph"
+                            class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition">
+                        Clear Filter
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (_error is not null)
+        {
+            <div class="bg-red-900/50 border border-red-700 rounded-lg px-4 py-3 text-sm" data-testid="history-graph-error">
+                @_error
+            </div>
+        }
+
+        <!-- Stats bar -->
+        @if (_nodes.Count > 0)
+        {
+            <div class="flex gap-6 text-sm text-gray-400" data-testid="history-graph-stats">
+                <span><span class="text-white font-semibold">@_nodes.Count</span> nodes</span>
+                <span><span class="text-white font-semibold">@_edges.Count</span> edges</span>
+                @if (_subgraphRoot is not null)
+                {
+                    <span class="text-purple-400">Subgraph from: <span class="font-semibold">@_subgraphRoot</span></span>
+                }
+            </div>
+        }
+
+        <!-- Diagram -->
+        <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden" data-testid="history-graph-diagram-container">
+            @if (_loading)
+            {
+                <div class="p-12 text-center text-gray-400">Loading graph data...</div>
+            }
+            else if (_nodes.Count == 0 && !_loading)
+            {
+                <div class="p-12 text-center text-gray-500" data-testid="history-graph-empty">
+                    No workflow history recorded yet. Run some workflows to see the graph.
+                </div>
+            }
+            else if (_renderError is not null)
+            {
+                <div class="p-6 space-y-3">
+                    <p class="text-yellow-400 text-sm">Diagram render failed — showing raw Mermaid source:</p>
+                    <pre class="bg-gray-950 rounded p-4 text-xs text-gray-300 overflow-auto max-h-96 whitespace-pre-wrap">@_mermaidSource</pre>
+                </div>
+            }
+            else
+            {
+                <div id="history-mermaid-diagram"
+                     data-testid="history-graph-diagram"
+                     class="p-4 overflow-auto min-h-64 flex justify-center">
+                    <!-- SVG injected here by mermaidRender.render() -->
+                </div>
+            }
+        </div>
+
+        <!-- Node list -->
+        @if (_filteredNodes.Count > 0)
+        {
+            <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden" data-testid="history-graph-node-list">
+                <div class="px-4 py-3 border-b border-gray-800 flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-gray-300">Nodes</h2>
+                    <span class="text-xs text-gray-500">Click a node to view its subgraph</span>
+                </div>
+                <div class="divide-y divide-gray-800 max-h-96 overflow-y-auto">
+                    @foreach (var node in _filteredNodes)
+                    {
+                        <button @onclick="() => LoadSubgraphAsync(node)"
+                                data-testid="history-graph-node-row"
+                                class="w-full text-left px-4 py-3 hover:bg-gray-800 transition flex items-center gap-4">
+                            <span class="@GetKindBadgeClass(node.Kind) text-xs font-medium px-2 py-0.5 rounded">@node.Kind</span>
+                            <span class="flex-1 text-sm text-gray-200 truncate">@node.Name</span>
+                            <span class="text-xs text-gray-500 shrink-0">@node.ExecutionCount runs</span>
+                            <span class="@GetSuccessRateClass(node.SuccessRate) text-xs font-semibold shrink-0">
+                                @node.SuccessRate.ToString("P0")
+                            </span>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // ── State ──────────────────────────────────────────────────────────────────
+
+    private bool _loading;
+    private string? _error;
+    private string? _renderError;
+    private string _searchQuery = "";
+    private int _maxNodes = 50;
+    private long _minEdgeWeight = 1;
+    private string? _subgraphRoot;
+    private string _mermaidSource = "";
+
+    private List<HistoryNodeSummary> _nodes = [];
+    private List<HistoryEdgeSummary> _edges = [];
+
+    private IReadOnlyList<HistoryNodeSummary> _filteredNodes =>
+        string.IsNullOrWhiteSpace(_searchQuery)
+            ? _nodes
+            : _nodes.Where(n => n.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    // ── Lifecycle ──────────────────────────────────────────────────────────────
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFullGraphAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await JS.InvokeVoidAsync("mermaidRender.init");
+
+        if (!string.IsNullOrWhiteSpace(_mermaidSource) && _renderError is null && _nodes.Count > 0)
+            await RenderDiagramAsync();
+    }
+
+    // ── Data loading ──────────────────────────────────────────────────────────
+
+    private async Task LoadFullGraphAsync()
+    {
+        _loading = true;
+        _error = null;
+        _renderError = null;
+        _subgraphRoot = null;
+        _mermaidSource = "";
+        StateHasChanged();
+
+        try
+        {
+            _nodes = await Api.GetHistoryNodesAsync(string.IsNullOrWhiteSpace(_searchQuery) ? null : _searchQuery, _maxNodes);
+            _edges = await Api.GetHistoryEdgesAsync(minWeight: _minEdgeWeight);
+            _mermaidSource = BuildMermaidSource(_nodes, _edges);
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load graph: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task LoadSubgraphAsync(HistoryNodeSummary node)
+    {
+        _loading = true;
+        _error = null;
+        _renderError = null;
+        _subgraphRoot = node.Name;
+        _mermaidSource = "";
+        StateHasChanged();
+
+        try
+        {
+            var mermaid = await Api.GetHistoryMermaidSubgraphAsync(node.Fingerprint);
+            if (!string.IsNullOrWhiteSpace(mermaid))
+            {
+                _mermaidSource = mermaid;
+                // Rebuild node/edge lists from included fingerprints for stats bar
+                var includedIds = ExtractNodeIds(mermaid);
+                _nodes = _nodes.Where(n => includedIds.Contains(n.Fingerprint)).ToList();
+                _edges = _edges.Where(e => includedIds.Contains(e.SourceFingerprint) && includedIds.Contains(e.TargetFingerprint)).ToList();
+            }
+            else
+            {
+                _error = "Subgraph returned empty — fingerprint may not exist.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load subgraph: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task ClearSubgraph()
+    {
+        _subgraphRoot = null;
+        await LoadFullGraphAsync();
+    }
+
+    // ── Mermaid rendering ─────────────────────────────────────────────────────
+
+    private async Task RenderDiagramAsync()
+    {
+        try
+        {
+            var result = await JS.InvokeAsync<string?>("mermaidRender.render", "history-mermaid-diagram", _mermaidSource);
+            if (result is null)
+                _renderError = "Mermaid render returned null — diagram may be malformed.";
+            else
+                _renderError = null;
+        }
+        catch (Exception ex)
+        {
+            _renderError = ex.Message;
+        }
+        StateHasChanged();
+    }
+
+    // ── Mermaid source builder ────────────────────────────────────────────────
+
+    private static string BuildMermaidSource(List<HistoryNodeSummary> nodes, List<HistoryEdgeSummary> edges)
+    {
+        if (nodes.Count == 0)
+            return "graph TD\n    empty[\"No data\"]";
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("graph TD");
+
+        var includedFingerprints = nodes.Select(n => n.Fingerprint).ToHashSet();
+
+        foreach (var node in nodes)
+        {
+            var id = $"N_{node.Fingerprint}";
+            var label = EscapeLabel(node.Name);
+            var shape = node.Kind switch
+            {
+                "Conditional" => $"{id}{{{{{label}}}}}",
+                "Loop"        => $"{id}[/{label}\\]",
+                "Nested"      => $"{id}[[{label}]]",
+                _             => $"{id}[\"{label}\"]",
+            };
+            sb.AppendLine($"    {shape}");
+        }
+
+        foreach (var edge in edges.Where(e =>
+            includedFingerprints.Contains(e.SourceFingerprint) &&
+            includedFingerprints.Contains(e.TargetFingerprint)))
+        {
+            var src = $"N_{edge.SourceFingerprint}";
+            var tgt = $"N_{edge.TargetFingerprint}";
+            var label = $"w:{edge.Weight}";
+            if (string.Equals(edge.Kind, "SubStep", StringComparison.OrdinalIgnoreCase))
+                sb.AppendLine($"    {src} -. \"{label}\" .-> {tgt}");
+            else
+                sb.AppendLine($"    {src} -- \"{label}\" --> {tgt}");
+        }
+
+        foreach (var node in nodes)
+        {
+            var id = $"N_{node.Fingerprint}";
+            var rate = node.SuccessRate;
+            var style = rate >= 0.9
+                ? $"style {id} fill:#2d6a2d,color:#fff"
+                : rate >= 0.5
+                    ? $"style {id} fill:#c8a600,color:#000"
+                    : $"style {id} fill:#8b1a1a,color:#fff";
+            sb.AppendLine($"    {style}");
+        }
+
+        return sb.ToString();
+    }
+
+    private static string EscapeLabel(string name) =>
+        name.Replace("\"", "'")
+            .Replace("[", "(")
+            .Replace("]", ")")
+            .Replace("{", "(")
+            .Replace("}", ")");
+
+    // Extract fingerprints from "N_{fp}" node IDs in a Mermaid string
+    private static HashSet<string> ExtractNodeIds(string mermaid)
+    {
+        var result = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var line in mermaid.Split('\n'))
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("N_", StringComparison.Ordinal))
+            {
+                var end = trimmed.IndexOfAny(['[', '{', '/', '(']);
+                if (end > 2)
+                    result.Add(trimmed.Substring(2, end - 2));
+            }
+        }
+        return result;
+    }
+
+    // ── UI helpers ────────────────────────────────────────────────────────────
+
+    private Task OnSearchKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+            return LoadFullGraphAsync();
+        return Task.CompletedTask;
+    }
+
+    private static string GetKindBadgeClass(string kind) => kind switch
+    {
+        "Conditional" => "bg-yellow-800 text-yellow-200",
+        "Loop"        => "bg-blue-800 text-blue-200",
+        "Nested"      => "bg-purple-800 text-purple-200",
+        "Agent"       => "bg-pink-800 text-pink-200",
+        _             => "bg-gray-700 text-gray-300",
+    };
+
+    private static string GetSuccessRateClass(double rate) => rate >= 0.9
+        ? "text-green-400"
+        : rate >= 0.5
+            ? "text-yellow-400"
+            : "text-red-400";
+
+}

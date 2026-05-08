@@ -30,3 +30,32 @@ Feature: Settings Management
     And I am on the settings page
     When I click Test Connection
     Then I should see a connection test result
+
+  Scenario Outline: Cloud providers can be configured without stored credentials
+    Given the dashboard is running
+    And I am on the settings page
+    When I select "<provider>" as the default provider
+    Then the model dropdown should be populated
+    When I select a model
+    And I click Save Settings
+    Then I should see a success toast
+    When I reload the settings page
+    Then "<provider>" should be selected as the default provider
+    And the "<provider>" provider should show as not configured
+    And the "<provider>" API key field should be empty
+
+    Examples:
+      | provider    |
+      | openai      |
+      | anthropic   |
+      | huggingface |
+
+  @sensitive
+  Scenario: Saved provider keys are not echoed back to the browser
+    Given the dashboard is running
+    And I am on the settings page
+    When I enter "test-openai-key" as the OpenAI API key
+    And I click Save Settings
+    And I reload the settings page
+    Then the OpenAI provider should show as configured
+    And the OpenAI API key field should be empty

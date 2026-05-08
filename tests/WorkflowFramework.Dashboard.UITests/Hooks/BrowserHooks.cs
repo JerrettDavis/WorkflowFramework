@@ -23,6 +23,7 @@ public sealed class BrowserHooks
     [BeforeTestRun]
     public static async Task InitPlaywright()
     {
+        ArtifactPaths.InitializeRun();
         _playwrightFixture = new PlaywrightFixture();
         await _playwrightFixture.InitializeAsync();
     }
@@ -31,7 +32,21 @@ public sealed class BrowserHooks
     public async Task CreatePage()
     {
         var page = await PlaywrightFixture.NewPageAsync();
+        var artifacts = new ScenarioArtifacts(
+            _scenarioContext.ScenarioInfo.Title,
+            ArtifactPaths.GetScenarioDirectory(_scenarioContext),
+            _scenarioContext.ScenarioInfo.Tags);
+        if (!IsSensitiveScenario())
+        {
+            await page.Context.Tracing.StartAsync(new TracingStartOptions
+            {
+                Screenshots = true,
+                Snapshots = true,
+                Sources = true
+            });
+        }
         _scenarioContext.Set(page);
+        _scenarioContext.Set(artifacts);
     }
 
     [AfterScenario(Order = 20000)]
@@ -40,6 +55,26 @@ public sealed class BrowserHooks
         if (_scenarioContext.TryGetValue<IPage>(out var page))
         {
             var context = page.Context;
+            if (_scenarioContext.TryGetValue<ScenarioArtifacts>(out var artifacts))
+            {
+                try
+                {
+                    if (!IsSensitiveScenario())
+                    {
+                        var tracePath = ArtifactPaths.GetScenarioArtifactPath(_scenarioContext, "traces", "trace.zip");
+                        await context.Tracing.StopAsync(new TracingStopOptions { Path = tracePath });
+                        artifacts.Add("trace", tracePath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    artifacts.Add("trace-error", ex.Message);
+                }
+                finally
+                {
+                    await artifacts.WriteManifestAsync(_scenarioContext.TestError is null);
+                }
+            }
             await page.CloseAsync();
             await context.CloseAsync();
         }
@@ -68,4 +103,8 @@ public sealed class BrowserHooks
         if (_playwrightFixture is not null)
             await _playwrightFixture.DisposeAsync();
     }
+
+    private bool IsSensitiveScenario()
+        => _scenarioContext.ScenarioInfo.Tags.Contains("sensitive", StringComparer.OrdinalIgnoreCase)
+           || _scenarioContext.ScenarioInfo.Tags.Contains("no-artifacts", StringComparer.OrdinalIgnoreCase);
 }

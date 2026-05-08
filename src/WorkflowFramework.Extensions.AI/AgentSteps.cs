@@ -23,9 +23,10 @@ public sealed class LlmCallStep : IStep
     /// <inheritdoc />
     public async Task ExecuteAsync(IWorkflowContext context)
     {
+        var prompt = PromptTemplateRenderer.Render(_options.PromptTemplate, context.Properties);
         var request = new LlmRequest
         {
-            Prompt = _options.PromptTemplate,
+            Prompt = prompt,
             Variables = new Dictionary<string, object?>(context.Properties),
             Model = _options.Model,
             Temperature = _options.Temperature,
@@ -90,9 +91,10 @@ public sealed class AgentDecisionStep : IStep
     /// <inheritdoc />
     public async Task ExecuteAsync(IWorkflowContext context)
     {
+        var prompt = PromptTemplateRenderer.Render(_options.Prompt, context.Properties);
         var request = new AgentDecisionRequest
         {
-            Prompt = _options.Prompt,
+            Prompt = prompt,
             Options = _options.Options,
             Variables = new Dictionary<string, object?>(context.Properties)
         };
@@ -123,30 +125,73 @@ public sealed class AgentDecisionOptions
 public sealed class AgentPlanStep : IStep
 {
     private readonly IAgentProvider _provider;
-    private readonly string? _stepName;
+    private readonly AgentPlanOptions _options;
 
     /// <summary>
     /// Initializes a new instance of <see cref="AgentPlanStep"/>.
     /// </summary>
-    public AgentPlanStep(IAgentProvider provider, string? stepName = null)
+    public AgentPlanStep(IAgentProvider provider, AgentPlanOptions options)
     {
         _provider = provider ?? throw new ArgumentNullException(nameof(provider));
-        _stepName = stepName;
+        _options = options ?? throw new ArgumentNullException(nameof(options));
     }
 
     /// <inheritdoc />
-    public string Name => _stepName ?? "AgentPlan";
+    public string Name => _options.StepName ?? "AgentPlan";
+
+    /// <summary>
+    /// Initializes a new instance of <see cref="AgentPlanStep"/> using the default planning options.
+    /// </summary>
+    public AgentPlanStep(IAgentProvider provider, string? stepName = null)
+        : this(provider, new AgentPlanOptions { StepName = stepName })
+    {
+    }
 
     /// <inheritdoc />
     public async Task ExecuteAsync(IWorkflowContext context)
     {
+        var prompt = PromptTemplateRenderer.Render(_options.PromptTemplate, context.Properties);
         var request = new LlmRequest
         {
-            Prompt = "Given the current workflow state, suggest the next steps to take.",
-            Variables = new Dictionary<string, object?>(context.Properties)
+            Prompt = prompt,
+            Variables = new Dictionary<string, object?>(context.Properties),
+            Model = _options.Model,
+            Temperature = _options.Temperature,
+            MaxTokens = _options.MaxTokens
         };
 
         var response = await _provider.CompleteAsync(request, context.CancellationToken).ConfigureAwait(false);
-        context.Properties[$"{Name}.Plan"] = response.Content;
+        var outputKey = string.IsNullOrWhiteSpace(_options.OutputPropertyName)
+            ? $"{Name}.Plan"
+            : _options.OutputPropertyName!;
+
+        context.Properties[outputKey] = response.Content;
+        context.Properties[$"{Name}.FinishReason"] = response.FinishReason;
+        if (response.Usage != null)
+            context.Properties[$"{Name}.TotalTokens"] = response.Usage.TotalTokens;
     }
+}
+
+/// <summary>
+/// Options for an agent planning step.
+/// </summary>
+public sealed class AgentPlanOptions
+{
+    /// <summary>Gets or sets the step name.</summary>
+    public string? StepName { get; set; }
+
+    /// <summary>Gets or sets the planning prompt template.</summary>
+    public string PromptTemplate { get; set; } = "Given the current workflow state, suggest the next steps to take.";
+
+    /// <summary>Gets or sets the model.</summary>
+    public string? Model { get; set; }
+
+    /// <summary>Gets or sets the temperature.</summary>
+    public double? Temperature { get; set; }
+
+    /// <summary>Gets or sets the max tokens.</summary>
+    public int? MaxTokens { get; set; }
+
+    /// <summary>Gets or sets the property name used to store the generated plan.</summary>
+    public string? OutputPropertyName { get; set; }
 }

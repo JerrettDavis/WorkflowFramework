@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="WorkflowFramework.Dashboard.Api.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\WorkflowFramework.Dashboard.ServiceDefaults\WorkflowFramework.Dashboard.ServiceDefaults.csproj" />
     <ProjectReference Include="..\WorkflowFramework.Serialization\WorkflowFramework.Serialization.csproj" />
     <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />

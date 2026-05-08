@@ -260,7 +260,7 @@ window.voiceRecorder = (() => {
       size: sourceBlob.size,
       base64,
       previewUrl: activePreviewUrl,
-      liveTranscript: finalTranscript.trim(),
+      liveTranscript: `${finalTranscript} ${interimTranscript}`.trim(),
     };
 
     cleanupRecorder();
@@ -302,13 +302,43 @@ window.voiceRecorder = (() => {
     });
   }
 
+  function createPreviewUrlFromBase64(base64, mimeType) {
+    const normalizedBase64 = `${base64 || ""}`.trim();
+    if (!normalizedBase64) {
+      throw new Error("Audio preview data is empty.");
+    }
+
+    const binary = atob(normalizedBase64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+
+    const blob = new Blob([bytes], { type: mimeType || "audio/wav" });
+    return URL.createObjectURL(blob);
+  }
+
+  function revokePreviewUrl(url) {
+    if (typeof url !== "string" || !url.startsWith("blob:")) {
+      return;
+    }
+
+    if (activePreviewUrl === url) {
+      activePreviewUrl = null;
+    }
+
+    URL.revokeObjectURL(url);
+  }
+
   function notifyTranscript() {
     if (!dotNetRef) return;
     dotNetRef.invokeMethodAsync("OnLiveTranscriptUpdated", finalTranscript, interimTranscript).catch(() => {});
   }
 
   return {
+    createPreviewUrlFromBase64,
     listInputDevices,
+    revokePreviewUrl,
     startRecording,
     stopRecording,
     isRecording,

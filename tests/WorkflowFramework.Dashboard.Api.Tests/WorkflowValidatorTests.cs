@@ -1,5 +1,6 @@
 using Xunit;
 using FluentAssertions;
+using WorkflowFramework.Dashboard.Api.Models;
 using WorkflowFramework.Dashboard.Api.Services;
 using WorkflowFramework.Serialization;
 
@@ -187,5 +188,321 @@ public sealed class WorkflowValidatorTests
         };
         var result = _validator.Validate(def);
         result.WarningCount.Should().BeGreaterThan(0);
+    }
+
+    [Fact]
+    public void CanvasWithMissingSourceNode_ReturnsError()
+    {
+        var def = new WorkflowDefinitionDto
+        {
+            Name = "Canvas Flow",
+            Steps = [new StepDefinitionDto { Name = "Step 1", Type = "action" }],
+            Canvas = new WorkflowCanvasDto
+            {
+                Nodes =
+                [
+                    new WorkflowCanvasNodeDto { Id = "node_1", Type = "Action", Label = "Step 1" }
+                ],
+                Edges =
+                [
+                    new WorkflowCanvasEdgeDto { Id = "edge_1", Source = "missing", Target = "node_1" }
+                ]
+            }
+        };
+
+        var result = _validator.Validate(def);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Message.Contains("missing source node", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void CanvasWithMultipleIncomingEdgesToRealStep_ReturnsError()
+    {
+        var def = new WorkflowDefinitionDto
+        {
+            Name = "Canvas Flow",
+            Steps =
+            [
+                new StepDefinitionDto { Name = "Step 1", Type = "action" },
+                new StepDefinitionDto { Name = "Step 2", Type = "action" },
+                new StepDefinitionDto { Name = "Step 3", Type = "action" }
+            ],
+            Canvas = new WorkflowCanvasDto
+            {
+                Nodes =
+                [
+                    new WorkflowCanvasNodeDto { Id = "node_1", Type = "Action", Label = "Step 1" },
+                    new WorkflowCanvasNodeDto { Id = "node_2", Type = "Action", Label = "Step 2" },
+                    new WorkflowCanvasNodeDto { Id = "node_3", Type = "Action", Label = "Step 3" }
+                ],
+                Edges =
+                [
+                    new WorkflowCanvasEdgeDto { Id = "edge_1", Source = "node_1", Target = "node_3" },
+                    new WorkflowCanvasEdgeDto { Id = "edge_2", Source = "node_2", Target = "node_3" }
+                ]
+            }
+        };
+
+        var result = _validator.Validate(def);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Message.Contains("multiple incoming edges", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void CanvasWithUnsupportedConditionalHandle_ReturnsError()
+    {
+        var def = new WorkflowDefinitionDto
+        {
+            Name = "Canvas Flow",
+            Steps =
+            [
+                new StepDefinitionDto
+                {
+                    Name = "Decide",
+                    Type = "conditional",
+                    Then = new StepDefinitionDto { Name = "Then Step", Type = "action" }
+                }
+            ],
+            Canvas = new WorkflowCanvasDto
+            {
+                Nodes =
+                [
+                    new WorkflowCanvasNodeDto { Id = "node_1", Type = "Conditional", Label = "Decide" },
+                    new WorkflowCanvasNodeDto { Id = "node_2", Type = "Action", Label = "Then Step" }
+                ],
+                Edges =
+                [
+                    new WorkflowCanvasEdgeDto { Id = "edge_1", Source = "node_1", Target = "node_2", Kind = "body" }
+                ]
+            }
+        };
+
+        var result = _validator.Validate(def);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Message.Contains("unsupported 'body' output", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void CanvasWithDuplicateHandleConnections_ReturnsError()
+    {
+        var def = new WorkflowDefinitionDto
+        {
+            Name = "Canvas Flow",
+            Steps =
+            [
+                new StepDefinitionDto
+                {
+                    Name = "Decide",
+                    Type = "conditional",
+                    Then = new StepDefinitionDto { Name = "Approve", Type = "action" }
+                },
+                new StepDefinitionDto { Name = "Reject", Type = "action" }
+            ],
+            Canvas = new WorkflowCanvasDto
+            {
+                Nodes =
+                [
+                    new WorkflowCanvasNodeDto { Id = "node_1", Type = "Conditional", Label = "Decide" },
+                    new WorkflowCanvasNodeDto { Id = "node_2", Type = "Action", Label = "Approve" },
+                    new WorkflowCanvasNodeDto { Id = "node_3", Type = "Action", Label = "Reject" }
+                ],
+                Edges =
+                [
+                    new WorkflowCanvasEdgeDto { Id = "edge_1", Source = "node_1", Target = "node_2", Kind = "then" },
+                    new WorkflowCanvasEdgeDto { Id = "edge_2", Source = "node_1", Target = "node_3", Kind = "then" }
+                ]
+            }
+        };
+
+        var result = _validator.Validate(def);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Message.Contains("multiple connections on its 'then' output", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void SubWorkflowReferencingCurrentWorkflow_ReturnsError()
+    {
+        var def = new WorkflowDefinitionDto
+        {
+            Name = "Parent Flow",
+            Steps =
+            [
+                new StepDefinitionDto
+                {
+                    Name = "Run Child",
+                    Type = "SubWorkflow",
+                    SubWorkflowName = "Parent Flow"
+                }
+            ]
+        };
+
+        var result = _validator.Validate(def);
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Message.Contains("cannot reference the current workflow", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void StoredSubWorkflowReferenceCycle_ReturnsError()
+    {
+        var parent = new WorkflowDefinitionDto
+        {
+            Name = "Parent Flow",
+            Steps =
+            [
+                new StepDefinitionDto
+                {
+                    Name = "Run Child",
+                    Type = "SubWorkflow",
+                    SubWorkflowName = "Child Flow"
+                }
+            ]
+        };
+
+        var knownWorkflows = new List<SavedWorkflowDefinition>
+        {
+            new()
+            {
+                Id = "parent-id",
+                Definition = parent
+            },
+            new()
+            {
+                Id = "child-id",
+                Definition = new WorkflowDefinitionDto
+                {
+                    Name = "Child Flow",
+                    Steps =
+                    [
+                        new StepDefinitionDto
+                        {
+                            Name = "Loop Back",
+                            Type = "SubWorkflow",
+                            SubWorkflowName = "Parent Flow"
+                        }
+                    ]
+                }
+            }
+        };
+
+        var result = _validator.Validate(parent, knownWorkflows, "parent-id");
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Message.Contains("reference cycle detected", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void StoredMissingSubWorkflowReference_ReturnsWarning()
+    {
+        var parent = new WorkflowDefinitionDto
+        {
+            Name = "Parent Flow",
+            Steps =
+            [
+                new StepDefinitionDto
+                {
+                    Name = "Run Child",
+                    Type = "SubWorkflow",
+                    SubWorkflowName = "Missing Flow"
+                }
+            ]
+        };
+
+        var knownWorkflows = new List<SavedWorkflowDefinition>
+        {
+            new()
+            {
+                Id = "parent-id",
+                Definition = parent
+            }
+        };
+
+        var result = _validator.Validate(parent, knownWorkflows, "parent-id");
+
+        result.IsValid.Should().BeTrue();
+        result.WarningCount.Should().BeGreaterThan(0);
+        result.Errors.Should().Contain(e => e.Message.Contains("references missing workflow", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void RenamedDraftStillDetectsReachableSubWorkflowCycle()
+    {
+        var renamedDraft = new WorkflowDefinitionDto
+        {
+            Name = "Renamed Parent",
+            Steps =
+            [
+                new StepDefinitionDto
+                {
+                    Name = "Run Child One",
+                    Type = "SubWorkflow",
+                    SubWorkflowName = "Child One"
+                }
+            ]
+        };
+
+        var knownWorkflows = new List<SavedWorkflowDefinition>
+        {
+            new()
+            {
+                Id = "parent-id",
+                Definition = new WorkflowDefinitionDto
+                {
+                    Name = "Original Parent",
+                    Steps =
+                    [
+                        new StepDefinitionDto
+                        {
+                            Name = "Old Child",
+                            Type = "SubWorkflow",
+                            SubWorkflowName = "Child One"
+                        }
+                    ]
+                }
+            },
+            new()
+            {
+                Id = "child-one-id",
+                Definition = new WorkflowDefinitionDto
+                {
+                    Name = "Child One",
+                    Steps =
+                    [
+                        new StepDefinitionDto
+                        {
+                            Name = "Run Child Two",
+                            Type = "SubWorkflow",
+                            SubWorkflowName = "Child Two"
+                        }
+                    ]
+                }
+            },
+            new()
+            {
+                Id = "child-two-id",
+                Definition = new WorkflowDefinitionDto
+                {
+                    Name = "Child Two",
+                    Steps =
+                    [
+                        new StepDefinitionDto
+                        {
+                            Name = "Loop Child One",
+                            Type = "SubWorkflow",
+                            SubWorkflowName = "Child One"
+                        }
+                    ]
+                }
+            }
+        };
+
+        var result = _validator.Validate(renamedDraft, knownWorkflows, "parent-id");
+
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.Message.Contains("reference cycle detected", StringComparison.OrdinalIgnoreCase));
     }
 }

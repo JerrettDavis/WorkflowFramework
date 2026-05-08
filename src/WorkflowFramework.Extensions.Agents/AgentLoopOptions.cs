@@ -27,4 +27,6 @@ public sealed class AgentLoopOptions
     public ICheckpointStore? CheckpointStore { get; set; }
     /// <summary>Checkpoint interval (iterations). Default 1.</summary>
     public int CheckpointInterval { get; set; } = 1;
+    /// <summary>Optional initial user/task prompt template added before the first iteration.</summary>
+    public string? InitialUserMessageTemplate { get; set; }
 }

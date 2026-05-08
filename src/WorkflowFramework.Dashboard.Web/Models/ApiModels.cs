@@ -32,6 +32,74 @@ public sealed class WorkflowDefinitionDto
 
     [JsonPropertyName("steps")]
     public List<StepDefinitionApiDto> Steps { get; set; } = new();
+
+    [JsonPropertyName("canvas")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public WorkflowCanvasDto? Canvas { get; set; }
+}
+
+public sealed class WorkflowCanvasDto
+{
+    [JsonPropertyName("nodes")]
+    public List<WorkflowCanvasNodeDto> Nodes { get; set; } = new();
+
+    [JsonPropertyName("edges")]
+    public List<WorkflowCanvasEdgeDto> Edges { get; set; } = new();
+}
+
+public sealed class WorkflowCanvasNodeDto
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "";
+
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "";
+
+    [JsonPropertyName("label")]
+    public string Label { get; set; } = "";
+
+    [JsonPropertyName("icon")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Icon { get; set; }
+
+    [JsonPropertyName("category")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Category { get; set; }
+
+    [JsonPropertyName("color")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Color { get; set; }
+
+    [JsonPropertyName("x")]
+    public double X { get; set; }
+
+    [JsonPropertyName("y")]
+    public double Y { get; set; }
+
+    [JsonPropertyName("config")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Dictionary<string, string>? Config { get; set; }
+}
+
+public sealed class WorkflowCanvasEdgeDto
+{
+    [JsonPropertyName("id")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Id { get; set; }
+
+    [JsonPropertyName("kind")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Kind { get; set; }
+
+    [JsonPropertyName("source")]
+    public string Source { get; set; } = "";
+
+    [JsonPropertyName("target")]
+    public string Target { get; set; } = "";
+
+    [JsonPropertyName("label")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Label { get; set; }
 }
 
 public sealed class StepDefinitionApiDto
@@ -66,6 +134,10 @@ public sealed class StepDefinitionApiDto
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public double TimeoutSeconds { get; set; }
 
+    [JsonPropertyName("delaySeconds")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public double DelaySeconds { get; set; }
+
     [JsonPropertyName("tryBody")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<StepDefinitionApiDto>? TryBody { get; set; }
@@ -77,6 +149,10 @@ public sealed class StepDefinitionApiDto
     [JsonPropertyName("finallyBody")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public List<StepDefinitionApiDto>? FinallyBody { get; set; }
+
+    [JsonPropertyName("subWorkflowName")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? SubWorkflowName { get; set; }
 
     [JsonPropertyName("config")]
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -129,6 +205,8 @@ public sealed class WorkflowTemplateSummary
     public TemplateDifficulty Difficulty { get; set; }
     public int StepCount { get; set; }
     public string? PreviewImageUrl { get; set; }
+    public bool IsFeatured { get; set; }
+    public string? FeaturedReason { get; set; }
 }
 
 public sealed class ValidationErrorDto
@@ -180,6 +258,19 @@ public sealed class ValidationSeverityStringConverter : JsonConverter<string>
 public sealed class DashboardSettingsDto
 {
     public string OllamaUrl { get; set; } = "http://localhost:11434";
+    public string? OpenAiBaseUrl { get; set; }
+    public string? DefaultProvider { get; set; }
+    public string? DefaultModel { get; set; }
+    public int DefaultTimeoutSeconds { get; set; } = 300;
+    public int MaxConcurrentRuns { get; set; } = 5;
+    public bool OpenAiConfigured { get; set; }
+    public bool AnthropicConfigured { get; set; }
+    public bool HuggingFaceConfigured { get; set; }
+}
+
+public sealed class UpdateDashboardSettingsRequest
+{
+    public string OllamaUrl { get; set; } = "http://localhost:11434";
     public string? OpenAiApiKey { get; set; }
     public string? AnthropicApiKey { get; set; }
     public string? HuggingFaceApiKey { get; set; }
@@ -188,6 +279,11 @@ public sealed class DashboardSettingsDto
     public string? DefaultModel { get; set; }
     public int DefaultTimeoutSeconds { get; set; } = 300;
     public int MaxConcurrentRuns { get; set; } = 5;
+}
+
+public sealed class TestOllamaConnectionRequest
+{
+    public string? OllamaUrl { get; set; }
 }
 
 public sealed class OllamaTestResult
@@ -223,6 +319,8 @@ public sealed class WorkflowTemplate
     public TemplateDifficulty Difficulty { get; set; }
     public int StepCount { get; set; }
     public string? PreviewImageUrl { get; set; }
+    public bool IsFeatured { get; set; }
+    public string? FeaturedReason { get; set; }
     public WorkflowDefinitionDto Definition { get; set; } = new();
 }
 
@@ -332,4 +430,30 @@ public sealed class VoiceQaPairDto
 {
     public string Question { get; set; } = "";
     public string Answer { get; set; } = "";
+}
+
+// History Graph DTOs
+public sealed class HistoryNodeSummary
+{
+    public string Fingerprint { get; set; } = "";
+    public string Name { get; set; } = "";
+    public string Kind { get; set; } = "";
+    public string? Target { get; set; }
+    public long ExecutionCount { get; set; }
+    public long SuccessCount { get; set; }
+    public long FailureCount { get; set; }
+    public DateTimeOffset FirstSeenAt { get; set; }
+    public DateTimeOffset LastSeenAt { get; set; }
+    public double SuccessRate => ExecutionCount > 0 ? (double)SuccessCount / ExecutionCount : 0.0;
+}
+
+public sealed class HistoryEdgeSummary
+{
+    public string Id { get; set; } = "";
+    public string SourceFingerprint { get; set; } = "";
+    public string TargetFingerprint { get; set; } = "";
+    public string Kind { get; set; } = "";
+    public long Weight { get; set; }
+    public DateTimeOffset FirstSeenAt { get; set; }
+    public DateTimeOffset LastSeenAt { get; set; }
 }

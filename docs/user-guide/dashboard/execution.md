@@ -21,6 +21,22 @@ When a workflow runs, the **Execution Panel** opens at the bottom of the designe
 ![Execution panel](../../images/dashboard/execution-panel.png)
 *The execution panel showing real-time step progress.*
 
+## Local Ollama smoke workflow
+
+The built-in **Local Ollama Smoke Test** sample is the fastest way to validate the full dashboard execution loop with a real local model:
+
+1. Open **Settings**
+2. Set the Ollama URL to your loopback endpoint (for example `http://localhost:11434`)
+3. Select **Ollama** as the default provider and choose an installed chat model
+4. Open the `Local Ollama Smoke Test` sample from the workflow browser
+5. Save and run the workflow
+
+![Local Ollama smoke workflow](../../images/dashboard/ollama-local-run.png)
+*A promoted screenshot from the end-to-end local Ollama dashboard scenario.*
+
+> [!TIP]
+> The dashboard UI artifact pipeline also includes config-only OpenAI, Anthropic, and Hugging Face settings scenarios so provider/model setup can be demonstrated without storing real credentials in screenshots or reports.
+
 Each log entry shows:
 - **Timestamp** — when the event occurred
 - **Step name** — which step emitted the event
@@ -70,9 +86,6 @@ This provides an at-a-glance view of workflow progress directly on the canvas.
 
 View all past runs for a workflow by clicking the **History** button in the execution panel.
 
-![Run history](../../images/dashboard/run-history.png)
-*Run history showing past executions with status and duration.*
-
 Each run entry shows:
 - Run ID
 - Start/end timestamps
@@ -85,3 +98,17 @@ Click a run to view its full execution log in the execution panel.
 ## Cancelling Runs
 
 Click the **Cancel** button in the execution panel to abort a running workflow. The current step completes (or times out), then execution stops. Cancelled runs are marked with a `Cancelled` status in run history.
+
+## Generating dashboard execution artifacts
+
+The dashboard UI tests write deterministic artifacts under `TestResults\dashboard-ui\latest`. After running the targeted Reqnroll + Playwright scenarios, generate the report bundle with:
+
+```powershell
+.\eng\generate-dashboard-ui-report.ps1
+```
+
+That produces:
+
+- `livingdoc\index.html` — a lightweight LivingDoc-style scenario report
+- `allure-results\dashboard-summary.json` — machine-readable scenario and artifact metadata
+- scenario manifests, traces, screenshots, and docs-promotable screenshots for curated docs updates

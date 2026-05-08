@@ -23,3 +23,14 @@ Feature: Run Assistant
     When I complete the run assistant flow and start the workflow
     Then the output feed should show detailed execution telemetry
     And the browser should not report run assistant interop errors
+
+  Scenario: Run assistant recovers when stopping recording fails
+    Given the browser voice recorder stop fails after transcription halts
+    And the dashboard is running
+    And I open the "Quick Transcript" sample workflow
+    When I run the workflow
+    Then the run assistant should open with recording controls
+    When I start recording in the run assistant
+    And stopping recording fails in the run assistant
+    Then the run assistant should reset recording controls after a stop failure
+    And the browser should not report run assistant interop errors

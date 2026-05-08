@@ -30,6 +30,28 @@
         return Math.round(val / GRID_SIZE) * GRID_SIZE;
     }
 
+    function nextIdFrom(items, prefix) {
+        return items.reduce((max, item) => {
+            const match = new RegExp(`^${prefix}_(\\d+)$`).exec(item.id || '');
+            return match ? Math.max(max, Number(match[1])) : max;
+        }, 0) + 1;
+    }
+
+    function reseedIds() {
+        nextNodeId = nextIdFrom(nodes, 'node');
+        nextEdgeId = nextIdFrom(edges, 'edge');
+    }
+
+    function normalizeEdge(edge) {
+        const kind = edge?.kind ?? edge?.sourceHandle ?? null;
+        const label = edge?.label ?? kind ?? null;
+        return { ...edge, kind, label };
+    }
+
+    function isSyntheticNode(node) {
+        return node?.config?.__syntheticKind === 'container-exit';
+    }
+
     function initialize(containerId, ref, initialNodes, initialEdges) {
         container = document.getElementById(containerId);
         dotNetRef = ref;
@@ -91,9 +113,8 @@
 
         // Load initial data
         nodes = (initialNodes || []).map(n => ({ ...n }));
-        edges = (initialEdges || []).map(e => ({ ...e }));
-        if (nodes.length > 0) nextNodeId = Math.max(...nodes.map(n => parseInt(n.id) || 0)) + 1;
-        if (edges.length > 0) nextEdgeId = Math.max(...edges.map(e => parseInt(e.id) || 0)) + 1;
+        edges = (initialEdges || []).map(normalizeEdge);
+        reseedIds();
 
         render();
     }
@@ -112,7 +133,14 @@
     }
 
     function onCanvasClick(e) {
-        if (e.target === canvas || e.target.tagName === 'rect') {
+        if (e.target instanceof Element && e.target.closest('[data-node-id]')) {
+            return;
+        }
+
+        const isBackground = e.target === canvas
+            || (e.target instanceof Element && e.target.getAttribute('fill') === 'url(#grid)');
+
+        if (isBackground) {
             selectNode(null);
         }
     }
@@ -137,10 +165,11 @@
         }
         if (connectingFrom) {
             const pt = svgPoint(e.clientX, e.clientY);
-            const src = nodes.find(n => n.id === connectingFrom);
+            const src = nodes.find(n => n.id === connectingFrom.nodeId);
             if (src) {
                 const tempEdge = document.getElementById('temp-edge');
-                const sx = src.x + 70, sy = src.y + 25;
+                const handle = getOutputHandlePosition(src, connectingFrom.kind);
+                const sx = src.x + handle.cx, sy = src.y + handle.cy;
                 const d = `M${sx},${sy} C${sx + 60},${sy} ${pt.x - 60},${pt.y} ${pt.x},${pt.y}`;
                 tempEdge.setAttribute('d', d);
                 tempEdge.style.display = '';
@@ -206,11 +235,12 @@
     }
 
     function selectNode(nodeId) {
-        selectedNodeId = nodeId;
         const node = nodeId ? nodes.find(n => n.id === nodeId) : null;
+        selectedNodeId = node && !isSyntheticNode(node) ? nodeId : null;
+        const selectedNode = selectedNodeId ? node : null;
         render();
         if (dotNetRef) {
-            dotNetRef.invokeMethodAsync('OnNodeSelected', nodeId, node?.type || null, node?.config || null);
+            dotNetRef.invokeMethodAsync('OnNodeSelected', selectedNodeId, selectedNode?.type || null, selectedNode?.config || null);
         }
     }
 
@@ -219,7 +249,8 @@
         const tgt = nodes.find(n => n.id === edge.target);
         if (!src || !tgt) return;
 
-        const sx = src.x + 140, sy = src.y + 25;
+        const sourceHandle = getOutputHandlePosition(src, edge.kind);
+        const sx = src.x + sourceHandle.cx, sy = src.y + sourceHandle.cy;
         const tx = tgt.x, ty = tgt.y + 25;
         const midX = (sx + tx) / 2;
 
@@ -268,7 +299,13 @@
     function renderNode(node) {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
-        g.style.cursor = 'pointer';
+        const synthetic = isSyntheticNode(node);
+        g.style.cursor = synthetic ? 'default' : 'pointer';
+        g.setAttribute('data-node-id', node.id);
+        g.setAttribute('data-node-type', node.type);
+        if (synthetic) {
+            g.setAttribute('data-node-synthetic', 'true');
+        }
 
         const isSelected = node.id === selectedNodeId;
 
@@ -333,6 +370,12 @@
             g.appendChild(circle);
         }
 
+        if (synthetic) {
+            g.style.pointerEvents = 'none';
+            nodesLayer.appendChild(g);
+            return;
+        }
+
         // Input handle (left)
         const inputHandle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         inputHandle.setAttribute('cx', '0');
@@ -341,12 +384,23 @@
         inputHandle.setAttribute('fill', '#6b7280');
         inputHandle.setAttribute('stroke', '#374151');
         inputHandle.setAttribute('stroke-width', '2');
+        inputHandle.dataset.handleRole = 'input';
         inputHandle.style.cursor = 'crosshair';
         inputHandle.addEventListener('mouseup', (e) => {
             e.stopPropagation();
-            if (connectingFrom && connectingFrom !== node.id) {
+            if (connectingFrom && connectingFrom.nodeId !== node.id) {
+                const sourceNode = nodes.find(n => n.id === connectingFrom.nodeId);
+                const shouldKeepMultiple = (sourceNode?.type || '').toLowerCase() === 'parallel';
+                if (!shouldKeepMultiple) {
+                    edges = edges.filter(existing =>
+                        !(existing.source === connectingFrom.nodeId && (existing.kind || null) === (connectingFrom.kind || null)));
+                }
+
                 const edgeId = 'edge_' + (nextEdgeId++);
-                edges.push({ id: edgeId, source: connectingFrom, target: node.id });
+                const label = connectingFrom.kind === 'then' || connectingFrom.kind === 'else'
+                    ? connectingFrom.kind
+                    : null;
+                edges.push({ id: edgeId, source: connectingFrom.nodeId, target: node.id, kind: connectingFrom.kind, label });
                 connectingFrom = null;
                 document.getElementById('temp-edge').style.display = 'none';
                 render();
@@ -355,27 +409,41 @@
         });
         g.appendChild(inputHandle);
 
-        // Output handle (right)
-        const outputHandle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        outputHandle.setAttribute('cx', '140');
-        outputHandle.setAttribute('cy', '25');
-        outputHandle.setAttribute('r', '5');
-        outputHandle.setAttribute('fill', '#6b7280');
-        outputHandle.setAttribute('stroke', '#374151');
-        outputHandle.setAttribute('stroke-width', '2');
-        outputHandle.style.cursor = 'crosshair';
-        outputHandle.addEventListener('mousedown', (e) => {
-            e.stopPropagation();
-            connectingFrom = node.id;
+        getOutputHandles(node).forEach(handle => {
+            const outputHandle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            outputHandle.setAttribute('cx', String(handle.cx));
+            outputHandle.setAttribute('cy', String(handle.cy));
+            outputHandle.setAttribute('r', '5');
+            outputHandle.setAttribute('fill', '#6b7280');
+            outputHandle.setAttribute('stroke', '#374151');
+            outputHandle.setAttribute('stroke-width', '2');
+            outputHandle.dataset.handleRole = 'output';
+            outputHandle.dataset.handleKind = handle.kind || '';
+            outputHandle.style.cursor = 'crosshair';
+            outputHandle.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                connectingFrom = { nodeId: node.id, kind: handle.kind };
+            });
+            g.appendChild(outputHandle);
+
+            if (handle.badge) {
+                const badge = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                badge.setAttribute('x', String(handle.cx - 10));
+                badge.setAttribute('y', String(handle.cy - 7));
+                badge.setAttribute('fill', '#9ca3af');
+                badge.setAttribute('font-size', '8');
+                badge.setAttribute('text-anchor', 'end');
+                badge.textContent = handle.badge;
+                g.appendChild(badge);
+            }
         });
-        g.appendChild(outputHandle);
 
         // Drag behavior
         let isDragging = false;
         let dragOffset = { x: 0, y: 0 };
 
         g.addEventListener('mousedown', (e) => {
-            if (e.target === inputHandle || e.target === outputHandle) return;
+            if (e.target instanceof Element && e.target.closest('[data-handle-role]')) return;
             e.stopPropagation();
             isDragging = true;
             const pt = svgPoint(e.clientX, e.clientY);
@@ -422,6 +490,53 @@
         nodes.forEach(renderNode);
     }
 
+    function getOutputHandles(node) {
+        const type = (node.type || '').toLowerCase();
+        if (type === 'conditional') {
+            return [
+                { kind: 'then', cx: 140, cy: 12, badge: 'then' },
+                { kind: 'continue', cx: 140, cy: 25, badge: 'next' },
+                { kind: 'else', cx: 140, cy: 38, badge: 'else' }
+            ];
+        }
+
+        if (type === 'trycatch') {
+            return [
+                { kind: 'try', cx: 140, cy: 12, badge: 'try' },
+                { kind: 'finally', cx: 140, cy: 25, badge: 'finally' },
+                { kind: 'continue', cx: 140, cy: 38, badge: 'next' }
+            ];
+        }
+
+        if (type === 'timeout') {
+            return [
+                { kind: 'inner', cx: 140, cy: 16, badge: 'inner' },
+                { kind: 'continue', cx: 140, cy: 34, badge: 'next' }
+            ];
+        }
+
+        if (['retry', 'foreach', 'while', 'dowhile', 'saga'].includes(type)) {
+            return [
+                { kind: 'body', cx: 140, cy: 16, badge: 'body' },
+                { kind: 'continue', cx: 140, cy: 34, badge: 'next' }
+            ];
+        }
+
+        if (type === 'parallel') {
+            return [
+                { kind: null, cx: 140, cy: 16, badge: 'branch' },
+                { kind: 'continue', cx: 140, cy: 34, badge: 'next' }
+            ];
+        }
+
+        return [{ kind: null, cx: 140, cy: 25, badge: null }];
+    }
+
+    function getOutputHandlePosition(node, kind) {
+        const handles = getOutputHandles(node);
+        return handles.find(h => h.kind === kind) || handles[0];
+    }
+
     // Public API
     window.workflowEditor = {
         initialize,
@@ -443,6 +558,10 @@
         },
 
         removeNode(nodeId) {
+            const node = nodes.find(n => n.id === nodeId);
+            if (node && isSyntheticNode(node)) {
+                return;
+            }
             nodes = nodes.filter(n => n.id !== nodeId);
             edges = edges.filter(e => e.source !== nodeId && e.target !== nodeId);
             if (selectedNodeId === nodeId) selectNode(null);
@@ -463,7 +582,8 @@
 
         setWorkflowDefinition(newNodes, newEdges) {
             nodes = (newNodes || []).map(n => ({ ...n }));
-            edges = (newEdges || []).map(e => ({ ...e }));
+            edges = (newEdges || []).map(normalizeEdge);
+            reseedIds();
             selectedNodeId = null;
             render();
         },
@@ -492,12 +612,16 @@
         getNodeConnections(nodeId) {
             const inputs = edges.filter(e => e.target === nodeId).map(e => {
                 const src = nodes.find(n => n.id === e.source);
-                return { id: e.source, label: src ? (src.config?.label || src.label || e.source) : e.source, edgeLabel: e.label || null };
-            });
+                return src && !isSyntheticNode(src)
+                    ? { id: e.source, label: src.config?.label || src.label || e.source, edgeLabel: e.label || e.kind || null, kind: e.kind || null }
+                    : null;
+            }).filter(Boolean);
             const outputs = edges.filter(e => e.source === nodeId).map(e => {
                 const tgt = nodes.find(n => n.id === e.target);
-                return { id: e.target, label: tgt ? (tgt.config?.label || tgt.label || e.target) : e.target, edgeLabel: e.label || null };
-            });
+                return tgt && !isSyntheticNode(tgt)
+                    ? { id: e.target, label: tgt.config?.label || tgt.label || e.target, edgeLabel: e.label || e.kind || null, kind: e.kind || null }
+                    : null;
+            }).filter(Boolean);
             return { inputs, outputs };
         },
 
@@ -518,11 +642,19 @@
         },
 
         getAllNodes() {
-            return nodes.map(n => ({ id: n.id, type: n.type, label: n.config?.label || n.label || '', icon: n.icon || '⬡', category: n.category || '', color: n.color || '#4b5563' }));
+            return nodes
+                .filter(n => !isSyntheticNode(n))
+                .map(n => ({ id: n.id, type: n.type, label: n.config?.label || n.label || '', icon: n.icon || '⬡', category: n.category || '', color: n.color || '#4b5563' }));
         },
 
         getAllEdges() {
-            return edges.map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label || null }));
+            return edges
+                .filter(e => {
+                    const sourceNode = nodes.find(n => n.id === e.source);
+                    const targetNode = nodes.find(n => n.id === e.target);
+                    return !isSyntheticNode(sourceNode) && !isSyntheticNode(targetNode);
+                })
+                .map(e => ({ id: e.id, source: e.source, target: e.target, label: e.label || e.kind || null, kind: e.kind || null }));
         },
 
         updateNodeStatus(stepName, status) {
@@ -536,6 +668,11 @@
         deleteSelected() {
             if (selectedNodeId) {
                 const nodeId = selectedNodeId;
+                const node = nodes.find(n => n.id === nodeId);
+                if (node && isSyntheticNode(node)) {
+                    selectNode(null);
+                    return;
+                }
                 nodes = nodes.filter(n => n.id !== nodeId);
                 edges = edges.filter(e => e.source !== nodeId && e.target !== nodeId);
                 selectNode(null);

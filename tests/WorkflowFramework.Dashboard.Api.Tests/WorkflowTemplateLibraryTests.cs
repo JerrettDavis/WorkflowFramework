@@ -13,7 +13,7 @@ public class WorkflowTemplateLibraryTests
     public async Task GetTemplatesAsync_ReturnsAllTemplates()
     {
         var templates = await _library.GetTemplatesAsync();
-        templates.Should().HaveCount(25);
+        templates.Should().HaveCount(26);
     }
 
     [Fact]
@@ -83,6 +83,7 @@ public class WorkflowTemplateLibraryTests
     [InlineData("order-with-approval", "Order with Approval", "Order Management", 6)]
     [InlineData("task-extraction-pipeline", "Task Extraction Pipeline", "AI & Agents", 5)]
     [InlineData("agent-triage-workflow", "Agent Triage Workflow", "AI & Agents", 4)]
+    [InlineData("multimodal-local-router", "Multimodal Local Router", "AI & Agents", 8)]
     [InlineData("quick-transcript", "Quick Transcript", "Voice & Audio", 5)]
     [InlineData("meeting-notes", "Meeting Notes", "Voice & Audio", 7)]
     [InlineData("blog-from-interview", "Blog from Interview", "Voice & Audio", 10)]
@@ -127,5 +128,109 @@ public class WorkflowTemplateLibraryTests
                 TemplateDifficulty.Intermediate,
                 TemplateDifficulty.Advanced);
         }
+    }
+
+    [Fact]
+    public async Task GetTemplatesAsync_ExposesFeaturedStarterWorkflows()
+    {
+        var templates = await _library.GetTemplatesAsync();
+
+        templates.Where(template => template.IsFeatured)
+            .Select(template => template.Id)
+            .Should()
+            .Contain(["multimodal-local-router", "blog-from-interview"]);
+
+        templates.Where(template => template.IsFeatured)
+            .Should()
+            .OnlyContain(template => !string.IsNullOrWhiteSpace(template.FeaturedReason));
+    }
+
+    [Fact]
+    public async Task GetTemplatesAsync_ExposesPreviewImages_ForFeaturedStarters()
+    {
+        var templates = await _library.GetTemplatesAsync();
+
+        templates.Where(template => template.IsFeatured)
+            .Should()
+            .OnlyContain(template => !string.IsNullOrWhiteSpace(template.PreviewImageUrl));
+
+        templates.Where(template => template.IsFeatured)
+            .Select(template => template.PreviewImageUrl)
+            .Should()
+            .Contain([
+                "/images/templates/multimodal-local-router-preview.svg",
+                "/images/templates/blog-from-interview-preview.svg"
+            ]);
+    }
+
+    [Fact]
+    public async Task GetTemplateAsync_MultimodalLocalRouter_DemonstratesLocalRoutingAndSpecialistModels()
+    {
+        var template = await _library.GetTemplateAsync("multimodal-local-router");
+
+        template.Should().NotBeNull();
+        template!.PreviewImageUrl.Should().Be("/images/templates/multimodal-local-router-preview.svg");
+        var steps = template!.Definition.Steps;
+
+        var routeBrief = steps.Single(step => step.Name == "Route Brief");
+        routeBrief.Type.Should().Be("AgentDecisionStep");
+        routeBrief.Config.Should().Contain(new KeyValuePair<string, string>("provider", "ollama"));
+        routeBrief.Config.Should().Contain(new KeyValuePair<string, string>("model", "phi4-mini"));
+        routeBrief.Config!["prompt"].Should().Contain("{{Transcribe Brief.Output}}");
+
+        var planSpecialists = steps.Single(step => step.Name == "Plan Specialist Passes");
+        planSpecialists.Type.Should().Be("AgentPlanStep");
+        planSpecialists.Config.Should().Contain(new KeyValuePair<string, string>("provider", "ollama"));
+        planSpecialists.Config.Should().Contain(new KeyValuePair<string, string>("model", "llama3.2"));
+        planSpecialists.Config!["objective"].Should().Contain("{{Route Brief.Decision}}");
+
+        var specialistPasses = steps.Single(step => step.Name == "Specialist Passes");
+        specialistPasses.Type.Should().Be("Parallel");
+        specialistPasses.Steps.Should().NotBeNull();
+        specialistPasses.Steps!.Should().HaveCount(2);
+
+        specialistPasses.Steps.Single(step => step.Name == "Draft with OpenAI").Config.Should()
+            .Contain(new KeyValuePair<string, string>("provider", "openai"));
+        specialistPasses.Steps.Single(step => step.Name == "Audit with Anthropic").Config.Should()
+            .Contain(new KeyValuePair<string, string>("provider", "anthropic"));
+
+        steps.Single(step => step.Name == "Merge Specialist Outputs").Config!["expression"]
+            .Should().Contain("{{Draft with OpenAI.Response}}")
+            .And.Contain("{{Audit with Anthropic.Response}}");
+    }
+
+    [Fact]
+    public async Task GetTemplateAsync_BlogFromInterview_UsesVoiceInputs_AndPromptWiring()
+    {
+        var template = await _library.GetTemplateAsync("blog-from-interview");
+
+        template.Should().NotBeNull();
+        template!.IsFeatured.Should().BeTrue();
+        template.FeaturedReason.Should().NotBeNullOrWhiteSpace();
+        template.PreviewImageUrl.Should().Be("/images/templates/blog-from-interview-preview.svg");
+        var steps = template!.Definition.Steps;
+
+        steps.Single(step => step.Name == "RecordTopicIntro").Config!["expression"]
+            .Should().Contain("{recordings}")
+            .And.Contain("{transcript}");
+
+        var cleanupTopic = steps.Single(step => step.Name == "CleanupTopic");
+        cleanupTopic.Type.Should().Be("LlmCallStep");
+        cleanupTopic.Config.Should().Contain(new KeyValuePair<string, string>("provider", "ollama"));
+        cleanupTopic.Config.Should().Contain(new KeyValuePair<string, string>("model", "qwen2.5"));
+        cleanupTopic.Config!["prompt"].Should().Contain("{{TranscribeTopic.Output}}");
+
+        var generateQuestions = steps.Single(step => step.Name == "GenerateQuestions");
+        generateQuestions.Type.Should().Be("AgentLoopStep");
+        generateQuestions.Config.Should().Contain(new KeyValuePair<string, string>("provider", "ollama"));
+        generateQuestions.Config.Should().Contain(new KeyValuePair<string, string>("model", "llama3.2"));
+        generateQuestions.Config!["systemPrompt"].Should().Contain("{{CleanupTopic.Response}}");
+
+        var synthesizeBlog = steps.Single(step => step.Name == "SynthesizeBlog");
+        synthesizeBlog.Type.Should().Be("LlmCallStep");
+        synthesizeBlog.Config.Should().Contain(new KeyValuePair<string, string>("provider", "openai"));
+        synthesizeBlog.Config.Should().Contain(new KeyValuePair<string, string>("model", "gpt-4o-mini"));
+        synthesizeBlog.Config!["prompt"].Should().Contain("{qaPairs}");
+        synthesizeBlog.Config["prompt"].Should().Contain("{{ParseQuestions.Output}}");
     }
 }

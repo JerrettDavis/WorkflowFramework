@@ -70,9 +70,6 @@ dotnet run
 
 The Aspire dashboard will open automatically. From there, navigate to the **Dashboard.Web** endpoint (typically `https://localhost:5001`).
 
-![Aspire dashboard with projects](../../images/dashboard/aspire-launch.png)
-*The .NET Aspire dashboard showing Dashboard.Web and Dashboard.Api resources.*
-
 ## Your First Workflow
 
 ### Step 1: Create a New Workflow

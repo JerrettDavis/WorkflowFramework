@@ -36,6 +36,46 @@ public class ImportExportTests
         deserialized.Tags.Should().HaveCount(2);
         deserialized.Definition.Steps.Should().HaveCount(1);
         deserialized.FormatVersion.Should().Be("1.0");
+        deserialized.Definition.Canvas.Should().BeNull();
+    }
+
+    [Fact]
+    public void ExportDto_RoundTrip_Json_PreservesCanvasMetadata()
+    {
+        var export = new WorkflowExportDto
+        {
+            Name = "Canvas Workflow",
+            Definition = new WorkflowDefinitionDto
+            {
+                Name = "Canvas Workflow",
+                Steps = [new StepDefinitionDto { Name = "Collect input", Type = "Action" }],
+                Canvas = new WorkflowCanvasDto
+                {
+                    Nodes =
+                    [
+                        new WorkflowCanvasNodeDto
+                        {
+                            Id = "node_1",
+                            Type = "Action",
+                            Label = "Collect input",
+                            X = 32,
+                            Y = 64,
+                            Config = new Dictionary<string, string> { ["label"] = "Collect input", ["provider"] = "openai" }
+                        }
+                    ],
+                    Edges = []
+                }
+            }
+        };
+
+        var json = JsonSerializer.Serialize(export);
+        var deserialized = JsonSerializer.Deserialize<WorkflowExportDto>(json);
+
+        deserialized.Should().NotBeNull();
+        deserialized!.Definition.Canvas.Should().NotBeNull();
+        deserialized.Definition.Canvas!.Nodes.Should().ContainSingle();
+        deserialized.Definition.Canvas.Nodes[0].Label.Should().Be("Collect input");
+        deserialized.Definition.Canvas.Nodes[0].Config.Should().ContainKey("provider");
     }
 
     [Fact]
