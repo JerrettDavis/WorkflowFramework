@@ -574,6 +574,7 @@ public sealed class WorkflowDefinitionBuilder
             {
                 ctx.Properties[$"{stepName}.Message"] = message;
                 ctx.Properties[$"{stepName}.RequiredApprovers"] = stepDef.RequiredApprovers ?? 1;
+                ctx.Properties[$"{stepName}.TimeoutMinutes"] = stepDef.TimeoutMinutes ?? 0;
                 ctx.Properties[$"{stepName}.Status"] = "Pending";
                 return Task.CompletedTask;
             });
@@ -649,11 +650,27 @@ public sealed class WorkflowDefinitionBuilder
     /// Used to honour <see cref="StepDefinition.Name"/> for leaf steps resolved from the registry
     /// so that multiple instances of the same step class can have distinct names and avoid
     /// duplicate-step-name validation failures.
+    /// When the inner step implements <see cref="ICompensatingStep"/>, this wrapper also
+    /// implements <see cref="ICompensatingStep"/> and delegates <see cref="ICompensatingStep.CompensateAsync"/>
+    /// so that saga compensation is not silently lost through the name override.
     /// </summary>
-    private sealed class NamedStep(string name, IStep inner) : IStep
+    private sealed class NamedStep : ICompensatingStep
     {
-        public string Name => name;
-        public Task ExecuteAsync(IWorkflowContext context) => inner.ExecuteAsync(context);
+        private readonly IStep _inner;
+
+        public NamedStep(string name, IStep inner)
+        {
+            Name = name;
+            _inner = inner;
+        }
+
+        public string Name { get; }
+
+        public Task ExecuteAsync(IWorkflowContext context) => _inner.ExecuteAsync(context);
+
+        // Delegate CompensateAsync when the inner step supports it; otherwise no-op.
+        public Task CompensateAsync(IWorkflowContext context) =>
+            _inner is ICompensatingStep comp ? comp.CompensateAsync(context) : Task.CompletedTask;
     }
 
     /// <summary>

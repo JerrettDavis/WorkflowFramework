@@ -911,6 +911,157 @@ public class YamlWorkflowFullTests
         def.Description.Should().BeNull();
     }
 
+    // ── finallySteps field ────────────────────────────────────────────────────
+
+    [Fact]
+    public void Yaml_TryType_WithFinallySteps_LoadsAndBuilds()
+    {
+        var yaml = """
+            name: TryFinallyFlow
+            steps:
+              - name: TryBlock
+                type: try
+                steps:
+                  - type: step
+                    class: RiskyStep
+                finallySteps:
+                  - type: step
+                    class: CleanupStep
+            """;
+
+        var loader = new YamlWorkflowDefinitionLoader();
+        var def = loader.Load(yaml);
+
+        def.Steps[0].Steps.Should().HaveCount(1);
+        def.Steps[0].FinallySteps.Should().HaveCount(1);
+        def.Steps[0].FinallySteps![0].Class.Should().Be("CleanupStep");
+        def.Steps[0].ElseSteps.Should().BeNull(); // elseSteps not set
+
+        var registry = new StepRegistry();
+        registry.Register("RiskyStep", () => new TestStep("RiskyStep"));
+        registry.Register("CleanupStep", () => new TestStep("CleanupStep"));
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        wf.Steps.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void Yaml_TryType_FinallyStepsTakesPrecedenceOverElseSteps()
+    {
+        // When both finallySteps and elseSteps are set, finallySteps wins.
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Type = "try",
+                    Steps = [new StepDefinition { Type = "step", Class = "RiskyStep" }],
+                    FinallySteps = [new StepDefinition { Type = "step", Class = "FinallyStep" }],
+                    ElseSteps = [new StepDefinition { Type = "step", Class = "ElseStep" }]
+                }
+            ]
+        };
+
+        var registry = new StepRegistry();
+        registry.Register("RiskyStep", () => new TestStep("RiskyStep"));
+        registry.Register("FinallyStep", () => new TestStep("FinallyStep"));
+        // ElseStep is NOT registered — if it were used as the finally body, Build would fail.
+        var act = () => new WorkflowDefinitionBuilder(registry).Build(def);
+        act.Should().NotThrow("finallySteps takes precedence over elseSteps");
+    }
+
+    // ── snake_case YAML keys ───────────────────────────────────────────────────
+
+    [Fact]
+    public void Yaml_SnakeCaseKeys_AreNotSupportedByLoader()
+    {
+        // The YAML loader uses CamelCase naming convention.
+        // Snake_case keys (e.g. required_approvers, timeout_minutes) are silently ignored.
+        // Authors must use camelCase keys: requiredApprovers, timeoutMinutes.
+        var yaml = """
+            name: ApprovalFlow
+            steps:
+              - name: HumanReview
+                type: approval
+                message: Review required
+                required_approvers: 3
+                timeout_minutes: 120
+            """;
+
+        var loader = new YamlWorkflowDefinitionLoader();
+        var def = loader.Load(yaml);
+
+        // Loader silently ignores unknown keys — values are null/default.
+        def.Steps[0].RequiredApprovers.Should().BeNull(
+            "snake_case 'required_approvers' is not recognized; use camelCase 'requiredApprovers'");
+        def.Steps[0].TimeoutMinutes.Should().BeNull(
+            "snake_case 'timeout_minutes' is not recognized; use camelCase 'timeoutMinutes'");
+    }
+
+    // ── NamedStep ICompensatingStep delegation ────────────────────────────────
+
+    [Fact]
+    public async Task NamedStep_WithCompensatingInner_DelegatesCompensate()
+    {
+        // When ApplyName wraps a compensating step with a NamedStep, CompensateAsync must
+        // be forwarded to the inner step so saga compensation is not silently lost.
+        var inner = new CompensatingTestStep("OriginalName");
+        var registry = new StepRegistry();
+        registry.Register("CompStep", () => inner);
+
+        var def = new WorkflowDefinition
+        {
+            Compensation = true,
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Name = "RenamedStep",  // override name forces NamedStep wrapping
+                    Type = "step",
+                    Class = "CompStep"
+                }
+            ]
+        };
+
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        wf.Steps.Should().HaveCount(1);
+        wf.Steps[0].Should().BeAssignableTo<ICompensatingStep>(
+            "NamedStep wrapping a compensating inner step must implement ICompensatingStep");
+
+        var comp = (ICompensatingStep)wf.Steps[0];
+        var ctx = new WorkflowContext();
+        await comp.CompensateAsync(ctx);
+        inner.Compensated.Should().BeTrue("CompensateAsync must be delegated to the inner compensating step");
+    }
+
+    // ── approval fallback: TimeoutMinutes ─────────────────────────────────────
+
+    [Fact]
+    public async Task Yaml_ApprovalFallback_RecordsTimeoutMinutes()
+    {
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Name = "Review",
+                    Type = "approval",
+                    Message = "Please review",
+                    RequiredApprovers = 2,
+                    TimeoutMinutes = 60
+                }
+            ]
+        };
+
+        var registry = new StepRegistry(); // "approval" not registered → fallback
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+
+        var ctx = new WorkflowContext();
+        await wf.ExecuteAsync(ctx);
+        ctx.Properties["Review.TimeoutMinutes"].Should().Be(60);
+    }
+
     // ── helpers ────────────────────────────────────────────────────────────────
 
     private sealed class TestStep(string name) : IStep
@@ -934,5 +1085,17 @@ public class YamlWorkflowFullTests
         public string Name => "ThrowStep";
         public Task ExecuteAsync(IWorkflowContext context) =>
             throw new InvalidOperationException("Simulated failure");
+    }
+
+    private sealed class CompensatingTestStep(string name) : ICompensatingStep
+    {
+        public bool Compensated { get; private set; }
+        public string Name => name;
+        public Task ExecuteAsync(IWorkflowContext context) => Task.CompletedTask;
+        public Task CompensateAsync(IWorkflowContext context)
+        {
+            Compensated = true;
+            return Task.CompletedTask;
+        }
     }
 }
