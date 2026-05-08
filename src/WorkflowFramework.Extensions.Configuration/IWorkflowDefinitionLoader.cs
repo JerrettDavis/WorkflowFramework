@@ -570,11 +570,14 @@ public sealed class WorkflowDefinitionBuilder
         {
             var stepName = stepDef.Name ?? "Approval";
             var message = stepDef.Message ?? "Approval required";
+            var timeoutMinutes = stepDef.TimeoutMinutes;
             builder.Step(stepName, ctx =>
             {
                 ctx.Properties[$"{stepName}.Message"] = message;
                 ctx.Properties[$"{stepName}.RequiredApprovers"] = stepDef.RequiredApprovers ?? 1;
-                ctx.Properties[$"{stepName}.TimeoutMinutes"] = stepDef.TimeoutMinutes ?? 0;
+                // Only record TimeoutMinutes when explicitly configured; null means no timeout was set.
+                if (timeoutMinutes.HasValue)
+                    ctx.Properties[$"{stepName}.TimeoutMinutes"] = timeoutMinutes.Value;
                 ctx.Properties[$"{stepName}.Status"] = "Pending";
                 return Task.CompletedTask;
             });
