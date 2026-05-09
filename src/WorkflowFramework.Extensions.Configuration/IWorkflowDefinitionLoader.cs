@@ -254,55 +254,28 @@ public sealed class WorkflowDefinitionBuilder
         else if (stepDef.Parallel != null && stepDef.Parallel.Count > 0)
         {
             // Legacy format: parallel with a flat list of class names
-            builder.Parallel(p =>
+            // Use a temp builder to capture the created step so we can apply the configured name.
+            var tempBuilder = Workflow.Create("_temp");
+            tempBuilder.Parallel(p =>
             {
                 foreach (var parallelType in stepDef.Parallel)
                     p.Step(_stepRegistry.Resolve(parallelType));
             });
+            builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
         }
         else if (stepDef.Condition != null && (stepDef.Then != null || stepDef.ThenSteps?.Count > 0))
         {
-            // Legacy conditional format
-            Func<IWorkflowContext, bool> predicate = ctx =>
-            {
-                ctx.Properties.TryGetValue(stepDef.Condition, out var val);
-                return val is true or "true";
-            };
-
-            var stepName = stepDef.Name ?? "conditional";
-
-            if (stepDef.ThenSteps?.Count > 0)
-            {
-                var thenStep = BuildStepsAsGroupStep($"{stepName}_then", stepDef.ThenSteps);
-                if (stepDef.ElseSteps?.Count > 0)
-                {
-                    var elseStep = BuildStepsAsGroupStep($"{stepName}_else", stepDef.ElseSteps);
-                    builder.If(predicate).Then(thenStep).Else(elseStep);
-                }
-                else
-                {
-                    builder.If(predicate).Then(thenStep).EndIf();
-                }
-            }
-            else
-            {
-                var thenStep = _stepRegistry.Resolve(stepDef.Then!);
-                if (stepDef.Else != null)
-                {
-                    var elseStep = _stepRegistry.Resolve(stepDef.Else);
-                    builder.If(predicate).Then(thenStep).Else(elseStep);
-                }
-                else
-                {
-                    builder.If(predicate).Then(thenStep).EndIf();
-                }
-            }
+            // Legacy conditional format — delegate to BuildConditionalStep so ApplyName is applied consistently.
+            BuildConditionalStep(builder, stepDef);
         }
         else if (stepDef.Retry != null && !string.IsNullOrEmpty(stepDef.Type))
         {
             // Legacy format: single step with retry wrapping
+            // Use a temp builder to capture the created step so we can apply the configured name.
             var retryStep = _stepRegistry.Resolve(stepDef.Type);
-            builder.Retry(b => b.Step(retryStep), stepDef.Retry.MaxAttempts);
+            var tempBuilder = Workflow.Create("_temp");
+            tempBuilder.Retry(b => b.Step(retryStep), stepDef.Retry.MaxAttempts);
+            builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
         }
         else if (!string.IsNullOrEmpty(stepDef.Class))
         {
