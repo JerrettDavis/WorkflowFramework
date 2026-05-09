@@ -309,7 +309,10 @@ public sealed class WorkflowDefinitionBuilder
         // Prefer nested step definitions; fall back to legacy class-name strings
         var thenSteps = stepDef.ThenSteps;
         var elseSteps = stepDef.ElseSteps;
-        var stepName = stepDef.Name ?? "conditional";
+        // Use the condition key as the default name so that multiple unnamed conditionals with
+        // different condition expressions produce unique branch-group names and don't collide in
+        // DefaultWorkflowValidator's duplicate-step-name check.
+        var stepName = stepDef.Name ?? conditionKey;
 
         IStep thenStep;
         if (thenSteps != null && thenSteps.Count > 0)
