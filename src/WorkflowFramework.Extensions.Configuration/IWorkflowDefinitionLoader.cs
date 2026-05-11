@@ -644,12 +644,20 @@ public sealed class WorkflowDefinitionBuilder
 
     /// <summary>
     /// An inline step that executes a workflow — used when multiple steps must be grouped
-    /// for a conditional Then/Else branch.
+    /// for a conditional Then/Else branch. Mirrors <c>SubWorkflowStep</c> semantics: sets
+    /// <see cref="IWorkflowContext.IsAborted"/> when the grouped workflow does not succeed so
+    /// that subsequent steps in the outer workflow are skipped when a branch step fails.
     /// </summary>
     private sealed class InlineWorkflowStep(string name, IWorkflow workflow) : IStep
     {
         public string Name => name;
-        public Task ExecuteAsync(IWorkflowContext context) => workflow.ExecuteAsync(context);
+
+        public async Task ExecuteAsync(IWorkflowContext context)
+        {
+            var result = await workflow.ExecuteAsync(context).ConfigureAwait(false);
+            if (!result.IsSuccess)
+                context.IsAborted = true;
+        }
     }
 
     /// <summary>
@@ -723,8 +731,11 @@ public sealed class WorkflowDefinitionBuilder
     }
 
     /// <summary>
-    /// Executes an inner <see cref="IStep"/> with a wall-clock timeout.
-    /// Throws <see cref="TimeoutException"/> if the step does not complete within the allotted time.
+    /// Executes an inner <see cref="IStep"/> with a wall-clock timeout enforced by racing the
+    /// step task against <see cref="Task.Delay(TimeSpan)"/>. A cooperative cancellation signal
+    /// is also sent to the inner step's context token so that well-behaved steps can stop early.
+    /// Throws <see cref="TimeoutException"/> if the step does not complete within the allotted
+    /// time, regardless of whether the inner step observes the <see cref="CancellationToken"/>.
     /// Used when the inner step does not implement <see cref="ICompensatingStep"/>.
     /// </summary>
     private sealed class TimeoutStepWrapper(IStep inner, TimeSpan timeout) : IStep
@@ -734,23 +745,44 @@ public sealed class WorkflowDefinitionBuilder
         public async Task ExecuteAsync(IWorkflowContext context)
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
-            cts.CancelAfter(timeout);
+            cts.CancelAfter(timeout); // cooperative signal to the inner step
             var timeoutContext = new TimeoutContextWrapper(context, cts.Token);
+
+            using var delayCts = new CancellationTokenSource();
+            var stepTask = inner.ExecuteAsync(timeoutContext);
+            var delayTask = Task.Delay(timeout, delayCts.Token);
             try
             {
-                await inner.ExecuteAsync(timeoutContext).ConfigureAwait(false);
+                var first = await Task.WhenAny(stepTask, delayTask).ConfigureAwait(false);
+                if (first != stepTask)
+                    throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+
+                // Propagate step exceptions — convert OCE from our own timeout CTS to TimeoutException
+                // so callers see a consistent TimeoutException instead of OperationCanceledException.
+                try
+                {
+                    await stepTask.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!context.CancellationToken.IsCancellationRequested)
+                {
+                    throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+                }
             }
-            catch (OperationCanceledException) when (!context.CancellationToken.IsCancellationRequested)
+            finally
             {
-                throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+                delayCts.Cancel(); // ensure the delay task is always cleaned up
             }
         }
     }
 
     /// <summary>
-    /// Executes an inner <see cref="ICompensatingStep"/> with a wall-clock timeout,
-    /// delegating <see cref="ICompensatingStep.CompensateAsync"/> to the inner step
-    /// so that saga compensation is not silently lost through the timeout wrapper.
+    /// Executes an inner <see cref="ICompensatingStep"/> with a wall-clock timeout enforced by
+    /// racing the step task against <see cref="Task.Delay(TimeSpan)"/>. A cooperative cancellation
+    /// signal is also sent to the inner step's context token so that well-behaved steps can stop
+    /// early. Throws <see cref="TimeoutException"/> if the step does not complete within the
+    /// allotted time, regardless of whether the inner step observes the <see cref="CancellationToken"/>.
+    /// Delegates <see cref="ICompensatingStep.CompensateAsync"/> to the inner step so that saga
+    /// compensation is not silently lost through the timeout wrapper.
     /// </summary>
     private sealed class TimeoutCompensatingStepWrapper(ICompensatingStep inner, TimeSpan timeout)
         : ICompensatingStep
@@ -760,15 +792,32 @@ public sealed class WorkflowDefinitionBuilder
         public async Task ExecuteAsync(IWorkflowContext context)
         {
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
-            cts.CancelAfter(timeout);
+            cts.CancelAfter(timeout); // cooperative signal to the inner step
             var timeoutContext = new TimeoutContextWrapper(context, cts.Token);
+
+            using var delayCts = new CancellationTokenSource();
+            var stepTask = inner.ExecuteAsync(timeoutContext);
+            var delayTask = Task.Delay(timeout, delayCts.Token);
             try
             {
-                await inner.ExecuteAsync(timeoutContext).ConfigureAwait(false);
+                var first = await Task.WhenAny(stepTask, delayTask).ConfigureAwait(false);
+                if (first != stepTask)
+                    throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+
+                // Propagate step exceptions — convert OCE from our own timeout CTS to TimeoutException
+                // so callers see a consistent TimeoutException instead of OperationCanceledException.
+                try
+                {
+                    await stepTask.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException) when (!context.CancellationToken.IsCancellationRequested)
+                {
+                    throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+                }
             }
-            catch (OperationCanceledException) when (!context.CancellationToken.IsCancellationRequested)
+            finally
             {
-                throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+                delayCts.Cancel(); // ensure the delay task is always cleaned up
             }
         }
 

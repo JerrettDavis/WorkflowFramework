@@ -1200,6 +1200,80 @@ public class YamlWorkflowFullTests
         wf.Steps[0].Name.Should().Be("SlowOp");
     }
 
+    // ── InlineWorkflowStep failure propagation ────────────────────────────────
+
+    [Fact]
+    public async Task Conditional_BranchFailure_AbortsOuterWorkflow()
+    {
+        // A failing step inside a conditional Then-branch must not be silently swallowed.
+        // Before the fix, InlineWorkflowStep returned the sub-workflow result without checking
+        // it, so the outer workflow would complete normally even when a branch step threw.
+        var registry = new StepRegistry();
+        registry.Register("BadStep", () => new ThrowingStep());
+
+        var subsequentExecuted = new List<string>();
+        registry.Register("AfterStep", () => new TrackingStep("AfterStep", subsequentExecuted));
+
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Type = "conditional",
+                    Condition = "isActive",  // property key — must be set in context to trigger branch
+                    ThenSteps = [new StepDefinition { Type = "step", Class = "BadStep" }]
+                },
+                // This step must NOT execute if the conditional branch failed
+                new StepDefinition { Type = "step", Class = "AfterStep" }
+            ]
+        };
+
+        var ctx = new WorkflowContext();
+        ctx.Properties["isActive"] = true; // ensure the Then-branch executes
+
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        var result = await wf.ExecuteAsync(ctx);
+
+        result.Status.Should().NotBe(WorkflowStatus.Completed,
+            "a failing branch step must prevent the outer workflow from completing normally");
+        subsequentExecuted.Should().BeEmpty(
+            "subsequent steps must not run after a failed conditional branch");
+    }
+
+    // ── TimeoutStepWrapper wall-clock enforcement ─────────────────────────────
+
+    [Fact]
+    public async Task Timeout_WallClock_EnforcedEvenWhenStepIgnoresCancellationToken()
+    {
+        // Verifies that TimeoutStepWrapper enforces the wall-clock timeout via Task.WhenAny even
+        // when the inner step does not observe its CancellationToken (cooperative cancellation alone
+        // would not stop such a step within the configured timeout).
+        var registry = new StepRegistry();
+        registry.Register("IgnorantStep", () => new CancellationIgnorantSlowStep());
+
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Name = "Slow",
+                    Type = "step",
+                    Class = "IgnorantStep",
+                    TimeoutSeconds = 0.1 // 100 ms
+                }
+            ]
+        };
+
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        var result = await wf.ExecuteAsync(new WorkflowContext());
+
+        result.Status.Should().Be(WorkflowStatus.Faulted);
+        result.Errors.Should().ContainSingle()
+            .Which.Exception.Should().BeOfType<TimeoutException>();
+    }
+
     // ── helpers ────────────────────────────────────────────────────────────────
 
     private sealed class TestStep(string name) : IStep
@@ -1230,6 +1304,17 @@ public class YamlWorkflowFullTests
         public string Name => "SlowStep";
         public Task ExecuteAsync(IWorkflowContext context) =>
             Task.Delay(delay, context.CancellationToken);
+    }
+
+    /// <summary>
+    /// A step that does NOT observe the CancellationToken — used to verify that
+    /// <c>TimeoutStepWrapper</c> enforces wall-clock timeouts even for uncooperative steps.
+    /// </summary>
+    private sealed class CancellationIgnorantSlowStep : IStep
+    {
+        public string Name => "IgnorantStep";
+        public Task ExecuteAsync(IWorkflowContext context) =>
+            Task.Delay(TimeSpan.FromSeconds(30)); // intentionally ignores context.CancellationToken
     }
 
     private sealed class CompensatingTestStep(string name) : ICompensatingStep
