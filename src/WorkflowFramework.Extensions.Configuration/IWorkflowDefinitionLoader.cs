@@ -483,8 +483,12 @@ public sealed class WorkflowDefinitionBuilder
             BuildSteps(catchBodyBuilder, catchSteps);
             var catchWorkflow = catchBodyBuilder.Build();
 
-            Func<IWorkflowContext, Exception, Task> handler = (ctx, _) =>
-                catchWorkflow.ExecuteAsync(ctx);
+            Func<IWorkflowContext, Exception, Task> handler = async (ctx, _) =>
+            {
+                var result = await catchWorkflow.ExecuteAsync(ctx).ConfigureAwait(false);
+                if (!result.IsSuccess)
+                    ctx.IsAborted = true;
+            };
 
             // Use reflection to call the generic Catch<TException> with the resolved exception type.
             var catchMethod = typeof(ITryCatchBuilder)
@@ -755,7 +759,16 @@ public sealed class WorkflowDefinitionBuilder
             {
                 var first = await Task.WhenAny(stepTask, delayTask).ConfigureAwait(false);
                 if (first != stepTask)
+                {
+                    // Observe the abandoned task to avoid UnobservedTaskException when the inner step
+                    // eventually faults or cancels after we have already thrown the TimeoutException.
+                    _ = stepTask.ContinueWith(
+                        static t => _ = t.Exception,
+                        CancellationToken.None,
+                        TaskContinuationOptions.OnlyOnFaulted,
+                        TaskScheduler.Default);
                     throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+                }
 
                 // Propagate step exceptions — convert OCE from our own timeout CTS to TimeoutException
                 // so callers see a consistent TimeoutException instead of OperationCanceledException.
@@ -802,7 +815,16 @@ public sealed class WorkflowDefinitionBuilder
             {
                 var first = await Task.WhenAny(stepTask, delayTask).ConfigureAwait(false);
                 if (first != stepTask)
+                {
+                    // Observe the abandoned task to avoid UnobservedTaskException when the inner step
+                    // eventually faults or cancels after we have already thrown the TimeoutException.
+                    _ = stepTask.ContinueWith(
+                        static t => _ = t.Exception,
+                        CancellationToken.None,
+                        TaskContinuationOptions.OnlyOnFaulted,
+                        TaskScheduler.Default);
                     throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+                }
 
                 // Propagate step exceptions — convert OCE from our own timeout CTS to TimeoutException
                 // so callers see a consistent TimeoutException instead of OperationCanceledException.
