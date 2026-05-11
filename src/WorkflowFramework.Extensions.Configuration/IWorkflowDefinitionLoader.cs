@@ -196,6 +196,22 @@ public sealed class WorkflowDefinitionBuilder
 
     private void BuildStep(IWorkflowBuilder builder, StepDefinition stepDef)
     {
+        // When TimeoutSeconds is configured, capture the built step via a temp builder and wrap it.
+        // This ensures timeout is applied to the entire composite step (not just its body steps).
+        if (stepDef.TimeoutSeconds is > 0)
+        {
+            var tempCapture = Workflow.Create("_capture");
+            BuildStepCore(tempCapture, stepDef);
+            builder.Step(ApplyTimeout(tempCapture.Build().Steps[0], stepDef.TimeoutSeconds));
+        }
+        else
+        {
+            BuildStepCore(builder, stepDef);
+        }
+    }
+
+    private void BuildStepCore(IWorkflowBuilder builder, StepDefinition stepDef)
+    {
         var typeCategory = stepDef.Type?.ToLowerInvariant() ?? string.Empty;
 
         if (KnownCategories.Contains(typeCategory))
@@ -569,7 +585,8 @@ public sealed class WorkflowDefinitionBuilder
         }
         catch (KeyNotFoundException)
         {
-            var stepName = stepDef.Name ?? "Approval";
+            var stepName = stepDef.Name
+                ?? (string.IsNullOrWhiteSpace(stepDef.Message) ? "Approval" : stepDef.Message);
             var message = stepDef.Message ?? "Approval required";
             var timeoutMinutes = stepDef.TimeoutMinutes;
             builder.Step(stepName, ctx =>
@@ -669,5 +686,92 @@ public sealed class WorkflowDefinitionBuilder
         return step is ICompensatingStep comp
             ? new NamedCompensatingStep(overrideName, comp)
             : new NamedStep(overrideName, step);
+    }
+
+    /// <summary>
+    /// Wraps <paramref name="step"/> in a <see cref="TimeoutStepWrapper"/> (or
+    /// <see cref="TimeoutCompensatingStepWrapper"/> for compensating steps) when
+    /// <paramref name="timeoutSeconds"/> is positive. Returns the step unchanged when the
+    /// value is null or &lt;= 0. The wrapper preserves the inner step's <see cref="IStep.Name"/>
+    /// so that the configured step name remains visible in the built workflow.
+    /// </summary>
+    private static IStep ApplyTimeout(IStep step, double? timeoutSeconds)
+    {
+        if (timeoutSeconds is null or <= 0)
+            return step;
+        var timeout = TimeSpan.FromSeconds(timeoutSeconds.Value);
+        return step is ICompensatingStep comp
+            ? new TimeoutCompensatingStepWrapper(comp, timeout)
+            : new TimeoutStepWrapper(step, timeout);
+    }
+
+    /// <summary>
+    /// Wraps an <see cref="IWorkflowContext"/> to substitute a timeout-linked
+    /// <see cref="CancellationToken"/> while delegating all other members to the original context.
+    /// </summary>
+    private sealed class TimeoutContextWrapper(IWorkflowContext inner, CancellationToken cancellationToken)
+        : IWorkflowContext
+    {
+        public string WorkflowId => inner.WorkflowId;
+        public string CorrelationId => inner.CorrelationId;
+        public CancellationToken CancellationToken { get; } = cancellationToken;
+        public IDictionary<string, object?> Properties => inner.Properties;
+        public string? CurrentStepName { get => inner.CurrentStepName; set => inner.CurrentStepName = value; }
+        public int CurrentStepIndex { get => inner.CurrentStepIndex; set => inner.CurrentStepIndex = value; }
+        public bool IsAborted { get => inner.IsAborted; set => inner.IsAborted = value; }
+        public IList<WorkflowError> Errors => inner.Errors;
+    }
+
+    /// <summary>
+    /// Executes an inner <see cref="IStep"/> with a wall-clock timeout.
+    /// Throws <see cref="TimeoutException"/> if the step does not complete within the allotted time.
+    /// Used when the inner step does not implement <see cref="ICompensatingStep"/>.
+    /// </summary>
+    private sealed class TimeoutStepWrapper(IStep inner, TimeSpan timeout) : IStep
+    {
+        public string Name => inner.Name;
+
+        public async Task ExecuteAsync(IWorkflowContext context)
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            cts.CancelAfter(timeout);
+            var timeoutContext = new TimeoutContextWrapper(context, cts.Token);
+            try
+            {
+                await inner.ExecuteAsync(timeoutContext).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!context.CancellationToken.IsCancellationRequested)
+            {
+                throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Executes an inner <see cref="ICompensatingStep"/> with a wall-clock timeout,
+    /// delegating <see cref="ICompensatingStep.CompensateAsync"/> to the inner step
+    /// so that saga compensation is not silently lost through the timeout wrapper.
+    /// </summary>
+    private sealed class TimeoutCompensatingStepWrapper(ICompensatingStep inner, TimeSpan timeout)
+        : ICompensatingStep
+    {
+        public string Name => inner.Name;
+
+        public async Task ExecuteAsync(IWorkflowContext context)
+        {
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(context.CancellationToken);
+            cts.CancelAfter(timeout);
+            var timeoutContext = new TimeoutContextWrapper(context, cts.Token);
+            try
+            {
+                await inner.ExecuteAsync(timeoutContext).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (!context.CancellationToken.IsCancellationRequested)
+            {
+                throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
+            }
+        }
+
+        public Task CompensateAsync(IWorkflowContext context) => inner.CompensateAsync(context);
     }
 }

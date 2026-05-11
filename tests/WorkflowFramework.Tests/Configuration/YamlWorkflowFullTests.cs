@@ -350,8 +350,10 @@ public class YamlWorkflowFullTests
     }
 
     [Fact]
-    public void Yaml_TryType_WithFinally_LoadsAndBuilds()
+    public void Yaml_TryType_WithElseSteps_AsLegacyFinally_LoadsAndBuilds()
     {
+        // This test covers the legacy finally encoding via 'elseSteps' (not the dedicated 'finallySteps' key).
+        // See Yaml_TryType_WithFinallySteps_LoadsAndBuilds for the new 'finallySteps' path.
         var yaml = """
             name: TryFinallyFlow
             steps:
@@ -1091,6 +1093,113 @@ public class YamlWorkflowFullTests
         ctx.Properties["Review.TimeoutMinutes"].Should().Be(60);
     }
 
+    [Fact]
+    public void Yaml_ApprovalFallback_UsesMessageAsDefaultStepName_WhenNameOmitted()
+    {
+        // Two unnamed approval steps with different messages must produce distinct step names
+        // so that DefaultWorkflowValidator does not flag a duplicate-step-name error.
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition { Type = "approval", Message = "Manager sign-off" },
+                new StepDefinition { Type = "approval", Message = "Director approval" }
+            ]
+        };
+
+        var registry = new StepRegistry(); // "approval" not registered → fallback
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+
+        wf.Steps.Should().HaveCount(2);
+        wf.Steps[0].Name.Should().Be("Manager sign-off");
+        wf.Steps[1].Name.Should().Be("Director approval");
+        wf.Steps[0].Name.Should().NotBe(wf.Steps[1].Name,
+            "two unnamed approval steps with different messages must not collide");
+    }
+
+    // ── timeoutSeconds ────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Yaml_StepType_WithTimeoutSeconds_FaultsWithTimeoutException_WhenStepExceedsLimit()
+    {
+        var registry = new StepRegistry();
+        registry.Register("SlowStep", () => new SlowStep(TimeSpan.FromSeconds(10)));
+
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Name = "SlowOp",
+                    Type = "step",
+                    Class = "SlowStep",
+                    TimeoutSeconds = 0.05 // 50 ms — the step takes 10 s so it will time out
+                }
+            ]
+        };
+
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        wf.Steps.Should().HaveCount(1);
+        wf.Steps[0].Name.Should().Be("SlowOp", "the configured name is preserved on the timeout wrapper");
+
+        var ctx = new WorkflowContext();
+        var result = await wf.ExecuteAsync(ctx);
+        result.Status.Should().Be(WorkflowStatus.Faulted);
+        result.Errors.Should().ContainSingle()
+            .Which.Exception.Should().BeOfType<TimeoutException>();
+    }
+
+    [Fact]
+    public async Task Yaml_StepType_WithoutTimeoutSeconds_CompletesNormally()
+    {
+        var executed = new List<string>();
+        var registry = new StepRegistry();
+        registry.Register("QuickStep", () => new TrackingStep("QuickStep", executed));
+
+        var def = new WorkflowDefinition
+        {
+            Steps =
+            [
+                new StepDefinition
+                {
+                    Name = "QuickOp",
+                    Type = "step",
+                    Class = "QuickStep"
+                    // TimeoutSeconds intentionally omitted
+                }
+            ]
+        };
+
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        await wf.ExecuteAsync(new WorkflowContext());
+        executed.Should().ContainSingle().Which.Should().Be("QuickStep");
+    }
+
+    [Fact]
+    public void Yaml_TimeoutSeconds_LoadsAndBuilds()
+    {
+        var yaml = """
+            name: TimeoutFlow
+            steps:
+              - name: SlowOp
+                type: step
+                class: SlowStep
+                timeoutSeconds: 0.1
+            """;
+
+        var loader = new YamlWorkflowDefinitionLoader();
+        var def = loader.Load(yaml);
+
+        def.Steps[0].TimeoutSeconds.Should().BeApproximately(0.1, 0.001);
+
+        var registry = new StepRegistry();
+        registry.Register("SlowStep", () => new SlowStep(TimeSpan.FromSeconds(10)));
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        wf.Steps.Should().HaveCount(1);
+        wf.Steps[0].Name.Should().Be("SlowOp");
+    }
+
     // ── helpers ────────────────────────────────────────────────────────────────
 
     private sealed class TestStep(string name) : IStep
@@ -1114,6 +1223,13 @@ public class YamlWorkflowFullTests
         public string Name => "ThrowStep";
         public Task ExecuteAsync(IWorkflowContext context) =>
             throw new InvalidOperationException("Simulated failure");
+    }
+
+    private sealed class SlowStep(TimeSpan delay) : IStep
+    {
+        public string Name => "SlowStep";
+        public Task ExecuteAsync(IWorkflowContext context) =>
+            Task.Delay(delay, context.CancellationToken);
     }
 
     private sealed class CompensatingTestStep(string name) : ICompensatingStep
