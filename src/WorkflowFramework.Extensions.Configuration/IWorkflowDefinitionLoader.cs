@@ -892,11 +892,13 @@ public sealed class WorkflowDefinitionBuilder
 
                 // Propagate step exceptions — convert OCE from our own timeout CTS to TimeoutException
                 // so callers see a consistent TimeoutException instead of OperationCanceledException.
+                // Only convert when our own CTS triggered the cancellation and the outer context token
+                // is not the reason — this prevents misreporting inner-step self-cancellations as timeouts.
                 try
                 {
                     await stepTask.ConfigureAwait(false);
                 }
-                catch (OperationCanceledException) when (!context.CancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException) when (cts.IsCancellationRequested && !context.CancellationToken.IsCancellationRequested)
                 {
                     throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
                 }
@@ -951,11 +953,13 @@ public sealed class WorkflowDefinitionBuilder
 
                 // Propagate step exceptions — convert OCE from our own timeout CTS to TimeoutException
                 // so callers see a consistent TimeoutException instead of OperationCanceledException.
+                // Only convert when our own CTS triggered the cancellation and the outer context token
+                // is not the reason — this prevents misreporting inner-step self-cancellations as timeouts.
                 try
                 {
                     await stepTask.ConfigureAwait(false);
                 }
-                catch (OperationCanceledException) when (!context.CancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException) when (cts.IsCancellationRequested && !context.CancellationToken.IsCancellationRequested)
                 {
                     throw new TimeoutException($"Step '{inner.Name}' timed out after {timeout}.");
                 }
