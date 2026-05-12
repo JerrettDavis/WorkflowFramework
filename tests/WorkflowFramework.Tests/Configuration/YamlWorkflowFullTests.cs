@@ -139,7 +139,7 @@ public class YamlWorkflowFullTests
         step.ThenSteps![0].Class.Should().Be("ChargePayment");
         step.ElseSteps.Should().HaveCount(1);
         step.ElseSteps![0].Class.Should().Be("RejectOrder");
-        // Scalar 'then'/'else' should remain unpopulated (they were sequences, not strings).
+        // The scalar 'then'/'else' properties should be null — the sequences were mapped to thenSteps/elseSteps.
         step.Then.Should().BeNull();
         step.Else.Should().BeNull();
 

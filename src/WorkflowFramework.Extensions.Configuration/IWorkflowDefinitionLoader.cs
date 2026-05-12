@@ -160,7 +160,6 @@ public sealed class YamlWorkflowDefinitionLoader : IWorkflowDefinitionLoader
 
         using var writer = new StringWriter();
         stream.Save(writer, assignAnchors: false);
-        // YamlStream.Save prepends "..." document-end markers; strip the trailing one if present.
         return writer.ToString();
     }
 
