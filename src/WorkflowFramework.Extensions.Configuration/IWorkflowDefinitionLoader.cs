@@ -613,8 +613,15 @@ public sealed class WorkflowDefinitionBuilder
             throw new InvalidOperationException(
                 $"Saga step '{stepDef.Name ?? "unnamed"}' requires a non-empty 'steps' list.");
 
+        // Derive a unique default name when stepDef.Name is absent so multiple unnamed sagas
+        // in the same workflow don't all resolve to "SubWorkflow(Saga)" and collide in
+        // DefaultWorkflowValidator. Use all body-step identifiers joined with '::' (unlikely
+        // to appear in class/step names) as a deterministic fingerprint of the saga body.
+        var sagaKey = stepDef.Name
+            ?? string.Join("::", bodySteps.Select(s => s.Name ?? s.Class ?? s.Type ?? "step"));
+
         // Build a compensating sub-workflow for the saga group
-        var sagaBuilder = Workflow.Create(stepDef.Name ?? "Saga");
+        var sagaBuilder = Workflow.Create(sagaKey);
         sagaBuilder.WithCompensation();
         BuildSteps(sagaBuilder, bodySteps);
         var sagaWorkflow = sagaBuilder.Build();
@@ -758,7 +765,10 @@ public sealed class WorkflowDefinitionBuilder
             try
             {
                 var first = await Task.WhenAny(stepTask, delayTask).ConfigureAwait(false);
-                if (first != stepTask)
+                // Guard against the simultaneous-completion race: Task.WhenAny may return delayTask
+                // even when stepTask completed at essentially the same instant. Only treat it as a
+                // true timeout when the delay won *and* the step has not yet completed.
+                if (first != stepTask && !stepTask.IsCompleted)
                 {
                     // Observe the abandoned task to avoid UnobservedTaskException when the inner step
                     // eventually faults or cancels after we have already thrown the TimeoutException.
@@ -814,7 +824,10 @@ public sealed class WorkflowDefinitionBuilder
             try
             {
                 var first = await Task.WhenAny(stepTask, delayTask).ConfigureAwait(false);
-                if (first != stepTask)
+                // Guard against the simultaneous-completion race: Task.WhenAny may return delayTask
+                // even when stepTask completed at essentially the same instant. Only treat it as a
+                // true timeout when the delay won *and* the step has not yet completed.
+                if (first != stepTask && !stepTask.IsCompleted)
                 {
                     // Observe the abandoned task to avoid UnobservedTaskException when the inner step
                     // eventually faults or cancels after we have already thrown the TimeoutException.

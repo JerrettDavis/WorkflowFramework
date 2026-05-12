@@ -142,6 +142,13 @@ public sealed class StepDefinition
     /// <summary>
     /// Gets or sets loop configuration (for forEach/while/doWhile steps).
     /// </summary>
+    /// <remarks>
+    /// <b>Note:</b> This property is not currently read by <c>WorkflowDefinitionBuilder</c>.
+    /// The loop variant is driven by <see cref="Type"/> (<c>"foreach"</c>, <c>"while"</c>, or
+    /// <c>"dowhile"</c>), the loop condition by <see cref="Condition"/>, and the loop body by
+    /// <see cref="Steps"/>. <see cref="LoopDefinition.MaxIterations"/> is reserved for a future
+    /// release and has no runtime effect at this time.
+    /// </remarks>
     [JsonPropertyName("loop")]
     public LoopDefinition? Loop { get; set; }
 
