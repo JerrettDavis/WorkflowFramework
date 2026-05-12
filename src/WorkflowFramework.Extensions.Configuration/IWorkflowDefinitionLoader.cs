@@ -361,7 +361,7 @@ public sealed class WorkflowDefinitionBuilder
         {
             tempBuilder.If(predicate).Then(thenStep).EndIf();
         }
-        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepName));
     }
 
     private void BuildParallelStep(IWorkflowBuilder builder, StepDefinition stepDef)
