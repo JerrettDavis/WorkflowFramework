@@ -744,12 +744,7 @@ public sealed class WorkflowDefinitionBuilder
         IReadOnlyList<StepDefinition> steps,
         IReadOnlyList<CatchDefinition>? catches = null)
     {
-        var stepPart = string.Join(
-            "::",
-            steps.Select(s =>
-                s.Name
-                ?? s.Class
-                ?? $"{s.Type ?? "step"}({s.Condition ?? s.SubWorkflow ?? s.Message ?? string.Empty})"));
+        var stepPart = string.Join("::", steps.Select(GetStepIdentifier));
 
         if (catches is { Count: > 0 })
         {
@@ -758,6 +753,22 @@ public sealed class WorkflowDefinitionBuilder
         }
 
         return stepPart;
+    }
+
+    /// <summary>
+    /// Returns a short, deterministic identifier for a step definition used as a component of a
+    /// composite key.  Prefers <c>Name</c>, then <c>Class</c>, and finally falls back to
+    /// <c>Type</c> optionally qualified by the first distinguishing field
+    /// (<c>Condition</c>, <c>SubWorkflow</c>, or <c>Message</c>) to avoid generic-type collisions.
+    /// </summary>
+    private static string GetStepIdentifier(StepDefinition s)
+    {
+        if (s.Name is { Length: > 0 }) return s.Name;
+        if (s.Class is { Length: > 0 }) return s.Class;
+
+        var baseType = s.Type ?? "step";
+        var qualifier = s.Condition ?? s.SubWorkflow ?? s.Message;
+        return qualifier is { Length: > 0 } ? $"{baseType}({qualifier})" : baseType;
     }
 
     /// <summary>
