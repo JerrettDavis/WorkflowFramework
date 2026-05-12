@@ -577,9 +577,12 @@ public sealed class WorkflowDefinitionBuilder
                 "Sub-workflow step requires 'subWorkflow' or 'class' to identify the workflow.");
 
         if (_subWorkflows == null || !_subWorkflows.TryGetValue(key, out var wf))
-            throw new InvalidOperationException(
-                $"Sub-workflow '{key}' is not registered. " +
-                $"Available sub-workflows: [{string.Join(", ", _subWorkflows?.Keys ?? Enumerable.Empty<string>())}].");
+        {
+            var available = _subWorkflows?.Count > 0
+                ? $"Available sub-workflows: [{string.Join(", ", _subWorkflows.Keys)}]."
+                : "No sub-workflows are registered.";
+            throw new InvalidOperationException($"Sub-workflow '{key}' is not registered. {available}");
+        }
 
         // Use a temp builder to capture the SubWorkflowStep so we can apply the configured name.
         var tempBuilder = Workflow.Create("_temp");
