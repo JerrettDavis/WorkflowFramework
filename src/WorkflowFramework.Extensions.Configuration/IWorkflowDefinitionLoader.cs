@@ -394,6 +394,8 @@ public sealed class WorkflowDefinitionBuilder
         var itemsKey = stepDef.Condition ?? "items";
 
         // Use a temp builder to capture the created step so we can apply the configured name.
+        // Fall back to itemsKey so multiple unnamed foreach steps with different item sources
+        // produce distinct step names and pass DefaultWorkflowValidator.
         var tempBuilder = Workflow.Create("_temp");
         tempBuilder.ForEach<object>(
             ctx =>
@@ -407,7 +409,7 @@ public sealed class WorkflowDefinitionBuilder
                 return Array.Empty<object>();
             },
             b => BuildSteps(b, bodySteps));
-        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name ?? itemsKey));
     }
 
     private void BuildWhileStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -418,6 +420,8 @@ public sealed class WorkflowDefinitionBuilder
         var bodySteps = stepDef.Steps ?? [];
 
         // Use a temp builder to capture the created step so we can apply the configured name.
+        // Fall back to conditionKey so multiple unnamed while steps with different conditions
+        // produce distinct step names and pass DefaultWorkflowValidator.
         var tempBuilder = Workflow.Create("_temp");
         tempBuilder.While(
             ctx =>
@@ -426,7 +430,7 @@ public sealed class WorkflowDefinitionBuilder
                 return val is true or "true";
             },
             b => BuildSteps(b, bodySteps));
-        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name ?? conditionKey));
     }
 
     private void BuildDoWhileStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -437,6 +441,8 @@ public sealed class WorkflowDefinitionBuilder
         var bodySteps = stepDef.Steps ?? [];
 
         // Use a temp builder to capture the created step so we can apply the configured name.
+        // Fall back to conditionKey so multiple unnamed dowhile steps with different conditions
+        // produce distinct step names and pass DefaultWorkflowValidator.
         var tempBuilder = Workflow.Create("_temp");
         tempBuilder.DoWhile(
             b => BuildSteps(b, bodySteps),
@@ -445,7 +451,7 @@ public sealed class WorkflowDefinitionBuilder
                 ctx.Properties.TryGetValue(conditionKey, out var val);
                 return val is true or "true";
             });
-        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name ?? conditionKey));
     }
 
     private void BuildRetryGroupStep(IWorkflowBuilder builder, StepDefinition stepDef)
@@ -502,7 +508,11 @@ public sealed class WorkflowDefinitionBuilder
         else
             tryCatchBuilder.EndTry();
 
-        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
+        // Derive a unique default name from try-body step identifiers and caught exception types so
+        // multiple unnamed try blocks in the same workflow don't all resolve to "Try" and collide in
+        // DefaultWorkflowValidator.
+        var tryKey = stepDef.Name ?? BuildCompositeKey(tryBody, catchDefs);
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], tryKey));
     }
 
     /// <summary>
@@ -614,11 +624,10 @@ public sealed class WorkflowDefinitionBuilder
                 $"Saga step '{stepDef.Name ?? "unnamed"}' requires a non-empty 'steps' list.");
 
         // Derive a unique default name when stepDef.Name is absent so multiple unnamed sagas
-        // in the same workflow don't all resolve to "SubWorkflow(Saga)" and collide in
-        // DefaultWorkflowValidator. Use all body-step identifiers joined with '::' (unlikely
-        // to appear in class/step names) as a deterministic fingerprint of the saga body.
-        var sagaKey = stepDef.Name
-            ?? string.Join("::", bodySteps.Select(s => s.Name ?? s.Class ?? s.Type ?? "step"));
+        // in the same workflow don't collide in DefaultWorkflowValidator. Use BuildCompositeKey
+        // which incorporates per-step Name/Class/Type/Condition/SubWorkflow/Message, so composite
+        // body steps (conditional/try/while/etc.) produce richer identifiers than plain "conditional".
+        var sagaKey = stepDef.Name ?? BuildCompositeKey(bodySteps);
 
         // Build a compensating sub-workflow for the saga group
         var sagaBuilder = Workflow.Create(sagaKey);
@@ -722,6 +731,33 @@ public sealed class WorkflowDefinitionBuilder
         return step is ICompensatingStep comp
             ? new TimeoutCompensatingStepWrapper(comp, timeout)
             : new TimeoutStepWrapper(step, timeout);
+    }
+
+    /// <summary>
+    /// Builds a deterministic composite key from a list of step definitions and optional catch
+    /// definitions, used as a unique fallback name when the caller has not supplied an explicit
+    /// step name.  Incorporating per-step distinguishing fields (Name, Class, Type, Condition,
+    /// SubWorkflow, Message) and the caught exception types reduces collisions when multiple
+    /// unnamed composite steps of the same type appear in the same workflow.
+    /// </summary>
+    private static string BuildCompositeKey(
+        IReadOnlyList<StepDefinition> steps,
+        IReadOnlyList<CatchDefinition>? catches = null)
+    {
+        var stepPart = string.Join(
+            "::",
+            steps.Select(s =>
+                s.Name
+                ?? s.Class
+                ?? $"{s.Type ?? "step"}({s.Condition ?? s.SubWorkflow ?? s.Message ?? string.Empty})"));
+
+        if (catches is { Count: > 0 })
+        {
+            var catchPart = string.Join(",", catches.Select(c => c.Exception ?? "Exception"));
+            return $"{stepPart}#{catchPart}";
+        }
+
+        return stepPart;
     }
 
     /// <summary>
