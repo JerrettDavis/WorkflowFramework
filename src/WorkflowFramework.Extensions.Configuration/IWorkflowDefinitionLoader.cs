@@ -378,11 +378,13 @@ public sealed class WorkflowDefinitionBuilder
             for (var i = 0; i < childSteps.Count; i++)
             {
                 var child = childSteps[i];
-                // Use composite-aware grouping so nested conditionals/retries/etc. work inside parallel.
-                // Include an index in the default name to ensure uniqueness when child.Name is null.
-                var branchName = child.Name ?? $"branch_{i}";
-                var branchStep = BuildStepsAsGroupStep(branchName, new List<StepDefinition> { child });
-                p.Step(branchStep);
+                // Build each branch step directly (not through InlineWorkflowStep) so that exceptions
+                // from a failing branch propagate as-thrown, giving WorkflowStatus.Faulted on the
+                // outer workflow.  Wrapping via InlineWorkflowStep would absorb the exception and set
+                // IsAborted instead, silently swallowing the fault and breaking ParallelErrorTests.
+                var branchBuilder = Workflow.Create("_branch");
+                BuildStep(branchBuilder, child);
+                p.Step(branchBuilder.Build().Steps[0]);
             }
         });
         builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
