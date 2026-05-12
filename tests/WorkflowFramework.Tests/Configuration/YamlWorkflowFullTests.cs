@@ -110,6 +110,78 @@ public class YamlWorkflowFullTests
         executed.Should().ContainSingle().Which.Should().Be("ThenStep");
     }
 
+    [Fact]
+    public void Yaml_ConditionalType_WithThenAndElseAsListAliases_LoadsAndBuilds()
+    {
+        // 'then:' and 'else:' as YAML sequences are aliases for 'thenSteps:'/'elseSteps:'.
+        var yaml = """
+            name: AliasFlow
+            steps:
+              - name: Decision
+                type: conditional
+                condition: isValid
+                then:
+                  - name: Charge
+                    type: step
+                    class: ChargePayment
+                else:
+                  - name: Reject
+                    type: step
+                    class: RejectOrder
+            """;
+
+        var loader = new YamlWorkflowDefinitionLoader();
+        var def = loader.Load(yaml);
+
+        var step = def.Steps[0];
+        step.Type.Should().Be("conditional");
+        step.ThenSteps.Should().HaveCount(1);
+        step.ThenSteps![0].Class.Should().Be("ChargePayment");
+        step.ElseSteps.Should().HaveCount(1);
+        step.ElseSteps![0].Class.Should().Be("RejectOrder");
+        // Scalar 'then'/'else' should remain unpopulated (they were sequences, not strings).
+        step.Then.Should().BeNull();
+        step.Else.Should().BeNull();
+
+        var registry = new StepRegistry();
+        registry.Register("ChargePayment", () => new TestStep("ChargePayment"));
+        registry.Register("RejectOrder", () => new TestStep("RejectOrder"));
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+        wf.Steps.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public async Task Yaml_ConditionalType_ThenListAlias_ExecutesCorrectly()
+    {
+        // 'then:' as a list (alias for 'thenSteps:') should route correctly at runtime.
+        var yaml = """
+            name: AliasRunFlow
+            steps:
+              - type: conditional
+                condition: flag
+                then:
+                  - type: step
+                    class: ThenStep
+                else:
+                  - type: step
+                    class: ElseStep
+            """;
+
+        var executed = new List<string>();
+        var registry = new StepRegistry();
+        registry.Register("ThenStep", () => new TrackingStep("ThenStep", executed));
+        registry.Register("ElseStep", () => new TrackingStep("ElseStep", executed));
+
+        var def = new YamlWorkflowDefinitionLoader().Load(yaml);
+        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
+
+        var ctx = new WorkflowContext();
+        ctx.Properties["flag"] = true;
+        await wf.ExecuteAsync(ctx);
+
+        executed.Should().ContainSingle().Which.Should().Be("ThenStep");
+    }
+
     // ── parallel type ──────────────────────────────────────────────────────────
 
     [Fact]
@@ -320,6 +392,31 @@ public class YamlWorkflowFullTests
         registry.Register("FlakyStep", () => new TestStep("FlakyStep"));
         var wf = new WorkflowDefinitionBuilder(registry).Build(def);
         wf.Steps.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void Yaml_RetryType_WithZeroMaxAttempts_ClampsToOne()
+    {
+        // maxAttempts: 0 (or negative) must be clamped to 1 so the body always executes at least once.
+        var yaml = """
+            name: RetryClampFlow
+            steps:
+              - name: RetryGroup
+                type: retry
+                retry:
+                  maxAttempts: 0
+                steps:
+                  - type: step
+                    class: FlakyStep
+            """;
+
+        var registry = new StepRegistry();
+        registry.Register("FlakyStep", () => new TestStep("FlakyStep"));
+
+        var def = new YamlWorkflowDefinitionLoader().Load(yaml);
+        // Building must not throw and the workflow must contain one step (the RetryGroupStep).
+        var act = () => new WorkflowDefinitionBuilder(registry).Build(def);
+        act.Should().NotThrow("maxAttempts=0 is clamped to 1 rather than producing a no-op retry");
     }
 
     // ── try type ───────────────────────────────────────────────────────────────

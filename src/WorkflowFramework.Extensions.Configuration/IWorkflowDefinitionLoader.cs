@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using WorkflowFramework.Builder;
+using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -128,7 +129,8 @@ public sealed class YamlWorkflowDefinitionLoader : IWorkflowDefinitionLoader
     public WorkflowDefinition Load(string content)
     {
         if (content == null) throw new ArgumentNullException(nameof(content));
-        return Deserializer.Deserialize<WorkflowDefinition>(content)
+        var normalized = NormalizeThenElseLists(content);
+        return Deserializer.Deserialize<WorkflowDefinition>(normalized)
             ?? throw new InvalidOperationException("Failed to deserialize YAML workflow definition.");
     }
 
@@ -138,6 +140,66 @@ public sealed class YamlWorkflowDefinitionLoader : IWorkflowDefinitionLoader
         if (filePath == null) throw new ArgumentNullException(nameof(filePath));
         var content = File.ReadAllText(filePath);
         return Load(content);
+    }
+
+    /// <summary>
+    /// Rewrites the YAML document so that any <c>then:</c> or <c>else:</c> key whose value is
+    /// a YAML sequence is renamed to <c>thenSteps:</c> or <c>elseSteps:</c> respectively.
+    /// This allows authors to write <c>then: [...]</c> / <c>else: [...]</c> as natural list
+    /// aliases rather than having to remember the longer <c>thenSteps</c> / <c>elseSteps</c> keys.
+    /// Scalar values (legacy single-class format) are left unchanged.
+    /// </summary>
+    private static string NormalizeThenElseLists(string yaml)
+    {
+        var stream = new YamlStream();
+        using var reader = new StringReader(yaml);
+        stream.Load(reader);
+
+        foreach (var document in stream.Documents)
+            NormalizeNode(document.RootNode);
+
+        using var writer = new StringWriter();
+        stream.Save(writer, assignAnchors: false);
+        // YamlStream.Save prepends "..." document-end markers; strip the trailing one if present.
+        return writer.ToString();
+    }
+
+    private static void NormalizeNode(YamlNode node)
+    {
+        if (node is YamlMappingNode mapping)
+        {
+            // Collect renames first to avoid mutating the dictionary while iterating.
+            List<(YamlScalarNode OldKey, string NewName)>? renames = null;
+            foreach (var child in mapping.Children)
+            {
+                if (child.Key is YamlScalarNode scalar && child.Value is YamlSequenceNode)
+                {
+                    if (scalar.Value == "then")
+                        (renames ??= []).Add((scalar, "thenSteps"));
+                    else if (scalar.Value == "else")
+                        (renames ??= []).Add((scalar, "elseSteps"));
+                }
+            }
+
+            if (renames != null)
+            {
+                foreach (var (oldKey, newName) in renames)
+                {
+                    var value = mapping.Children[oldKey];
+                    mapping.Children.Remove(oldKey);
+                    mapping.Children.Add(new YamlScalarNode(newName), value);
+                }
+            }
+
+            // Recurse into all child values.
+            foreach (var child in mapping.Children.Values)
+                NormalizeNode(child);
+        }
+        else if (node is YamlSequenceNode sequence)
+        {
+            foreach (var child in sequence.Children)
+                NormalizeNode(child);
+        }
     }
 }
 
@@ -290,7 +352,7 @@ public sealed class WorkflowDefinitionBuilder
             // Use a temp builder to capture the created step so we can apply the configured name.
             var retryStep = _stepRegistry.Resolve(stepDef.Type);
             var tempBuilder = Workflow.Create("_temp");
-            tempBuilder.Retry(b => b.Step(retryStep), stepDef.Retry.MaxAttempts);
+            tempBuilder.Retry(b => b.Step(retryStep), Math.Max(1, stepDef.Retry.MaxAttempts));
             builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
         }
         else if (!string.IsNullOrEmpty(stepDef.Class))
@@ -463,7 +525,7 @@ public sealed class WorkflowDefinitionBuilder
             throw new InvalidOperationException(
                 $"Retry step '{stepDef.Name ?? "unnamed"}' requires a non-empty 'steps' list.");
 
-        var maxAttempts = stepDef.Retry?.MaxAttempts ?? 3;
+        var maxAttempts = Math.Max(1, stepDef.Retry?.MaxAttempts ?? 3);
         // Use a temp builder to capture the created step so we can apply the configured name.
         var tempBuilder = Workflow.Create("_temp");
         tempBuilder.Retry(b => BuildSteps(b, bodySteps), maxAttempts);
