@@ -480,17 +480,17 @@ public class YamlWorkflowFullTests
     }
 
     [Fact]
-    public void Yaml_SubworkflowType_FallsBackToRegistry_WhenNoSubWorkflowRegistered()
+    public void Yaml_SubworkflowType_ThrowsWhenSubWorkflowNotRegistered()
     {
         var def = new WorkflowDefinition
         {
-            Steps = [new StepDefinition { Type = "subworkflow", SubWorkflow = "MyStep" }]
+            Steps = [new StepDefinition { Type = "subworkflow", SubWorkflow = "Missing" }]
         };
 
         var registry = new StepRegistry();
-        registry.Register("MyStep", () => new TestStep("MyStep"));
-        var wf = new WorkflowDefinitionBuilder(registry).Build(def);
-        wf.Steps.Should().HaveCount(1);
+        var act = () => new WorkflowDefinitionBuilder(registry).Build(def);
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("*Missing*");
     }
 
     // ── approval type ──────────────────────────────────────────────────────────

@@ -572,22 +572,19 @@ public sealed class WorkflowDefinitionBuilder
 
     private void BuildSubWorkflowStep(IWorkflowBuilder builder, StepDefinition stepDef)
     {
-        var name = stepDef.SubWorkflow ?? stepDef.Class ?? stepDef.Name
+        var key = stepDef.SubWorkflow ?? stepDef.Class
             ?? throw new InvalidOperationException(
-                "Sub-workflow step requires 'subWorkflow', 'class', or 'name' to identify the workflow.");
+                "Sub-workflow step requires 'subWorkflow' or 'class' to identify the workflow.");
 
-        if (_subWorkflows != null && _subWorkflows.TryGetValue(name, out var wf))
-        {
-            // Use a temp builder to capture the SubWorkflowStep so we can apply the configured name.
-            var tempBuilder = Workflow.Create("_temp");
-            tempBuilder.SubWorkflow(wf);
-            builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
-        }
-        else
-        {
-            // Fall back to treating the name as a step class registered in the registry
-            builder.Step(ApplyName(_stepRegistry.Resolve(name), stepDef.Name));
-        }
+        if (_subWorkflows == null || !_subWorkflows.TryGetValue(key, out var wf))
+            throw new InvalidOperationException(
+                $"Sub-workflow '{key}' is not registered. " +
+                $"Available sub-workflows: [{string.Join(", ", _subWorkflows?.Keys ?? Enumerable.Empty<string>())}].");
+
+        // Use a temp builder to capture the SubWorkflowStep so we can apply the configured name.
+        var tempBuilder = Workflow.Create("_temp");
+        tempBuilder.SubWorkflow(wf);
+        builder.Step(ApplyName(tempBuilder.Build().Steps[0], stepDef.Name));
     }
 
     private void BuildApprovalStep(IWorkflowBuilder builder, StepDefinition stepDef)
