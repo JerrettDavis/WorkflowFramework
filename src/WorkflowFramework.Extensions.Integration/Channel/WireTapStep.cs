@@ -1,3 +1,9 @@
+// Intentionally bespoke — WireTapStep's core contract (run a side-effect without disrupting
+// the main flow, with optional error swallowing) is simpler than PatternKit's
+// AsyncActionDecorator pipeline. AsyncActionDecorator wraps a component and transforms/
+// decorates it; WireTapStep wraps nothing — it IS the side-effect. Applying Decorator here
+// would add indirection without modelling the pattern more clearly. Characterization tests
+// added in Phase G.3.
 namespace WorkflowFramework.Extensions.Integration.Channel;
 
 /// <summary>

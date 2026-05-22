@@ -1,3 +1,8 @@
+// Intentionally bespoke — PatternKit AsyncAdapter<TIn,TOut> is a type-mapping pattern
+// (produce a TOut from a TIn). ChannelAdapterStep is a side-effect operation (send a
+// message to an IChannelAdapter); it has no output type and no conversion pipeline.
+// Using AsyncAdapter here would be a category error. Characterization tests added in
+// Phase G.3.
 using WorkflowFramework.Extensions.Integration.Abstractions;
 
 namespace WorkflowFramework.Extensions.Integration.Channel;
