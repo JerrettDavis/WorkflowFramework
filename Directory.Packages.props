@@ -87,6 +87,9 @@
     <PackageVersion Include="Reqnroll" Version="3.0.0" />
     <PackageVersion Include="Reqnroll.xUnit" Version="3.0.0" />
 
+    <!-- PatternKit -->
+    <PackageVersion Include="PatternKit.Core" Version="0.105.0" />
+
     <!-- TinyBDD -->
     <PackageVersion Include="TinyBDD" Version="0.19.16" />
     <PackageVersion Include="TinyBDD.Xunit" Version="0.19.16" />

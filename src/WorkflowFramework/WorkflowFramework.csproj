@@ -7,4 +7,7 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="PatternKit.Core" />
+  </ItemGroup>
 </Project>
