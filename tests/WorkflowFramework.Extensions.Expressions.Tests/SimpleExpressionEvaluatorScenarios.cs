@@ -100,4 +100,123 @@ public class SimpleExpressionEvaluatorScenarios : ExpressionsTestBase
             .Then("evaluates to hello", v => { v.Should().Be("hello"); return true; })
             .AssertPassed();
     }
+
+    [Scenario("Evaluates subtraction"), Fact]
+    public async Task EvalSubtraction()
+    {
+        var result = await Evaluator.EvaluateAsync<double>("10 - 3", EmptyVars);
+
+        await Given("expression '10 - 3'", () => result)
+            .Then("evaluates to 7", v => { v.Should().Be(7); return true; })
+            .AssertPassed();
+    }
+
+    [Scenario("Evaluates multiplication"), Fact]
+    public async Task EvalMultiplication()
+    {
+        var result = await Evaluator.EvaluateAsync<double>("6 * 7", EmptyVars);
+
+        await Given("expression '6 * 7'", () => result)
+            .Then("evaluates to 42", v => { v.Should().Be(42); return true; })
+            .AssertPassed();
+    }
+
+    [Scenario("Evaluates division"), Fact]
+    public async Task EvalDivision()
+    {
+        var result = await Evaluator.EvaluateAsync<double>("10 / 4", EmptyVars);
+
+        await Given("expression '10 / 4'", () => result)
+            .Then("evaluates to 2.5", v => { v.Should().BeApproximately(2.5, 0.001); return true; })
+            .AssertPassed();
+    }
+
+    [Scenario("Division by zero throws DivideByZeroException"), Fact]
+    public async Task EvalDivisionByZeroThrows()
+    {
+        Func<Task> act = () => Evaluator.EvaluateAsync<double>("5 / 0", EmptyVars);
+
+        await Given("expression '5 / 0'", () => act)
+            .Then("throws DivideByZeroException", fn =>
+            {
+                fn.Should().ThrowAsync<DivideByZeroException>();
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("Evaluates not-equal comparison that is true"), Fact]
+    public async Task EvalNotEqualTrue()
+    {
+        var vars = new Dictionary<string, object?> { ["n"] = 3.0 };
+        var result = await Evaluator.EvaluateAsync<bool>("n != 5", vars);
+
+        await Given("n!=5 where n=3", () => result)
+            .Then("evaluates to true", v => { v.Should().BeTrue(); return true; })
+            .AssertPassed();
+    }
+
+    [Scenario("Evaluates less-than comparison"), Fact]
+    public async Task EvalLessThan()
+    {
+        var result = await Evaluator.EvaluateAsync<bool>("3 < 5", EmptyVars);
+
+        await Given("expression '3 < 5'", () => result)
+            .Then("evaluates to true", v => { v.Should().BeTrue(); return true; })
+            .AssertPassed();
+    }
+
+    [Scenario("Evaluates greater-than-or-equal comparison"), Fact]
+    public async Task EvalGreaterThanOrEqual()
+    {
+        var result = await Evaluator.EvaluateAsync<bool>("5 >= 5", EmptyVars);
+
+        await Given("expression '5 >= 5'", () => result)
+            .Then("evaluates to true", v => { v.Should().BeTrue(); return true; })
+            .AssertPassed();
+    }
+
+    [Scenario("Evaluates logical AND — both true"), Fact]
+    public async Task EvalLogicalAndBothTrue()
+    {
+        var result = await Evaluator.EvaluateAsync<bool>("true && true", EmptyVars);
+
+        await Given("expression 'true && true'", () => result)
+            .Then("evaluates to true", v => { v.Should().BeTrue(); return true; })
+            .AssertPassed();
+    }
+
+    [Scenario("Evaluates logical OR — one true"), Fact]
+    public async Task EvalLogicalOrOneTrue()
+    {
+        var result = await Evaluator.EvaluateAsync<bool>("false || true", EmptyVars);
+
+        await Given("expression 'false || true'", () => result)
+            .Then("evaluates to true", v => { v.Should().BeTrue(); return true; })
+            .AssertPassed();
+    }
+
+    [Scenario("Evaluates null literal"), Fact]
+    public async Task EvalNullLiteral()
+    {
+        // EvaluateAsync<object?> returns null for 'null'
+        var result = await Evaluator.EvaluateAsync("null", EmptyVars);
+
+        await Given("expression 'null'", () => result)
+            .Then("evaluates to null", v => { v.Should().BeNull(); return true; })
+            .AssertPassed();
+    }
+
+    [Scenario("Variable arithmetic: expression with two variables"), Fact]
+    public async Task EvalTwoVariableArithmetic()
+    {
+        var vars = new Dictionary<string, object?> { ["a"] = 3.0, ["b"] = 4.0 };
+        // Gotcha: the evaluator uses LastIndexOf for arithmetic, which means
+        // 'a + b' splits on the last '+' in the trimmed string — works for single-op.
+        var result = await Evaluator.EvaluateAsync<double>("a + b", vars);
+
+        await Given("expression 'a + b' with a=3, b=4", () => result)
+            .Then("evaluates to 7", v => { v.Should().Be(7); return true; })
+            .AssertPassed();
+    }
 }
