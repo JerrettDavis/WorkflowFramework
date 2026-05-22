@@ -90,6 +90,7 @@
     <Project Path="tests/WorkflowFramework.Extensions.DependencyInjection.Tests/WorkflowFramework.Extensions.DependencyInjection.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.AI.Tests/WorkflowFramework.Extensions.AI.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Agents.Tests/WorkflowFramework.Extensions.Agents.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.HumanTasks.Tests/WorkflowFramework.Extensions.HumanTasks.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/WorkflowFramework.Benchmarks/WorkflowFramework.Benchmarks.csproj" />
