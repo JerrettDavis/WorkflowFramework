@@ -95,6 +95,9 @@
     <Project Path="tests/WorkflowFramework.Extensions.Http.Tests/WorkflowFramework.Extensions.Http.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Diagnostics.Tests/WorkflowFramework.Extensions.Diagnostics.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Events.Tests/WorkflowFramework.Extensions.Events.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Persistence.Tests/WorkflowFramework.Extensions.Persistence.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Persistence.InMemory.Tests/WorkflowFramework.Extensions.Persistence.InMemory.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Persistence.Sqlite.Tests/WorkflowFramework.Extensions.Persistence.Sqlite.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/WorkflowFramework.Benchmarks/WorkflowFramework.Benchmarks.csproj" />
