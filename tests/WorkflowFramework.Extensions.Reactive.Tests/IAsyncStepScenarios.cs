@@ -154,4 +154,75 @@ public class IAsyncStepScenarios : ReactiveTestBase
             })
             .AssertPassed();
     }
+
+    [Scenario("ForEachAsync invokes the callback for every streamed item"), Fact]
+    public async Task ForEachAsyncInvokesCallbackPerItem()
+    {
+        var step = new CountingStep(4);
+        var context = MakeContext();
+        var seen = new List<int>();
+
+        await step.ForEachAsync(context, item =>
+        {
+            seen.Add(item);
+            return Task.CompletedTask;
+        });
+
+        await Given("a 4-item step and ForEachAsync with a collecting callback", () => seen)
+            .Then("callback was invoked for each item in order", items =>
+            {
+                items.Should().Equal(0, 1, 2, 3);
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("ForEachAsync propagates fault from underlying step"), Fact]
+    public async Task ForEachAsyncPropagatesFault()
+    {
+        var faultyStep = new CountingStep(5, failAt: 1);
+        var context = MakeContext();
+
+        Func<Task> act = () => faultyStep.ForEachAsync(context, _ => Task.CompletedTask);
+
+        await Given("a step that faults at item 1 in ForEachAsync", () => act)
+            .Then("the exception propagates from ForEachAsync", fn =>
+            {
+                fn.Should().ThrowAsync<InvalidOperationException>();
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("AsyncStepAdapter uses the step name as default property key prefix"), Fact]
+    public async Task AsyncStepAdapterDefaultKeyUsesStepName()
+    {
+        var innerStep = new CountingStep(1);
+        var adapter = new AsyncStepAdapter<int>(innerStep);
+
+        await Given("an AsyncStepAdapter with no explicit key", () => adapter)
+            .Then("Name matches the inner step name", a =>
+            {
+                a.Name.Should().Be("counting-step");
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("CollectAsync returns empty list for a step that yields no items"), Fact]
+    public async Task CollectAsyncEmptyStep()
+    {
+        var step = new CountingStep(0);
+        var context = MakeContext();
+
+        var results = await step.CollectAsync(context);
+
+        await Given("a step that yields 0 items", () => results)
+            .Then("CollectAsync returns an empty list", items =>
+            {
+                items.Should().BeEmpty();
+                return true;
+            })
+            .AssertPassed();
+    }
 }
