@@ -86,6 +86,8 @@
     <Project Path="tests/WorkflowFramework.Dashboard.UITests/WorkflowFramework.Dashboard.UITests.csproj" />
     <Project Path="tests/WorkflowFramework.Dashboard.Persistence.Tests/WorkflowFramework.Dashboard.Persistence.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Dashboard.Api.Tests/WorkflowFramework.Dashboard.Api.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Hosting.Tests/WorkflowFramework.Extensions.Hosting.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.DependencyInjection.Tests/WorkflowFramework.Extensions.DependencyInjection.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/WorkflowFramework.Benchmarks/WorkflowFramework.Benchmarks.csproj" />
