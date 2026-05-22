@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Approvals</RootNamespace>
+    <Description>Orchestrator for WorkflowFramework approval channels. Provides quorum (N-of-M), timeout, escalation chains, durable persistence, DI registration (AddApprovals fluent builder), and a bridge to the legacy IApprovalService.</Description>
+    <!-- IHostedService and IOptions require net8+ to avoid version-downgrade conflicts on netstandard targets. -->
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Approvals.Abstractions\WorkflowFramework.Extensions.Approvals.Abstractions.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Scheduling\WorkflowFramework.Extensions.Scheduling.csproj" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+  </ItemGroup>
+</Project>

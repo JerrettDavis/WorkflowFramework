@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Approvals</RootNamespace>
+    <Description>Core abstractions for WorkflowFramework approval channels (Slack, Teams, Email, CLI). Defines IApprovalChannel, ApprovalRequest/Response/Record records, IApprovalStore persistence contract, ApprovalRequestBuilder fluent API, and the OnTimeoutAction / ApprovalOutcome enums.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+</Project>

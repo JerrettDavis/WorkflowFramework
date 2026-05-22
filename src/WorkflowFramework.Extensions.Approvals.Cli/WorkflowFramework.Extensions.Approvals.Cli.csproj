@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Approvals.Cli</RootNamespace>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <Description>CLI approval channel for WorkflowFramework. Provides 'wf approvals list/approve/reject/show' commands plus a CliApprovalChannel for local/CI workflows where humans run the CLI to respond to pending approvals.</Description>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Approvals.Abstractions\WorkflowFramework.Extensions.Approvals.Abstractions.csproj" />
+    <ProjectReference Include="..\WorkflowFramework.Extensions.Approvals\WorkflowFramework.Extensions.Approvals.csproj" />
+    <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+</Project>
