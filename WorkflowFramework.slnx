@@ -101,6 +101,8 @@
     <Project Path="tests/WorkflowFramework.Extensions.Configuration.Tests/WorkflowFramework.Extensions.Configuration.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Scheduling.Tests/WorkflowFramework.Extensions.Scheduling.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Plugins.Tests/WorkflowFramework.Extensions.Plugins.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Visualization.Tests/WorkflowFramework.Extensions.Visualization.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.DataMapping.Tests/WorkflowFramework.Extensions.DataMapping.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/WorkflowFramework.Benchmarks/WorkflowFramework.Benchmarks.csproj" />
