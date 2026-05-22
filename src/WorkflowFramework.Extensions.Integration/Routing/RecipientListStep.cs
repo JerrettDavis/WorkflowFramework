@@ -1,3 +1,9 @@
+// Intentionally bespoke — AsyncActionComposite<IWorkflowContext> requires the child
+// actions to be known and registered at build time. RecipientListStep's recipients are
+// resolved dynamically from the IWorkflowContext at execution time via the
+// recipientSelector delegate, so a pre-built composite is not feasible. The step also
+// implements context-aware abort short-circuiting in sequential mode. Characterization
+// tests added in Phase G.1.
 namespace WorkflowFramework.Extensions.Integration.Routing;
 
 /// <summary>
