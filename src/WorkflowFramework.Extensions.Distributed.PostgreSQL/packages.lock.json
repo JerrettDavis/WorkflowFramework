@@ -83,7 +83,6 @@
       "workflowframework.extensions.distributed": {
         "type": "Project",
         "dependencies": {
-          "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )"
         }
       },
