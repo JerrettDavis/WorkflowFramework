@@ -1,3 +1,8 @@
+// Intentionally bespoke — AsyncActionComposite requires children to be registered at
+// construction time. SplitterStep's items are sourced dynamically from IWorkflowContext
+// at execution time, so no pre-built composite can be used. The step also tracks
+// per-item processed-output via "__ProcessedItem" context key, which is not modelled by
+// PatternKit. Characterization tests added in Phase G.2.
 namespace WorkflowFramework.Extensions.Integration.Composition;
 
 /// <summary>

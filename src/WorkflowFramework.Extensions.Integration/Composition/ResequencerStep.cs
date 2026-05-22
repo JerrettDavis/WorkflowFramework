@@ -1,3 +1,7 @@
+// Intentionally bespoke — ResequencerStep is a pure LINQ OrderBy over a context-provided
+// collection. PatternKit 0.105.0 has no Resequencer or sort-pipeline primitive; introducing
+// a PatternKit wrapper would add indirection without any benefit. Characterization tests
+// added in Phase G.2.
 namespace WorkflowFramework.Extensions.Integration.Composition;
 
 /// <summary>
