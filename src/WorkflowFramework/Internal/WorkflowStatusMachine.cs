@@ -3,18 +3,18 @@ using PatternKit.Behavioral.State;
 namespace WorkflowFramework.Internal;
 
 /// <summary>
-/// Advisory-only PatternKit <see cref="StateMachine{TState,TEvent}"/> that models
-/// legal <see cref="WorkflowStatus"/> transitions for documentation and validation purposes.
+/// Authoritative PatternKit <see cref="StateMachine{TState,TEvent}"/> that defines and
+/// enforces legal <see cref="WorkflowStatus"/> transitions for <see cref="WorkflowEngine"/>.
 /// </summary>
 /// <remarks>
-/// This machine is <em>informational/advisory</em>: the production <c>WorkflowEngine</c>
-/// still uses its own internal status-assignment logic. This class exists to:
+/// Promoted from advisory to authoritative in Phase F. The production <c>WorkflowEngine</c>
+/// routes every status transition through <see cref="TryTransition"/>. Illegal transitions
+/// cause <see cref="InvalidOperationException"/> to be thrown by the engine.
 /// <list type="bullet">
-///   <item>Serve as a single authoritative model of allowed transitions.</item>
-///   <item>Be promoted to authoritative in Phase F when engine integration is confirmed.</item>
-///   <item>Pin the PatternKit <c>StateMachine</c> package in this project.</item>
+///   <item>Single authoritative model of all allowed transitions.</item>
+///   <item>Guards against logic errors that would produce an invalid status sequence.</item>
+///   <item>Thread safety: the compiled machine is immutable. Callers pass <c>state</c> by ref.</item>
 /// </list>
-/// Thread safety: the compiled machine is immutable. Callers pass <c>state</c> by ref.
 /// </remarks>
 internal static class WorkflowStatusMachine
 {
@@ -72,7 +72,8 @@ internal static class WorkflowStatusMachine
     /// <summary>
     /// Attempts to transition <paramref name="status"/> via <paramref name="event"/>.
     /// Returns <c>true</c> when the transition is legal and the state was updated.
-    /// Returns <c>false</c> when no transition is defined (advisory — caller decides what to do).
+    /// Returns <c>false</c> when no transition is defined — the <see cref="WorkflowEngine"/>
+    /// treats this as an <see cref="InvalidOperationException"/>.
     /// </summary>
     internal static bool TryTransition(ref WorkflowStatus status, WorkflowEvent @event)
         => Machine.TryTransition(ref status, @event);

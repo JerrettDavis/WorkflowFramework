@@ -1,3 +1,6 @@
+using WorkflowFramework.Internal;
+using WfEvent = WorkflowFramework.Internal.WorkflowStatusMachine.WorkflowEvent;
+
 namespace WorkflowFramework;
 
 /// <summary>
@@ -43,6 +46,11 @@ public sealed class WorkflowEngine : IWorkflow
     {
         if (context == null) throw new ArgumentNullException(nameof(context));
 
+        // WorkflowStatusMachine is now authoritative: all status transitions
+        // must go through the machine. Invalid transitions throw InvalidOperationException.
+        var status = WorkflowStatus.Pending;
+        FireTransition(ref status, WfEvent.Start);
+
         await RaiseEventAsync(e => e.OnWorkflowStartedAsync(context)).ConfigureAwait(false);
 
         var completedSteps = new List<IStep>();
@@ -54,7 +62,10 @@ public sealed class WorkflowEngine : IWorkflow
                 context.CancellationToken.ThrowIfCancellationRequested();
 
                 if (context.IsAborted)
-                    return new WorkflowResult(WorkflowStatus.Aborted, context);
+                {
+                    FireTransition(ref status, WfEvent.Abort);
+                    return new WorkflowResult(status, context);
+                }
 
                 var step = _steps[i];
                 context.CurrentStepIndex = i;
@@ -76,22 +87,38 @@ public sealed class WorkflowEngine : IWorkflow
                     if (_enableCompensation)
                     {
                         await CompensateAsync(context, completedSteps).ConfigureAwait(false);
+                        FireTransition(ref status, WfEvent.Compensate);
                         await RaiseEventAsync(e => e.OnWorkflowFailedAsync(context, ex)).ConfigureAwait(false);
-                        return new WorkflowResult(WorkflowStatus.Compensated, context);
+                        return new WorkflowResult(status, context);
                     }
 
+                    FireTransition(ref status, WfEvent.Fail);
                     await RaiseEventAsync(e => e.OnWorkflowFailedAsync(context, ex)).ConfigureAwait(false);
-                    return new WorkflowResult(WorkflowStatus.Faulted, context);
+                    return new WorkflowResult(status, context);
                 }
             }
 
+            FireTransition(ref status, WfEvent.Complete);
             await RaiseEventAsync(e => e.OnWorkflowCompletedAsync(context)).ConfigureAwait(false);
-            return new WorkflowResult(WorkflowStatus.Completed, context);
+            return new WorkflowResult(status, context);
         }
         catch (OperationCanceledException)
         {
-            return new WorkflowResult(WorkflowStatus.Aborted, context);
+            FireTransition(ref status, WfEvent.Abort);
+            return new WorkflowResult(status, context);
         }
+    }
+
+    /// <summary>
+    /// Fires a transition through the authoritative <see cref="WorkflowStatusMachine"/>.
+    /// Throws <see cref="InvalidOperationException"/> if the transition is not permitted,
+    /// guarding against logic errors that would produce an invalid status sequence.
+    /// </summary>
+    private static void FireTransition(ref WorkflowStatus status, WfEvent @event)
+    {
+        if (!WorkflowStatusMachine.TryTransition(ref status, @event))
+            throw new InvalidOperationException(
+                $"Invalid workflow state transition: cannot fire '{@event}' from '{status}'.");
     }
 
     private async Task ExecuteWithMiddlewareAsync(IWorkflowContext context, IStep step)
