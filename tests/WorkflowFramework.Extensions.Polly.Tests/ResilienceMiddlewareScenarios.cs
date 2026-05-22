@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Polly;
 using Polly.Retry;
+using Polly.Timeout;
 using TinyBDD;
 using TinyBDD.Xunit;
 using WorkflowFramework.Extensions.Polly.Tests.Support;
@@ -111,6 +112,203 @@ public class ResilienceMiddlewareScenarios : PollyTestBase
             {
                 t.executed.Should().BeTrue();
                 t.result.IsSuccess.Should().BeTrue();
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("Retry exhaustion surfaces the last exception to the workflow result"), Fact]
+    public async Task RetryExhaustionSurfaces()
+    {
+        var attempts = 0;
+        var pipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                MaxRetryAttempts = 2,
+                ShouldHandle = new PredicateBuilder().Handle<InvalidOperationException>(),
+                Delay = TimeSpan.Zero
+            })
+            .Build();
+
+        var middleware = new ResilienceMiddleware(pipeline);
+
+        // Always fails — exhausts all retries
+        var workflow = Workflow.Create("polly-exhaust")
+            .Use(middleware)
+            .Step("always-fail", _ =>
+            {
+                attempts++;
+                throw new InvalidOperationException("always fail");
+            })
+            .Build();
+
+        var context = new WorkflowContext();
+        var result = await workflow.ExecuteAsync(context);
+
+        await Given("a step that always throws InvalidOperationException", () => (result, attempts))
+            .Then("3 attempts are made (1 + 2 retries) and workflow reports failure", t =>
+            {
+                t.attempts.Should().Be(3);
+                t.result.IsSuccess.Should().BeFalse();
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("Exception predicate filters: only matching exceptions are retried"), Fact]
+    public async Task ExceptionPredicateFiltersOnMatchingType()
+    {
+        var attempts = 0;
+        var pipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                MaxRetryAttempts = 3,
+                // Only retry ArgumentException — NOT InvalidOperationException
+                ShouldHandle = new PredicateBuilder().Handle<ArgumentException>(),
+                Delay = TimeSpan.Zero
+            })
+            .Build();
+
+        var middleware = new ResilienceMiddleware(pipeline);
+
+        var workflow = Workflow.Create("polly-predicate")
+            .Use(middleware)
+            .Step("wrong-exception", _ =>
+            {
+                attempts++;
+                throw new InvalidOperationException("not retried");
+            })
+            .Build();
+
+        var context = new WorkflowContext();
+        var result = await workflow.ExecuteAsync(context);
+
+        await Given("a step throwing InvalidOperationException with an ArgumentException-only retry predicate", () => (result, attempts))
+            .Then("only 1 attempt is made (no retries) and workflow fails", t =>
+            {
+                t.attempts.Should().Be(1);
+                t.result.IsSuccess.Should().BeFalse();
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("Cancellation token propagates through Polly pipeline and aborts the workflow"), Fact]
+    public async Task CancellationPropagatesThroughPipeline()
+    {
+        // The engine catches OperationCanceledException and transitions to Aborted status.
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var pipeline = new ResiliencePipelineBuilder().Build();
+        var middleware = new ResilienceMiddleware(pipeline);
+
+        var workflow = Workflow.Create("polly-cancel")
+            .Use(middleware)
+            .Step("slow-step", async ctx =>
+            {
+                await Task.Delay(5000, ctx.CancellationToken);
+            })
+            .Build();
+
+        var context = new WorkflowContext(cts.Token);
+        var result = await workflow.ExecuteAsync(context);
+
+        await Given("a pre-cancelled token passed to a workflow using Polly middleware", () => result)
+            .Then("the workflow is aborted", r =>
+            {
+                r.Status.Should().Be(WorkflowStatus.Aborted);
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("Multiple middleware can be stacked around Polly middleware"), Fact]
+    public async Task PollyMiddlewareComposesWithOtherMiddleware()
+    {
+        var order = new List<string>();
+        var pipeline = new ResiliencePipelineBuilder().Build();
+
+        // Custom bookend middleware
+        var before = new DelegateMiddleware(async (ctx, step, next) =>
+        {
+            order.Add("before");
+            await next(ctx);
+            order.Add("after");
+        });
+
+        var workflow = Workflow.Create("polly-compose")
+            .Use(before)
+            .Use(new ResilienceMiddleware(pipeline))
+            .Step("step", _ => { order.Add("step"); return Task.CompletedTask; })
+            .Build();
+
+        var context = new WorkflowContext();
+        var result = await workflow.ExecuteAsync(context);
+
+        await Given("Polly middleware sandwiched between custom middleware", () => (result, order))
+            .Then("execution order is before -> step -> after and workflow succeeds", t =>
+            {
+                t.result.IsSuccess.Should().BeTrue();
+                t.order.Should().Equal("before", "step", "after");
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("Middleware works correctly when step succeeds on first attempt with retry configured"), Fact]
+    public async Task SuccessOnFirstAttemptWithRetryConfigured()
+    {
+        var attempts = 0;
+        var pipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                MaxRetryAttempts = 5,
+                Delay = TimeSpan.Zero
+            })
+            .Build();
+
+        var workflow = Workflow.Create("polly-first-success")
+            .Use(new ResilienceMiddleware(pipeline))
+            .Step("step", _ => { attempts++; return Task.CompletedTask; })
+            .Build();
+
+        var context = new WorkflowContext();
+        var result = await workflow.ExecuteAsync(context);
+
+        await Given("a step that succeeds on first attempt with 5 retries configured", () => (result, attempts))
+            .Then("only 1 attempt is made and workflow succeeds", t =>
+            {
+                t.attempts.Should().Be(1);
+                t.result.IsSuccess.Should().BeTrue();
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("Middleware applies to every step in the workflow independently"), Fact]
+    public async Task MiddlewareAppliedToEveryStep()
+    {
+        var stepACount = 0;
+        var stepBCount = 0;
+        var pipeline = new ResiliencePipelineBuilder().Build();
+        var middleware = new ResilienceMiddleware(pipeline);
+
+        var workflow = Workflow.Create("polly-multi-step")
+            .Use(middleware)
+            .Step("step-a", _ => { stepACount++; return Task.CompletedTask; })
+            .Step("step-b", _ => { stepBCount++; return Task.CompletedTask; })
+            .Build();
+
+        var context = new WorkflowContext();
+        var result = await workflow.ExecuteAsync(context);
+
+        await Given("a workflow with two steps under Polly middleware", () => (result, stepACount, stepBCount))
+            .Then("both steps execute once each and workflow succeeds", t =>
+            {
+                t.result.IsSuccess.Should().BeTrue();
+                t.stepACount.Should().Be(1);
+                t.stepBCount.Should().Be(1);
                 return true;
             })
             .AssertPassed();
