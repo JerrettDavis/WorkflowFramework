@@ -14,7 +14,7 @@ public class OllamaOptionsTests
     {
         var opts = new OllamaOptions();
         opts.BaseUrl.Should().Be("http://localhost:11434");
-        opts.DefaultModel.Should().Be("qwen3:30b-instruct");
+        opts.DefaultModel.Should().Be("qwen2.5:1.5b");
         opts.Timeout.Should().Be(TimeSpan.FromSeconds(120));
         opts.DisableThinking.Should().BeTrue();
     }

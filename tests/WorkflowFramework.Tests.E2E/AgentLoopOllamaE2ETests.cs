@@ -235,3 +235,79 @@ file sealed class SimpleToolProvider : IToolProvider
     public Task<ToolResult> InvokeToolAsync(string toolName, string argumentsJson, CancellationToken ct = default)
         => _handler(toolName, argumentsJson);
 }
+
+// ─── Goals 2-6 (E2E with real Ollama) ─────────────────────────────────────
+
+/// <summary>
+/// End-to-end tests for the DSL-emitter pipeline against a live local Ollama instance.
+/// These tests are automatically skipped when Ollama is not reachable (via <see cref="OllamaFactAttribute"/>).
+/// <para>
+/// Prerequisite: <c>ollama pull qwen2.5:1.5b</c>
+/// </para>
+/// Goals covered: 2 (agent emits DSL), 3 (framework executes DSL), 5 (E2E with Ollama),
+/// 6 (realistic "diagnose compilation" prompt → workflow steps, agent never calls tools).
+/// </summary>
+[Collection("Ollama")]
+[Trait("Category", "E2E")]
+public class DslEmitterOllamaTests(OllamaFixture fixture, ITestOutputHelper output)
+{
+    /// <summary>
+    /// Goal 5 + 6: a realistic "diagnose compilation errors" task should cause the model to
+    /// emit at least one Workflow Framework DSL step describing an inspection/build action.
+    /// The agent must NEVER call tools; it only emits DSL pipeline instructions.
+    /// </summary>
+    [OllamaFact(Timeout = 180_000)]   // ← OllamaFact – skips automatically if Ollama absent
+    public async Task DslEmitter_EmitsAtLeastOneDslStep_ForCodebaseDiagnosisTask_AgenticDemo()
+    {
+        // Arrange – use the shared Ollama provider from the fixture
+        var options = new DslEmitterOptions
+        {
+            StepName = "Diagnoser",
+            MaxIterations = 3
+        };
+        var step = new DslEmitterStep(fixture.Provider, options);
+        var context = new WorkflowContext();
+        context.Properties["task"] = "Diagnose the errors in this codebase compilation. " +
+            "Do NOT run anything yourself — emit only a JSON array of WorkflowFramework DSL steps.";
+
+        // Act
+        await step.ExecuteAsync(context);
+
+        // Assert – the real model must emit at least one DSL step (goal 6)
+        var emittedSteps = context.Properties["Diagnoser.EmittedSteps"] as System.Collections.IList;
+        output.WriteLine($"Emitted step count: {emittedSteps?.Count ?? 0}");
+        emittedSteps.Should().NotBeNull("provider should emit at least one DSL step");
+        emittedSteps!.Count.Should().BeGreaterThan(0,
+            "a diagnosis task should produce at least one inspection step");
+    }
+
+    /// <summary>
+    /// Goal 6 (agent never calls tools directly): the emitter response must never contain
+    /// raw tool invocations — only DSL instructions for the framework.
+    /// </summary>
+    [OllamaFact(Timeout = 180_000)]   // ← OllamaFact – skips automatically if Ollama absent
+    public async Task DslEmitter_NeverSurfacesToolCalls_AgentOnlyEmitsDsl_AgenticDemo()
+    {
+        // Arrange
+        var options = new DslEmitterOptions
+        {
+            StepName = "CodeDiagAgent",
+            MaxIterations = 2
+        };
+        var step = new DslEmitterStep(fixture.Provider, options);
+        var context = new WorkflowContext();
+        context.Properties["task"] = "List the workflow steps needed to detect and report " +
+            "build errors in a .NET project. Respond ONLY with a JSON array of DSL steps.";
+
+        // Act
+        await step.ExecuteAsync(context);
+
+        // Assert – requirement 6: the framework must never proxy raw tool calls through the emitter
+        context.Properties.Should().NotContainKey("CodeDiagAgent.ToolCalls",
+            "the DslEmitterStep must absorb/ignore tool calls — only DSL pipeline steps are allowed");
+
+        context.Properties.TryGetValue("CodeDiagAgent.Iterations", out var iterations);
+        output.WriteLine($"Iterations: {iterations}");
+        iterations.Should().NotBeNull("iteration count must be recorded");
+    }
+}

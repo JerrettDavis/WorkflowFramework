@@ -65,7 +65,7 @@ public static class TaskStreamServiceCollectionExtensions
                 var plugin = new TaskStreamPlugin(tools);
 
                 var builder = Kernel.CreateBuilder();
-                builder.AddOllamaChatCompletion("qwen3:30b-instruct", new Uri("http://localhost:11434"));
+                builder.AddOllamaChatCompletion("qwen2.5:1.5b", new Uri("http://localhost:11434"));
                 builder.Plugins.AddFromObject(plugin, "TaskStream");
                 var kernel = builder.Build();
 

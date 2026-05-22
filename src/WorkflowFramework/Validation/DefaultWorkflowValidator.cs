@@ -2,6 +2,8 @@ namespace WorkflowFramework.Validation;
 
 /// <summary>
 /// Default implementation of <see cref="IWorkflowValidator"/> that performs common validations.
+/// Validation rules are internally composed via PatternKit <c>Specification&lt;T&gt;</c> instances
+/// defined in <see cref="WorkflowSpec"/>. The public API is unchanged.
 /// </summary>
 public sealed class DefaultWorkflowValidator : IWorkflowValidator
 {
@@ -13,18 +15,17 @@ public sealed class DefaultWorkflowValidator : IWorkflowValidator
         var errors = new List<ValidationError>();
 
         // Validate workflow has at least one step
-        if (workflow.Steps.Count == 0)
+        if (!WorkflowSpec.HasAtLeastOneStep.IsSatisfiedBy(workflow))
         {
             errors.Add(new ValidationError("Workflow must have at least one step."));
         }
 
-        // Detect duplicate step names
-        var stepNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var step in workflow.Steps)
+        // Detect duplicate step names (use helper to find which names are duplicate)
+        if (!WorkflowSpec.NoDuplicateStepNames.IsSatisfiedBy(workflow))
         {
-            if (!stepNames.Add(step.Name))
+            foreach (var duplicateName in WorkflowSpec.FindDuplicateStepNames(workflow))
             {
-                errors.Add(new ValidationError($"Duplicate step name '{step.Name}'.", step.Name));
+                errors.Add(new ValidationError($"Duplicate step name '{duplicateName}'.", duplicateName));
             }
         }
 

@@ -25,7 +25,7 @@ public class SemanticKernelE2ETests(OllamaFixture fixture)
     private static Kernel BuildKernel(IEnumerable<IAgentTool>? tools = null)
     {
         var builder = Kernel.CreateBuilder();
-        builder.AddOllamaChatCompletion("qwen3:30b-instruct", new Uri("http://localhost:11434"));
+        builder.AddOllamaChatCompletion("qwen2.5:1.5b", new Uri("http://localhost:11434"));
 
         if (tools is not null)
         {

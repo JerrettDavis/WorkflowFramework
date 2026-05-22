@@ -22,7 +22,7 @@
     <PackageVersion Include="Polly.Core" Version="8.6.0" />
 
     <!-- OpenTelemetry -->
-    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="10.0.3" />
+    <PackageVersion Include="System.Diagnostics.DiagnosticSource" Version="10.0.5" />
 
     <!-- Serialization -->
     <PackageVersion Include="System.Text.Json" Version="10.0.1" />
@@ -86,6 +86,13 @@
     <!-- Reqnroll BDD -->
     <PackageVersion Include="Reqnroll" Version="3.0.0" />
     <PackageVersion Include="Reqnroll.xUnit" Version="3.0.0" />
+
+    <!-- PatternKit -->
+    <PackageVersion Include="PatternKit.Core" Version="0.105.0" />
+
+    <!-- TinyBDD -->
+    <PackageVersion Include="TinyBDD" Version="0.19.16" />
+    <PackageVersion Include="TinyBDD.Xunit" Version="0.19.16" />
     <PackageVersion Include="Microsoft.Playwright" Version="1.52.0" />
     <PackageVersion Include="Aspire.Hosting.Testing" Version="9.2.1" />
 

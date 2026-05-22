@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">AI DSL Emitter preview</title>
+  <desc id="desc">An LLM emits workflow step definitions as JSON, a human approves, and the framework executes them at runtime.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#08111f" />
+      <stop offset="55%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#1a1040" />
+    </linearGradient>
+    <linearGradient id="node" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#020617" flood-opacity="0.45" />
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#64748b" />
+    </marker>
+  </defs>
+
+  <rect width="1280" height="720" rx="32" fill="url(#bg)" />
+  <circle cx="1140" cy="100" r="190" fill="#7c3aed" opacity="0.15" />
+  <circle cx="200"  cy="620" r="160" fill="#0f766e" opacity="0.14" />
+
+  <text x="72" y="92"  fill="#e2e8f0" font-size="42" font-family="Segoe UI, Arial, sans-serif" font-weight="700">AI DSL Emitter</text>
+  <text x="72" y="132" fill="#a5b4fc" font-size="20" font-family="Segoe UI, Arial, sans-serif">LLM plans → human approves → framework executes — at runtime.</text>
+
+  <g filter="url(#shadow)">
+    <!-- Step 1: SelectProvider -->
+    <rect x="72"  y="200" width="210" height="110" rx="20" fill="url(#node)" stroke="#38bdf8" stroke-width="2" />
+    <text x="100" y="240" fill="#bae6fd" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Select Provider</text>
+    <text x="100" y="265" fill="#cbd5e1" font-size="13" font-family="Segoe UI, Arial, sans-serif">echo (offline) or ollama</text>
+    <text x="100" y="288" fill="#64748b" font-size="12" font-family="Segoe UI, Arial, sans-serif">resolves IAgentProvider</text>
+
+    <!-- Step 2: DslEmitterStep -->
+    <rect x="334" y="200" width="230" height="110" rx="20" fill="url(#node)" stroke="#a855f7" stroke-width="2" />
+    <text x="362" y="240" fill="#e9d5ff" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Emit DSL Steps</text>
+    <text x="362" y="265" fill="#cbd5e1" font-size="13" font-family="Segoe UI, Arial, sans-serif">DslEmitterStep</text>
+    <text x="362" y="288" fill="#64748b" font-size="12" font-family="Segoe UI, Arial, sans-serif">LLM emits JSON step array</text>
+
+    <!-- Step 3: ApprovalGate -->
+    <rect x="620" y="200" width="230" height="110" rx="20" fill="url(#node)" stroke="#f59e0b" stroke-width="2" />
+    <text x="648" y="240" fill="#fde68a" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Human Approval</text>
+    <text x="648" y="265" fill="#cbd5e1" font-size="13" font-family="Segoe UI, Arial, sans-serif">ApprovalStep</text>
+    <text x="648" y="288" fill="#64748b" font-size="12" font-family="Segoe UI, Arial, sans-serif">review &amp; approve emitted plan</text>
+
+    <!-- Step 4: BridgeStep -->
+    <rect x="906" y="200" width="230" height="110" rx="20" fill="url(#node)" stroke="#38bdf8" stroke-width="2" />
+    <text x="934" y="240" fill="#bae6fd" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Bridge Context</text>
+    <text x="934" y="265" fill="#cbd5e1" font-size="13" font-family="Segoe UI, Arial, sans-serif">Action</text>
+    <text x="934" y="288" fill="#64748b" font-size="12" font-family="Segoe UI, Arial, sans-serif">wire emitted steps → executor</text>
+
+    <!-- Step 5: WorkflowDslExecutorStep -->
+    <rect x="450" y="420" width="380" height="110" rx="20" fill="url(#node)" stroke="#22c55e" stroke-width="2" />
+    <text x="478" y="460" fill="#bbf7d0" font-size="16" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Execute Emitted Steps</text>
+    <text x="478" y="485" fill="#cbd5e1" font-size="13" font-family="Segoe UI, Arial, sans-serif">WorkflowDslExecutorStep</text>
+    <text x="478" y="508" fill="#64748b" font-size="12" font-family="Segoe UI, Arial, sans-serif">materialise &amp; run each emitted step</text>
+  </g>
+
+  <!-- Connector arrows -->
+  <g stroke="#64748b" stroke-width="4" fill="none" marker-end="url(#arrow)" opacity="0.95">
+    <path d="M282 255 H334" />
+    <path d="M564 255 H620" />
+    <path d="M850 255 H906" />
+    <!-- Bridge → Executor (down then right) -->
+    <path d="M1021 310 V370 C1021 400, 1000 420, 970 420" />
+    <!-- DslEmitter → Executor (shortcut visual) -->
+    <path d="M449 310 V370 C449 400, 450 420, 450 420" />
+  </g>
+
+  <g>
+    <rect x="72" y="572" width="360" height="90" rx="18" fill="#0f172a" stroke="#334155" stroke-width="2" />
+    <text x="100" y="610" fill="#f8fafc" font-size="15" font-family="Segoe UI, Arial, sans-serif" font-weight="700">Why it is featured</text>
+    <text x="100" y="636" fill="#94a3b8" font-size="14" font-family="Segoe UI, Arial, sans-serif">LLM-driven dynamic workflow construction with</text>
+    <text x="100" y="654" fill="#94a3b8" font-size="14" font-family="Segoe UI, Arial, sans-serif">human-in-the-loop approval and runtime execution.</text>
+  </g>
+</svg>

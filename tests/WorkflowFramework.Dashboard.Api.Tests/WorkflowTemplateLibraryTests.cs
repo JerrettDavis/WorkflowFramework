@@ -13,7 +13,7 @@ public class WorkflowTemplateLibraryTests
     public async Task GetTemplatesAsync_ReturnsAllTemplates()
     {
         var templates = await _library.GetTemplatesAsync();
-        templates.Should().HaveCount(26);
+        templates.Should().HaveCount(27);
     }
 
     [Fact]
@@ -84,6 +84,7 @@ public class WorkflowTemplateLibraryTests
     [InlineData("task-extraction-pipeline", "Task Extraction Pipeline", "AI & Agents", 5)]
     [InlineData("agent-triage-workflow", "Agent Triage Workflow", "AI & Agents", 4)]
     [InlineData("multimodal-local-router", "Multimodal Local Router", "AI & Agents", 8)]
+    [InlineData("ai-dsl-emitter", "AI DSL Emitter", "AI & Agents", 5)]
     [InlineData("quick-transcript", "Quick Transcript", "Voice & Audio", 5)]
     [InlineData("meeting-notes", "Meeting Notes", "Voice & Audio", 7)]
     [InlineData("blog-from-interview", "Blog from Interview", "Voice & Audio", 10)]
@@ -138,7 +139,7 @@ public class WorkflowTemplateLibraryTests
         templates.Where(template => template.IsFeatured)
             .Select(template => template.Id)
             .Should()
-            .Contain(["multimodal-local-router", "blog-from-interview"]);
+            .Contain(["multimodal-local-router", "blog-from-interview", "ai-dsl-emitter"]);
 
         templates.Where(template => template.IsFeatured)
             .Should()
@@ -159,7 +160,8 @@ public class WorkflowTemplateLibraryTests
             .Should()
             .Contain([
                 "/images/templates/multimodal-local-router-preview.svg",
-                "/images/templates/blog-from-interview-preview.svg"
+                "/images/templates/blog-from-interview-preview.svg",
+                "/images/templates/ai-dsl-emitter-preview.svg"
             ]);
     }
 
@@ -232,5 +234,37 @@ public class WorkflowTemplateLibraryTests
         synthesizeBlog.Config.Should().Contain(new KeyValuePair<string, string>("model", "gpt-4o-mini"));
         synthesizeBlog.Config!["prompt"].Should().Contain("{qaPairs}");
         synthesizeBlog.Config["prompt"].Should().Contain("{{ParseQuestions.Output}}");
+    }
+
+    [Fact]
+    public async Task GetTemplateAsync_AiDslEmitter_IsFeaturedAndHasCorrectStepTypes()
+    {
+        var template = await _library.GetTemplateAsync("ai-dsl-emitter");
+
+        template.Should().NotBeNull();
+        template!.IsFeatured.Should().BeTrue();
+        template.FeaturedReason.Should().NotBeNullOrWhiteSpace();
+        template.PreviewImageUrl.Should().Be("/images/templates/ai-dsl-emitter-preview.svg");
+        template.Category.Should().Be("AI & Agents");
+        template.Tags.Should().Contain(["ai", "dsl", "dynamic", "human-in-the-loop"]);
+
+        var steps = template.Definition.Steps;
+        steps.Should().HaveCount(5);
+
+        steps.Single(s => s.Name == "SelectProvider").Type.Should().Be("Action");
+
+        var emitStep = steps.Single(s => s.Name == "EmitSteps");
+        emitStep.Type.Should().Be("DslEmitterStep");
+        emitStep.Config.Should().ContainKey("provider");
+        emitStep.Config!["provider"].Should().Be("echo");
+        emitStep.Config.Should().ContainKey("systemPrompt");
+        emitStep.Config.Should().ContainKey("doneSignal");
+
+        var approvalStep = steps.Single(s => s.Name == "ApprovePlan");
+        approvalStep.Type.Should().Be("ApprovalStep");
+        approvalStep.Config!["instructions"].Should().Contain("{{EmitSteps.EmittedSteps}}");
+
+        steps.Single(s => s.Name == "BridgeContext").Type.Should().Be("Action");
+        steps.Single(s => s.Name == "ExecuteEmittedSteps").Type.Should().Be("WorkflowDslExecutorStep");
     }
 }
