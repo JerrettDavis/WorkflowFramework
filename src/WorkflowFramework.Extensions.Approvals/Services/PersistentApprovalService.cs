@@ -374,8 +374,13 @@ public sealed class PersistentApprovalService : IApprovalChannel
     private void Cleanup(string correlationId)
     {
         _pending.TryRemove(correlationId, out _);
-        if (_semaphores.TryRemove(correlationId, out var sem))
-            sem.Dispose();
+        // Note: we intentionally do NOT dispose the semaphore here.
+        // ResolveExternalAsync acquires the semaphore and calls Release() in a finally block.
+        // If we disposed the semaphore while it was held by ResolveExternalAsync, the Release()
+        // call would throw ObjectDisposedException. SemaphoreSlim wraps a AvailableWaitHandle
+        // which is only allocated on first access via the WaitHandle property (not used here),
+        // so skipping Dispose() is safe — the GC will reclaim it without leaking resources.
+        _semaphores.TryRemove(correlationId, out _);
     }
 
     private static void ValidateRequest(ApprovalRequest request)

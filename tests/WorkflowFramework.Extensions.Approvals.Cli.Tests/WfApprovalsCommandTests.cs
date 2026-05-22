@@ -301,10 +301,16 @@ public sealed class WfApprovalsCommandTests
         exitCode.Should().Be(3);
         console.Output.Should().Contain("Unauthorized");
 
-        // Cleanup
-        await persistent.ResolveExternalAsync(
-            request.CorrelationId,
-            new ApprovalRecord("sre", null, true, null, DateTimeOffset.UtcNow, "cli"));
+        // Cleanup: resolve the background RequestApprovalAsync task so the test doesn't hang.
+        // Ignore ObjectDisposedException — the semaphore may already be cleaned up under
+        // fast CI schedulers (seen on net9.0 under high-parallelism runs).
+        try
+        {
+            await persistent.ResolveExternalAsync(
+                request.CorrelationId,
+                new ApprovalRecord("sre", null, true, null, DateTimeOffset.UtcNow, "cli"));
+        }
+        catch (ObjectDisposedException) { /* semaphore already cleaned up — safe to ignore */ }
     }
 
     // -------------------------------------------------------------------------
