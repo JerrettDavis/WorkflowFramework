@@ -8,5 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Polly.Core" />
+    <PackageReference Include="PatternKit.Core" />
   </ItemGroup>
 </Project>
