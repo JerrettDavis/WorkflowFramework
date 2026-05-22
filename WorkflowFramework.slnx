@@ -90,6 +90,19 @@
     <Project Path="tests/WorkflowFramework.Extensions.DependencyInjection.Tests/WorkflowFramework.Extensions.DependencyInjection.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.AI.Tests/WorkflowFramework.Extensions.AI.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Agents.Tests/WorkflowFramework.Extensions.Agents.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.HumanTasks.Tests/WorkflowFramework.Extensions.HumanTasks.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Connectors.Tests/WorkflowFramework.Extensions.Connectors.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Http.Tests/WorkflowFramework.Extensions.Http.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Diagnostics.Tests/WorkflowFramework.Extensions.Diagnostics.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Events.Tests/WorkflowFramework.Extensions.Events.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Persistence.Tests/WorkflowFramework.Extensions.Persistence.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Persistence.InMemory.Tests/WorkflowFramework.Extensions.Persistence.InMemory.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Persistence.Sqlite.Tests/WorkflowFramework.Extensions.Persistence.Sqlite.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Configuration.Tests/WorkflowFramework.Extensions.Configuration.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Scheduling.Tests/WorkflowFramework.Extensions.Scheduling.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Plugins.Tests/WorkflowFramework.Extensions.Plugins.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Visualization.Tests/WorkflowFramework.Extensions.Visualization.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.DataMapping.Tests/WorkflowFramework.Extensions.DataMapping.Tests.csproj" />
   </Folder>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/WorkflowFramework.Benchmarks/WorkflowFramework.Benchmarks.csproj" />

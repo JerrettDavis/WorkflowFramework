@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Diagnostics.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Source projects under test -->
+    <ProjectReference Include="..\..\src\WorkflowFramework\WorkflowFramework.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Diagnostics\WorkflowFramework.Extensions.Diagnostics.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Test frameworks -->
+    <PackageReference Include="TinyBDD" />
+    <PackageReference Include="TinyBDD.Xunit" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+</Project>
