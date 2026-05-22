@@ -65,6 +65,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Polly.Tests/WorkflowFramework.Extensions.Polly.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Reactive.Tests/WorkflowFramework.Extensions.Reactive.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Approvals.Abstractions.Tests/WorkflowFramework.Extensions.Approvals.Abstractions.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Approvals.Acceptance/WorkflowFramework.Extensions.Approvals.Acceptance.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Approvals.Cli.Tests/WorkflowFramework.Extensions.Approvals.Cli.Tests.csproj" />
