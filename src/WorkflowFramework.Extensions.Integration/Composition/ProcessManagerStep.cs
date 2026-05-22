@@ -1,3 +1,9 @@
+// Intentionally bespoke — PatternKit AsyncStateMachine requires all states and transitions
+// to be declared at construction time. ProcessManagerStep's state is determined dynamically
+// by a delegate that reads IWorkflowContext, and transitions occur when a handler mutates
+// context (not by firing named events). This runtime-dynamic pattern cannot be expressed
+// cleanly with PatternKit's compile-time state machine builder. Characterization tests
+// added in Phase G.2.
 namespace WorkflowFramework.Extensions.Integration.Composition;
 
 /// <summary>

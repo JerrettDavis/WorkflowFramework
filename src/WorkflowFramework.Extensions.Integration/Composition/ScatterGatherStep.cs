@@ -1,3 +1,8 @@
+// Intentionally bespoke — PatternKit 0.105.0 does not expose a ScatterGather primitive.
+// AsyncActionComposite supports parallel execution but lacks the result-collection,
+// per-branch error swallowing, and timeout/partial-result semantics that ScatterGatherStep
+// implements via Task.WhenAll + a linked CancellationTokenSource. Characterization
+// tests added in Phase G.2.
 namespace WorkflowFramework.Extensions.Integration.Composition;
 
 /// <summary>

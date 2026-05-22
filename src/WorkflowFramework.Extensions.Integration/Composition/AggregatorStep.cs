@@ -1,3 +1,7 @@
+// Intentionally bespoke — PatternKit 0.105.0 has no Aggregator primitive. The completion
+// condition logic (count, predicate, timeout) is unique to the EIP Aggregator pattern and
+// is not modelled by any existing PatternKit behavioral or structural primitive without
+// wrapping all the logic anyway. Characterization tests added in Phase G.2.
 namespace WorkflowFramework.Extensions.Integration.Composition;
 
 /// <summary>
