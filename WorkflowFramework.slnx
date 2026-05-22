@@ -43,6 +43,12 @@
     <Project Path="src/WorkflowFramework.Extensions.Connectors.Messaging/WorkflowFramework.Extensions.Connectors.Messaging.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Connectors.Grpc/WorkflowFramework.Extensions.Connectors.Grpc.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Agents/WorkflowFramework.Extensions.Agents.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Approvals.Abstractions/WorkflowFramework.Extensions.Approvals.Abstractions.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Approvals/WorkflowFramework.Extensions.Approvals.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Approvals.Cli/WorkflowFramework.Extensions.Approvals.Cli.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Approvals.Email/WorkflowFramework.Extensions.Approvals.Email.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Approvals.Slack/WorkflowFramework.Extensions.Approvals.Slack.csproj" />
+    <Project Path="src/WorkflowFramework.Extensions.Approvals.Teams/WorkflowFramework.Extensions.Approvals.Teams.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Agents.Mcp/WorkflowFramework.Extensions.Agents.Mcp.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Agents.Skills/WorkflowFramework.Extensions.Agents.Skills.csproj" />
     <Project Path="src/WorkflowFramework.Extensions.Persistence.PostgreSQL/WorkflowFramework.Extensions.Persistence.PostgreSQL.csproj" />
@@ -58,6 +64,14 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/WorkflowFramework.Tests/WorkflowFramework.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Approvals.Abstractions.Tests/WorkflowFramework.Extensions.Approvals.Abstractions.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Approvals.Acceptance/WorkflowFramework.Extensions.Approvals.Acceptance.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Approvals.Cli.Tests/WorkflowFramework.Extensions.Approvals.Cli.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Approvals.Integration.Tests/WorkflowFramework.Extensions.Approvals.Integration.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Approvals.Email.Tests/WorkflowFramework.Extensions.Approvals.Email.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Approvals.Slack.Tests/WorkflowFramework.Extensions.Approvals.Slack.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Approvals.Teams.Tests/WorkflowFramework.Extensions.Approvals.Teams.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Approvals.Tests/WorkflowFramework.Extensions.Approvals.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Tests.Integration/WorkflowFramework.Tests.Integration.csproj" />
     <Project Path="tests/WorkflowFramework.Tests.Common/WorkflowFramework.Tests.Common.csproj" />
     <Project Path="tests/WorkflowFramework.Tests.E2E/WorkflowFramework.Tests.E2E.csproj" />

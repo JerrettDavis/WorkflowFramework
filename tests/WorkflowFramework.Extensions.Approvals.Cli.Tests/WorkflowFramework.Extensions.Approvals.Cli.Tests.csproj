@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Approvals.Cli.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Approvals.Cli\WorkflowFramework.Extensions.Approvals.Cli.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Approvals\WorkflowFramework.Extensions.Approvals.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Approvals.Abstractions\WorkflowFramework.Extensions.Approvals.Abstractions.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>WorkflowFramework.Extensions.Approvals.Integration.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Approvals.Abstractions\WorkflowFramework.Extensions.Approvals.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Approvals\WorkflowFramework.Extensions.Approvals.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Approvals.Cli\WorkflowFramework.Extensions.Approvals.Cli.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Approvals.Email\WorkflowFramework.Extensions.Approvals.Email.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Approvals.Slack\WorkflowFramework.Extensions.Approvals.Slack.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Approvals.Teams\WorkflowFramework.Extensions.Approvals.Teams.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0' OR '$(TargetFramework)' == 'net9.0' OR '$(TargetFramework)' == 'net10.0'">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

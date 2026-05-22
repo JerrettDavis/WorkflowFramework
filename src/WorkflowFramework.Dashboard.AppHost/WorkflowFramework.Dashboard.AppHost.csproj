@@ -9,6 +9,10 @@
     <IsAspireHost>true</IsAspireHost>
     <IsPackable>false</IsPackable>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <!-- The Aspire SDK injects platform-specific packages (e.g. Aspire.Dashboard.Sdk.linux-x64)
+         at restore time, so the packages.lock.json is inherently OS-specific and causes churn
+         in cross-platform repos.  Opt this AppHost project out of lock-file enforcement. -->
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
   </PropertyGroup>
 
   <ItemGroup>

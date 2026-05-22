@@ -5,6 +5,9 @@
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <RootNamespace>WorkflowFramework.Dashboard.UITests</RootNamespace>
+    <!-- Inherits Aspire RID-specific packages from AppHost; opt out of lock-file enforcement
+         to avoid OS-dependent lock-file churn (the Aspire SDK injects platform-specific packages). -->
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\WorkflowFramework.Dashboard.AppHost\WorkflowFramework.Dashboard.AppHost.csproj" />

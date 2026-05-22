@@ -20,6 +20,12 @@ public sealed class WorkflowDefinition
     public int Version { get; set; } = 1;
 
     /// <summary>
+    /// Gets or sets an optional description of the workflow.
+    /// </summary>
+    [JsonPropertyName("description")]
+    public string? Description { get; set; }
+
+    /// <summary>
     /// Gets or sets the workflow steps.
     /// </summary>
     [JsonPropertyName("steps")]
@@ -38,10 +44,24 @@ public sealed class WorkflowDefinition
 public sealed class StepDefinition
 {
     /// <summary>
-    /// Gets or sets the step type name (resolved via IStepRegistry).
+    /// Gets or sets the step type name (resolved via IStepRegistry) or a composite step category
+    /// (step, conditional, parallel, foreach, while, dowhile, retry, try, subworkflow, approval, saga).
     /// </summary>
     [JsonPropertyName("type")]
     public string Type { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the optional step class name. Interpretation depends on <see cref="Type"/>:
+    /// <list type="bullet">
+    ///   <item>When <c>type</c> is <c>"step"</c> or omitted, this value is resolved via the step registry.</item>
+    ///   <item>When <c>type</c> is <c>"subworkflow"</c>, this value identifies the named sub-workflow.</item>
+    ///   <item>When <c>type</c> is <c>"approval"</c>, this value is the registry key for a custom approval step
+    ///   (falls back to the built-in approval recording step when not found).</item>
+    ///   <item>For other composite categories this field may be unused or have category-specific semantics.</item>
+    /// </list>
+    /// </summary>
+    [JsonPropertyName("class")]
+    public string? Class { get; set; }
 
     /// <summary>
     /// Gets or sets an optional step name override.
@@ -50,22 +70,55 @@ public sealed class StepDefinition
     public string? Name { get; set; }
 
     /// <summary>
-    /// Gets or sets the condition expression (for If steps).
+    /// Gets or sets the condition expression key.
+    /// <list type="bullet">
+    ///   <item>For <c>conditional</c>, <c>while</c>, and <c>dowhile</c> steps: the property key whose value is
+    ///   checked to be <c>true</c> or <c>"true"</c> (via <c>ctx.Properties[Condition]</c>).</item>
+    ///   <item>For <c>foreach</c> steps: the property key whose value is the items collection to iterate
+    ///   (must implement <see cref="System.Collections.IEnumerable"/>). Defaults to <c>"items"</c> when not set.</item>
+    /// </list>
     /// </summary>
     [JsonPropertyName("condition")]
     public string? Condition { get; set; }
 
     /// <summary>
-    /// Gets or sets the then step type (for If steps).
+    /// Gets or sets the then step class name for a conditional (legacy single-class format).
+    /// Use <see cref="ThenSteps"/> for rich nested step definitions.
     /// </summary>
     [JsonPropertyName("then")]
     public string? Then { get; set; }
 
     /// <summary>
-    /// Gets or sets the else step type (for If steps).
+    /// Gets or sets the else step class name for a conditional (legacy single-class format).
+    /// Use <see cref="ElseSteps"/> for rich nested step definitions.
     /// </summary>
     [JsonPropertyName("else")]
     public string? Else { get; set; }
+
+    /// <summary>
+    /// Gets or sets the then-branch step definitions for a <c>conditional</c> step (new nested format),
+    /// or the try-body steps for a <c>try</c> step when <see cref="Steps"/> is not set.
+    /// Precedence for <c>type: try</c>: <see cref="Steps"/> is used first; <see cref="ThenSteps"/> is
+    /// the fallback for backward compatibility. Prefer <see cref="Steps"/> for new try-body definitions
+    /// and <see cref="FinallySteps"/> for the finally-body.
+    /// </summary>
+    [JsonPropertyName("thenSteps")]
+    public List<StepDefinition>? ThenSteps { get; set; }
+
+    /// <summary>
+    /// Gets or sets the else-branch step definitions for a <c>conditional</c> step (new nested format).
+    /// Also used as the finally-body for a <c>try</c> step when <see cref="FinallySteps"/> is not set
+    /// (legacy — prefer <see cref="FinallySteps"/> for try/finally definitions).
+    /// </summary>
+    [JsonPropertyName("elseSteps")]
+    public List<StepDefinition>? ElseSteps { get; set; }
+
+    /// <summary>
+    /// Gets or sets the finally-body step definitions for a <c>type: try</c> step.
+    /// Takes precedence over the legacy <see cref="ElseSteps"/> repurposing for try/finally.
+    /// </summary>
+    [JsonPropertyName("finallySteps")]
+    public List<StepDefinition>? FinallySteps { get; set; }
 
     /// <summary>
     /// Gets or sets retry configuration.
@@ -80,28 +133,61 @@ public sealed class StepDefinition
     public double? TimeoutSeconds { get; set; }
 
     /// <summary>
-    /// Gets or sets parallel step types.
+    /// Gets or sets parallel step types (legacy format — list of class names).
+    /// Use <see cref="Type"/> = "parallel" with <see cref="Steps"/> for the rich format.
     /// </summary>
     [JsonPropertyName("parallel")]
     public List<string>? Parallel { get; set; }
 
     /// <summary>
-    /// Gets or sets loop configuration (for While/DoWhile steps).
+    /// Gets or sets loop configuration (for forEach/while/doWhile steps).
     /// </summary>
+    /// <remarks>
+    /// <b>Note:</b> This property is not currently read by <c>WorkflowDefinitionBuilder</c>.
+    /// The loop variant is driven by <see cref="Type"/> (<c>"foreach"</c>, <c>"while"</c>, or
+    /// <c>"dowhile"</c>), the loop condition by <see cref="Condition"/>, and the loop body by
+    /// <see cref="Steps"/>. <see cref="LoopDefinition.MaxIterations"/> is reserved for a future
+    /// release and has no runtime effect at this time.
+    /// </remarks>
     [JsonPropertyName("loop")]
     public LoopDefinition? Loop { get; set; }
 
     /// <summary>
-    /// Gets or sets sub-workflow name.
+    /// Gets or sets sub-workflow name (for subworkflow type).
     /// </summary>
     [JsonPropertyName("subWorkflow")]
     public string? SubWorkflow { get; set; }
 
     /// <summary>
-    /// Gets or sets the child steps (for loop body, conditional branches, etc.).
+    /// Gets or sets the child steps (for composite step types such as parallel, retry, loop, try, saga).
     /// </summary>
     [JsonPropertyName("steps")]
     public List<StepDefinition>? Steps { get; set; }
+
+    /// <summary>
+    /// Gets or sets the human-readable message shown during an approval step.
+    /// </summary>
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+
+    /// <summary>
+    /// Gets or sets the minimum number of approvers required (for approval steps).
+    /// </summary>
+    [JsonPropertyName("requiredApprovers")]
+    public int? RequiredApprovers { get; set; }
+
+    /// <summary>
+    /// Gets or sets the approval timeout in minutes (for approval steps).
+    /// </summary>
+    [JsonPropertyName("timeoutMinutes")]
+    public int? TimeoutMinutes { get; set; }
+
+    /// <summary>
+    /// Gets or sets the catch handler definitions (for <c>type: try</c> steps).
+    /// Each handler specifies the exception type and the steps to execute when that exception is thrown.
+    /// </summary>
+    [JsonPropertyName("catch")]
+    public List<CatchDefinition>? Catch { get; set; }
 }
 
 /// <summary>
@@ -144,4 +230,24 @@ public sealed class RetryDefinition
     /// </summary>
     [JsonPropertyName("baseDelayMs")]
     public int BaseDelayMs { get; set; } = 100;
+}
+
+/// <summary>
+/// Defines a catch block for a <c>type: try</c> step.
+/// </summary>
+public sealed class CatchDefinition
+{
+    /// <summary>
+    /// Gets or sets the fully-qualified or short exception type name to catch
+    /// (e.g. <c>"Exception"</c>, <c>"InvalidOperationException"</c>).
+    /// If the type cannot be resolved at runtime, <see cref="System.Exception"/> is used as the fallback.
+    /// </summary>
+    [JsonPropertyName("exception")]
+    public string Exception { get; set; } = "Exception";
+
+    /// <summary>
+    /// Gets or sets the steps to execute when the exception is caught.
+    /// </summary>
+    [JsonPropertyName("steps")]
+    public List<StepDefinition> Steps { get; set; } = new();
 }
