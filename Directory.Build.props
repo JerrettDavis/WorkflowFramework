@@ -60,6 +60,6 @@
     <!-- Microsoft.Extensions.* version management for multi-targeting -->
     <PropertyGroup>
         <MicrosoftExtensionsVersion Condition="'$(TargetFramework)' == 'netstandard2.0' OR '$(TargetFramework)' == 'netstandard2.1'">8.0.2</MicrosoftExtensionsVersion>
-        <MicrosoftExtensionsVersion Condition="'$(MicrosoftExtensionsVersion)' == ''">10.0.3</MicrosoftExtensionsVersion>
+        <MicrosoftExtensionsVersion Condition="'$(MicrosoftExtensionsVersion)' == ''">10.0.5</MicrosoftExtensionsVersion>
     </PropertyGroup>
 </Project>

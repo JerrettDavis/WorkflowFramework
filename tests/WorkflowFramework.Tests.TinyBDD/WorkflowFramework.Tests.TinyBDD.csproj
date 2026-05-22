@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>
+    <RootNamespace>WorkflowFramework.Tests.TinyBDD</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Source projects under test -->
+    <ProjectReference Include="..\..\src\WorkflowFramework\WorkflowFramework.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Testing\WorkflowFramework.Testing.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.DataMapping\WorkflowFramework.Extensions.DataMapping.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.DependencyInjection\WorkflowFramework.Extensions.DependencyInjection.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Scheduling\WorkflowFramework.Extensions.Scheduling.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Plugins\WorkflowFramework.Extensions.Plugins.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Integration\WorkflowFramework.Extensions.Integration.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Agents\WorkflowFramework.Extensions.Agents.csproj" />
+
+    <!-- Test frameworks -->
+    <PackageReference Include="TinyBDD" />
+    <PackageReference Include="TinyBDD.Xunit" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+</Project>
