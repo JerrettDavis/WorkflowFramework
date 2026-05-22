@@ -1,17 +1,34 @@
-﻿version: 2
+version: 2
 updates:
-  - package-ecosystem: nuget
-    directory: /
+  - package-ecosystem: "nuget"
+    directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
     open-pull-requests-limit: 10
     labels:
-      - dependencies
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+    cooldown:
+      default-days: 2
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
 
-  - package-ecosystem: github-actions
-    directory: /
+  - package-ecosystem: "github-actions"
+    directory: "/"
     schedule:
-      interval: weekly
+      interval: "weekly"
     open-pull-requests-limit: 5
     labels:
-      - ci
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "chore(deps)"
+    cooldown:
+      default-days: 2
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
