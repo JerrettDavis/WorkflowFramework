@@ -1,3 +1,7 @@
+// Intentionally bespoke — ComposedMessageProcessorStep is a pipeline of three dynamic
+// operations (splitter→per-item-processor→aggregator) all sourced from context at runtime.
+// No single PatternKit primitive composes this pattern without recreating the full logic.
+// Characterization tests added in Phase G.2.
 namespace WorkflowFramework.Extensions.Integration.Composition;
 
 /// <summary>
