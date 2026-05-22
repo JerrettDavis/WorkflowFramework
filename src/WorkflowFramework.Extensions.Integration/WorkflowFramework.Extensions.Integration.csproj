@@ -6,5 +6,6 @@
   <ItemGroup>
     <ProjectReference Include="..\WorkflowFramework\WorkflowFramework.csproj" />
     <ProjectReference Include="..\WorkflowFramework.Extensions.Integration.Abstractions\WorkflowFramework.Extensions.Integration.Abstractions.csproj" />
+    <PackageReference Include="PatternKit.Core" />
   </ItemGroup>
 </Project>

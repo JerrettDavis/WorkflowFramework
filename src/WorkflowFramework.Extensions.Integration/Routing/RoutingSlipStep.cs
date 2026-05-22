@@ -1,3 +1,8 @@
+// Intentionally bespoke — PatternKit AsyncActionChain builds its pipeline at construction
+// time from a fixed set of handlers, but RoutingSlip selects the step registry and
+// itinerary dynamically at runtime from the IWorkflowContext. No PatternKit primitive
+// cleanly models a dynamic, state-advancing chain; keeping bespoke avoids a leaky
+// abstraction. Characterization tests added in Phase G.1.
 using WorkflowFramework.Extensions.Integration.Abstractions;
 
 namespace WorkflowFramework.Extensions.Integration.Routing;

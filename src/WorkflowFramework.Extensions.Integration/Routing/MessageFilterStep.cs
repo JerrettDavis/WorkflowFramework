@@ -1,3 +1,8 @@
+// Intentionally bespoke — MessageFilterStep is a one-line Specification pattern
+// (predicate → abort). PatternKit.Core 0.105.0 does not expose a standalone Specification
+// type; the Behavioral.Strategy primitives are overkill for a single boolean predicate.
+// The implementation is kept as-is to avoid unnecessary indirection. Characterization
+// tests added in Phase G.1.
 namespace WorkflowFramework.Extensions.Integration.Routing;
 
 /// <summary>

@@ -1,3 +1,7 @@
+// Intentionally bespoke — DynamicRouterStep's routing function can return a different
+// step each iteration based on evolving context state (a feedback loop). PatternKit
+// Strategy/Chain patterns pre-bake the route set at construction time and cannot model
+// this runtime-adaptive routing. Characterization tests added in Phase G.1.
 namespace WorkflowFramework.Extensions.Integration.Routing;
 
 /// <summary>
