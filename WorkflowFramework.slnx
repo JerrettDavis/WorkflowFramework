@@ -67,6 +67,7 @@
     <Project Path="tests/WorkflowFramework.Extensions.Polly.Tests/WorkflowFramework.Extensions.Polly.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Reactive.Tests/WorkflowFramework.Extensions.Reactive.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Expressions.Tests/WorkflowFramework.Extensions.Expressions.Tests.csproj" />
+    <Project Path="tests/WorkflowFramework.Extensions.Distributed.Redis.Tests/WorkflowFramework.Extensions.Distributed.Redis.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Approvals.Abstractions.Tests/WorkflowFramework.Extensions.Approvals.Abstractions.Tests.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Approvals.Acceptance/WorkflowFramework.Extensions.Approvals.Acceptance.csproj" />
     <Project Path="tests/WorkflowFramework.Extensions.Approvals.Cli.Tests/WorkflowFramework.Extensions.Approvals.Cli.Tests.csproj" />
