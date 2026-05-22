@@ -21,6 +21,15 @@
           "Microsoft.NETCore.Platforms": "1.1.0"
         }
       },
+      "PatternKit.Core": {
+        "type": "Direct",
+        "requested": "[0.105.0, )",
+        "resolved": "0.105.0",
+        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg==",
+        "dependencies": {
+          "System.Threading.Tasks.Extensions": "4.6.3"
+        }
+      },
       "PolySharp": {
         "type": "Direct",
         "requested": "[1.15.0, )",
@@ -42,8 +51,24 @@
         "resolved": "8.0.0",
         "contentHash": "dk9JPxTCIevS75HyEQ0E4OVAFhB2N+V9ShCXf8Q6FkUQZDkgLI12y679Nym1YqsiSysuQskT7Z+6nUf3yab6Vw=="
       },
+      "System.Runtime.CompilerServices.Unsafe": {
+        "type": "Transitive",
+        "resolved": "6.1.2",
+        "contentHash": "2hBr6zdbIBTDE3EhK7NSVNdX58uTK6iHW/P/Axmm9sl1xoGSLqDvMtpecn226TNwHByFokYwJmt/aQQNlO5CRw=="
+      },
+      "System.Threading.Tasks.Extensions": {
+        "type": "Transitive",
+        "resolved": "4.6.3",
+        "contentHash": "7sCiwilJLYbTZELaKnc7RecBBXWXA+xMLQWZKWawBxYjp6DBlSE3v9/UcvKBvr1vv2tTOhipiogM8rRmxlhrVA==",
+        "dependencies": {
+          "System.Runtime.CompilerServices.Unsafe": "6.1.2"
+        }
+      },
       "workflowframework": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "PatternKit.Core": "[0.105.0, )"
+        }
       },
       "workflowframework.extensions.integration.abstractions": {
         "type": "Project",
@@ -63,6 +88,12 @@
           "Microsoft.SourceLink.Common": "8.0.0"
         }
       },
+      "PatternKit.Core": {
+        "type": "Direct",
+        "requested": "[0.105.0, )",
+        "resolved": "0.105.0",
+        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
+      },
       "PolySharp": {
         "type": "Direct",
         "requested": "[1.15.0, )",
@@ -80,7 +111,10 @@
         "contentHash": "dk9JPxTCIevS75HyEQ0E4OVAFhB2N+V9ShCXf8Q6FkUQZDkgLI12y679Nym1YqsiSysuQskT7Z+6nUf3yab6Vw=="
       },
       "workflowframework": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "PatternKit.Core": "[0.105.0, )"
+        }
       },
       "workflowframework.extensions.integration.abstractions": {
         "type": "Project",
@@ -99,6 +133,12 @@
           "Microsoft.Build.Tasks.Git": "8.0.0",
           "Microsoft.SourceLink.Common": "8.0.0"
         }
+      },
+      "PatternKit.Core": {
+        "type": "Direct",
+        "requested": "[0.105.0, )",
+        "resolved": "0.105.0",
+        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
       },
       "Microsoft.Build.Tasks.Git": {
         "type": "Transitive",
@@ -144,7 +184,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.105.0, )"
         }
       },
       "workflowframework.extensions.integration.abstractions": {
@@ -203,6 +244,12 @@
           "Microsoft.SourceLink.Common": "8.0.0"
         }
       },
+      "PatternKit.Core": {
+        "type": "Direct",
+        "requested": "[0.105.0, )",
+        "resolved": "0.105.0",
+        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
+      },
       "Microsoft.Build.Tasks.Git": {
         "type": "Transitive",
         "resolved": "8.0.0",
@@ -248,7 +295,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.105.0, )"
         }
       },
       "workflowframework.extensions.integration.abstractions": {
@@ -314,6 +362,12 @@
           "Microsoft.SourceLink.Common": "8.0.0"
         }
       },
+      "PatternKit.Core": {
+        "type": "Direct",
+        "requested": "[0.105.0, )",
+        "resolved": "0.105.0",
+        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
+      },
       "Microsoft.Build.Tasks.Git": {
         "type": "Transitive",
         "resolved": "8.0.0",
@@ -359,7 +413,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.105.0, )"
         }
       },
       "workflowframework.extensions.integration.abstractions": {

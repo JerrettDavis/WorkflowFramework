@@ -1,3 +1,7 @@
+// Internal implementation uses PatternKit.Behavioral.Strategy.AsyncActionStrategy<IWorkflowContext>
+// (PatternKit 0.105.0) to evaluate the predicate/handler branches in order.
+// Public API is identical to the original bespoke implementation.
+using PatternKit.Behavioral.Strategy;
 using WorkflowFramework.Extensions.Integration.Abstractions;
 
 namespace WorkflowFramework.Extensions.Integration.Routing;
@@ -7,8 +11,7 @@ namespace WorkflowFramework.Extensions.Integration.Routing;
 /// </summary>
 public sealed class ContentBasedRouterStep : IStep
 {
-    private readonly List<(Func<IWorkflowContext, bool> Predicate, IStep Step)> _routes;
-    private readonly IStep? _defaultRoute;
+    private readonly AsyncActionStrategy<IWorkflowContext> _strategy;
 
     /// <summary>
     /// Initializes a new instance of <see cref="ContentBasedRouterStep"/>.
@@ -19,8 +22,31 @@ public sealed class ContentBasedRouterStep : IStep
         IEnumerable<(Func<IWorkflowContext, bool> Predicate, IStep Step)> routes,
         IStep? defaultRoute = null)
     {
-        _routes = routes?.ToList() ?? throw new ArgumentNullException(nameof(routes));
-        _defaultRoute = defaultRoute;
+        if (routes is null) throw new ArgumentNullException(nameof(routes));
+
+        var builder = AsyncActionStrategy<IWorkflowContext>.Create();
+
+        foreach (var (predicate, step) in routes)
+        {
+            var capturedStep = step;
+            var capturedPredicate = predicate;
+            builder
+                .When(ctx => capturedPredicate(ctx))
+                .Then(async (ctx, ct) => await capturedStep.ExecuteAsync(ctx).ConfigureAwait(false));
+        }
+
+        if (defaultRoute != null)
+        {
+            var capturedDefault = defaultRoute;
+            builder.Default(async (ctx, ct) => await capturedDefault.ExecuteAsync(ctx).ConfigureAwait(false));
+        }
+        else
+        {
+            // No default — silently do nothing when no predicate matches
+            builder.Default(_ => { });
+        }
+
+        _strategy = builder.Build();
     }
 
     /// <inheritdoc />
@@ -29,18 +55,6 @@ public sealed class ContentBasedRouterStep : IStep
     /// <inheritdoc />
     public async Task ExecuteAsync(IWorkflowContext context)
     {
-        foreach (var (predicate, step) in _routes)
-        {
-            if (predicate(context))
-            {
-                await step.ExecuteAsync(context).ConfigureAwait(false);
-                return;
-            }
-        }
-
-        if (_defaultRoute != null)
-        {
-            await _defaultRoute.ExecuteAsync(context).ConfigureAwait(false);
-        }
+        await _strategy.ExecuteAsync(context, context.CancellationToken).ConfigureAwait(false);
     }
 }
