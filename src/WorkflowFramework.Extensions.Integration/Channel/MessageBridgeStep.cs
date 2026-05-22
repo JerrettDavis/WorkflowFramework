@@ -1,3 +1,9 @@
+// Intentionally bespoke — MessageBridgeStep receives from one IChannelAdapter and sends
+// to another in a single atomic step. PatternKit Bridge connects two hierarchies
+// abstractly (implementation vs abstraction); it does not model a runtime channel
+// receive→forward pipeline. The implementation is a two-call thin wrapper;
+// no PatternKit primitive reduces the code further. Characterization tests added in
+// Phase G.3.
 using WorkflowFramework.Extensions.Integration.Abstractions;
 
 namespace WorkflowFramework.Extensions.Integration.Channel;

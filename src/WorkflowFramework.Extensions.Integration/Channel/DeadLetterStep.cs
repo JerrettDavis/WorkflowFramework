@@ -1,3 +1,9 @@
+// Intentionally bespoke — DeadLetterStep wraps a step with error-routing: on failure,
+// it extracts the dead-letter payload from context and routes it to an IDeadLetterStore.
+// PatternKit 0.105.0 has no dead-letter or error-routing primitive. The try/catch
+// + IDeadLetterStore pattern is specific to EIP and cannot be cleanly expressed
+// via PatternKit Decorator (which transforms inputs, not catches exceptions to external
+// stores). Characterization tests added in Phase G.3.
 using WorkflowFramework.Extensions.Integration.Abstractions;
 
 namespace WorkflowFramework.Extensions.Integration.Channel;
