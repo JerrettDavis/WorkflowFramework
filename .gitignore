@@ -30,6 +30,8 @@ bld/
 *.nupkg
 *.snupkg
 **/artifacts/
+# Exception: pre-release packages committed for CI bootstrap (removed once upstream publishes)
+!eng/local-feed/*.nupkg
 
 # Test Results
 [Tt]est[Rr]esult*/
