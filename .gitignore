@@ -52,7 +52,9 @@ docs/api/
 *.db-shm
 *.db-wal
 
-# Aspire AppHost and UITests use RestorePackagesWithLockFile=false; exclude their
-# ephemeral lock files that --use-lock-file can create at restore time.
+# These projects use RestorePackagesWithLockFile=false; exclude their ephemeral
+# lock files that --use-lock-file can create at restore time.
 src/WorkflowFramework.Dashboard.AppHost/packages.lock.json
 tests/WorkflowFramework.Dashboard.UITests/packages.lock.json
+tests/WorkflowFramework.Extensions.Approvals.Acceptance/packages.lock.json
+tests/WorkflowFramework.Extensions.Approvals.Integration.Tests/packages.lock.json
