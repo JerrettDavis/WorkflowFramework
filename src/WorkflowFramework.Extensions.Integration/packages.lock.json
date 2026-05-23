@@ -23,9 +23,9 @@
       },
       "PatternKit.Core": {
         "type": "Direct",
-        "requested": "[0.112.0, )",
-        "resolved": "0.112.0",
-        "contentHash": "iy+Pb7E4Wv06rWF0QciwFvFVjDaT+b1svE4SqscA70vU05z1I8I+krqnKnG+hG7FZJ3NVrN5zZ+FpYJnoRziIw==",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw==",
         "dependencies": {
           "System.Threading.Tasks.Extensions": "4.6.3"
         }
@@ -67,7 +67,7 @@
       "workflowframework": {
         "type": "Project",
         "dependencies": {
-          "PatternKit.Core": "[0.112.0, )"
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.integration.abstractions": {
@@ -90,9 +90,9 @@
       },
       "PatternKit.Core": {
         "type": "Direct",
-        "requested": "[0.112.0, )",
-        "resolved": "0.112.0",
-        "contentHash": "iy+Pb7E4Wv06rWF0QciwFvFVjDaT+b1svE4SqscA70vU05z1I8I+krqnKnG+hG7FZJ3NVrN5zZ+FpYJnoRziIw=="
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       },
       "PolySharp": {
         "type": "Direct",
@@ -113,7 +113,7 @@
       "workflowframework": {
         "type": "Project",
         "dependencies": {
-          "PatternKit.Core": "[0.112.0, )"
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.integration.abstractions": {
@@ -136,9 +136,9 @@
       },
       "PatternKit.Core": {
         "type": "Direct",
-        "requested": "[0.112.0, )",
-        "resolved": "0.112.0",
-        "contentHash": "iy+Pb7E4Wv06rWF0QciwFvFVjDaT+b1svE4SqscA70vU05z1I8I+krqnKnG+hG7FZJ3NVrN5zZ+FpYJnoRziIw=="
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       },
       "Microsoft.Build.Tasks.Git": {
         "type": "Transitive",
@@ -185,7 +185,7 @@
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
-          "PatternKit.Core": "[0.112.0, )"
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.integration.abstractions": {
@@ -246,9 +246,9 @@
       },
       "PatternKit.Core": {
         "type": "Direct",
-        "requested": "[0.112.0, )",
-        "resolved": "0.112.0",
-        "contentHash": "iy+Pb7E4Wv06rWF0QciwFvFVjDaT+b1svE4SqscA70vU05z1I8I+krqnKnG+hG7FZJ3NVrN5zZ+FpYJnoRziIw=="
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       },
       "Microsoft.Build.Tasks.Git": {
         "type": "Transitive",
@@ -296,7 +296,7 @@
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
-          "PatternKit.Core": "[0.112.0, )"
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.integration.abstractions": {
@@ -364,9 +364,9 @@
       },
       "PatternKit.Core": {
         "type": "Direct",
-        "requested": "[0.112.0, )",
-        "resolved": "0.112.0",
-        "contentHash": "iy+Pb7E4Wv06rWF0QciwFvFVjDaT+b1svE4SqscA70vU05z1I8I+krqnKnG+hG7FZJ3NVrN5zZ+FpYJnoRziIw=="
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       },
       "Microsoft.Build.Tasks.Git": {
         "type": "Transitive",
@@ -414,7 +414,7 @@
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
-          "PatternKit.Core": "[0.112.0, )"
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.integration.abstractions": {

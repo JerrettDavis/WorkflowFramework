@@ -537,7 +537,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.agents": {
@@ -749,6 +750,12 @@
           "Microsoft.SemanticKernel.Core": "1.71.0",
           "OllamaSharp": "5.4.12"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       }
     }
   }

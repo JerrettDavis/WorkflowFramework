@@ -110,7 +110,10 @@
         }
       },
       "workflowframework": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "PatternKit.Core": "[0.113.0, )"
+        }
       },
       "workflowframework.extensions.datamapping": {
         "type": "Project",
@@ -128,6 +131,15 @@
         "dependencies": {
           "Microsoft.Bcl.AsyncInterfaces": "8.0.0",
           "System.Threading.Tasks.Extensions": "4.5.4"
+        }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw==",
+        "dependencies": {
+          "System.Threading.Tasks.Extensions": "4.6.3"
         }
       },
       "System.Text.Json": {
@@ -203,7 +215,10 @@
         }
       },
       "workflowframework": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "PatternKit.Core": "[0.113.0, )"
+        }
       },
       "workflowframework.extensions.datamapping": {
         "type": "Project",
@@ -218,6 +233,12 @@
         "requested": "[8.0.2, )",
         "resolved": "8.0.2",
         "contentHash": "3iE7UF7MQkCv1cxzCahz+Y/guQbTqieyxyaWKhrRO91itI9cOKO76OHeQDahqG4MmW5umr3CcCvGmK92lWNlbg=="
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       },
       "System.Text.Json": {
         "type": "CentralTransitive",
@@ -293,7 +314,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.datamapping": {
@@ -340,6 +362,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       }
     },
     "net8.0": {
@@ -414,7 +442,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.datamapping": {
@@ -463,6 +492,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       },
       "System.Diagnostics.DiagnosticSource": {
         "type": "CentralTransitive",
@@ -553,7 +588,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.datamapping": {
@@ -602,6 +638,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       },
       "System.Diagnostics.DiagnosticSource": {
         "type": "CentralTransitive",

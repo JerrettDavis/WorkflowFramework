@@ -190,7 +190,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.approvals": {
@@ -261,6 +262,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       }
     },
     "net8.0": {
@@ -503,7 +510,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.approvals": {
@@ -592,6 +600,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       },
       "System.Diagnostics.DiagnosticSource": {
         "type": "CentralTransitive",
@@ -840,7 +854,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.approvals": {
@@ -929,6 +944,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "DWVGs/77WuhaezKiKFtBS3iSNRKpC27WJAUdxjx0uAdZR7DIlqj8gSg6wJDFCYcG/wf3JMuiBmn7Dr4lJ85MCw=="
       },
       "System.Diagnostics.DiagnosticSource": {
         "type": "CentralTransitive",
