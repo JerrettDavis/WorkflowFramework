@@ -582,7 +582,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.105.0, )"
         }
       },
       "workflowframework.extensions.agents": {
@@ -727,6 +728,7 @@
       "workflowframework.extensions.integration": {
         "type": "Project",
         "dependencies": {
+          "PatternKit.Core": "[0.105.0, )",
           "WorkflowFramework": "[1.0.0, )",
           "WorkflowFramework.Extensions.Integration.Abstractions": "[1.0.0, )"
         }
@@ -790,6 +792,7 @@
       "workflowframework.extensions.polly": {
         "type": "Project",
         "dependencies": {
+          "PatternKit.Core": "[0.105.0, )",
           "Polly.Core": "[8.6.0, )",
           "WorkflowFramework": "[1.0.0, )"
         }
@@ -947,6 +950,12 @@
           "Microsoft.EntityFrameworkCore.Relational": "[9.0.1, 10.0.0)",
           "Npgsql": "9.0.3"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.105.0, )",
+        "resolved": "0.105.0",
+        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
       },
       "Polly.Core": {
         "type": "CentralTransitive",
@@ -1592,7 +1601,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.105.0, )"
         }
       },
       "workflowframework.extensions.agents": {
@@ -1744,6 +1754,7 @@
       "workflowframework.extensions.integration": {
         "type": "Project",
         "dependencies": {
+          "PatternKit.Core": "[0.105.0, )",
           "WorkflowFramework": "[1.0.0, )",
           "WorkflowFramework.Extensions.Integration.Abstractions": "[1.0.0, )"
         }
@@ -1809,6 +1820,7 @@
       "workflowframework.extensions.polly": {
         "type": "Project",
         "dependencies": {
+          "PatternKit.Core": "[0.105.0, )",
           "Polly.Core": "[8.6.0, )",
           "WorkflowFramework": "[1.0.0, )"
         }
@@ -1970,6 +1982,12 @@
           "Microsoft.EntityFrameworkCore.Relational": "[9.0.1, 10.0.0)",
           "Npgsql": "9.0.3"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.105.0, )",
+        "resolved": "0.105.0",
+        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
       },
       "Polly.Core": {
         "type": "CentralTransitive",
@@ -2626,7 +2644,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.105.0, )"
         }
       },
       "workflowframework.extensions.agents": {
@@ -2778,6 +2797,7 @@
       "workflowframework.extensions.integration": {
         "type": "Project",
         "dependencies": {
+          "PatternKit.Core": "[0.105.0, )",
           "WorkflowFramework": "[1.0.0, )",
           "WorkflowFramework.Extensions.Integration.Abstractions": "[1.0.0, )"
         }
@@ -2843,6 +2863,7 @@
       "workflowframework.extensions.polly": {
         "type": "Project",
         "dependencies": {
+          "PatternKit.Core": "[0.105.0, )",
           "Polly.Core": "[8.6.0, )",
           "WorkflowFramework": "[1.0.0, )"
         }
@@ -3002,6 +3023,12 @@
           "Microsoft.EntityFrameworkCore.Relational": "[9.0.1, 10.0.0)",
           "Npgsql": "9.0.3"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.105.0, )",
+        "resolved": "0.105.0",
+        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
       },
       "Polly.Core": {
         "type": "CentralTransitive",

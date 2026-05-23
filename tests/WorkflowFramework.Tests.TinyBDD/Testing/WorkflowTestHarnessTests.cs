@@ -130,6 +130,102 @@ public class WorkflowTestHarnessTests : TinyBddTestBase
             })
             .AssertPassed();
     }
+
+    [Scenario("ExecuteAsync<TData> without overrides runs the typed workflow directly"), Fact]
+    public async Task TypedExecuteWithoutOverridesRunsTypedWorkflow()
+    {
+        var ran = false;
+        var workflow = Workflow.Create<HarnessNumberData>("typed-no-override")
+            .Step("compute", ctx => { ran = true; ctx.Data.Value = 42; return Task.CompletedTask; })
+            .Build();
+
+        var harness = new WorkflowTestHarness(); // no overrides configured
+        var result = await harness.ExecuteAsync(workflow, new HarnessNumberData { Value = 0 });
+
+        await Given("typed result with no harness overrides", () => (result, ran))
+            .Then("original step ran and data is mutated", t =>
+            {
+                t.result.IsSuccess.Should().BeTrue();
+                t.result.Data.Value.Should().Be(42);
+                t.ran.Should().BeTrue();
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("ExecuteAsync chains OverrideStep calls via fluent builder"), Fact]
+    public async Task OverrideStepIsChainable()
+    {
+        var workflow = Workflow.Create("fluent")
+            .Step(new LambdaStep("a", _ => Task.CompletedTask))
+            .Step(new LambdaStep("b", _ => Task.CompletedTask))
+            .Build();
+
+        var fakeA = new FakeStep("a");
+        var fakeB = new FakeStep("b");
+        var harness = new WorkflowTestHarness()
+            .OverrideStep("a", fakeA)
+            .OverrideStep("b", fakeB);
+
+        await harness.ExecuteAsync(workflow, new WorkflowContext());
+
+        await Given("harness configured with two chained overrides", () => (fakeA, fakeB))
+            .Then("both fakes executed once", t =>
+            {
+                t.fakeA.ExecutionCount.Should().Be(1);
+                t.fakeB.ExecutionCount.Should().Be(1);
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("ExecuteAsync<TData> with overrides and dual-interface workflow applies overrides"), Fact]
+    public async Task TypedExecuteWithOverridesAppliesWhenWorkflowImplementsIWorkflow()
+    {
+        var originalRan = false;
+        var dualWorkflow = new DualInterfaceWorkflow<HarnessNumberData>(
+            "dual-override",
+            new LambdaStep("expensive", _ => { originalRan = true; return Task.CompletedTask; }));
+
+        var fake = new FakeStep("expensive");
+        var harness = new WorkflowTestHarness();
+        harness.OverrideStep("expensive", fake);
+        var result = await harness.ExecuteAsync<HarnessNumberData>(dualWorkflow, new HarnessNumberData { Value = 5 });
+
+        await Given("typed result after override applied via dual-interface workflow", () => (result, fake, originalRan))
+            .Then("fake ran instead of original and result is successful", t =>
+            {
+                t.result.IsSuccess.Should().BeTrue();
+                t.fake.ExecutionCount.Should().Be(1);
+                t.originalRan.Should().BeFalse();
+                return true;
+            })
+            .AssertPassed();
+    }
 }
 
 file sealed class HarnessNumberData { public int Value { get; set; } }
+
+/// <summary>
+/// A test-only workflow that implements both IWorkflow and IWorkflow&lt;TData&gt;
+/// so that WorkflowTestHarness can apply typed overrides via the IWorkflow path.
+/// </summary>
+file sealed class DualInterfaceWorkflow<TData>(string name, params IStep[] steps)
+    : IWorkflow, IWorkflow<TData>
+    where TData : class
+{
+    public string Name => name;
+    public IReadOnlyList<IStep> Steps => steps;
+
+    public Task<WorkflowResult> ExecuteAsync(IWorkflowContext context) =>
+        Workflow.Create(name)
+            .Step(steps[0])
+            .Build()
+            .ExecuteAsync(context);
+
+    public async Task<WorkflowResult<TData>> ExecuteAsync(IWorkflowContext<TData> context)
+    {
+        var result = await ExecuteAsync((IWorkflowContext)context).ConfigureAwait(false);
+        return new WorkflowResult<TData>(result.Status, context);
+    }
+}
