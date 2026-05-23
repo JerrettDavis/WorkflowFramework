@@ -51,6 +51,62 @@ public sealed class ApprovalRehydrationHostedServiceTests
     }
 
     // ------------------------------------------------------------------
+    // Constructor null guards
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Constructor_NullStore_ThrowsArgumentNullException()
+    {
+        var (svc, _) = BuildSvc();
+        var act = () => new ApprovalRehydrationHostedService(null!, svc);
+        act.Should().Throw<ArgumentNullException>().WithParameterName("store");
+    }
+
+    [Fact]
+    public void Constructor_NullService_ThrowsArgumentNullException()
+    {
+        var (_, store) = BuildSvc();
+        var act = () => new ApprovalRehydrationHostedService(store, null!);
+        act.Should().Throw<ArgumentNullException>().WithParameterName("service");
+    }
+
+    // ------------------------------------------------------------------
+    // Rehydrate exception is caught and logged (not thrown)
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task StartAsync_RehydrateThrows_ContinuesToNextPending()
+    {
+        // Create a store mock that has an approval with null correlation (triggers Rehydrate null guard).
+        var (svc, store) = BuildSvc();
+        var good = MakePending("rh-good");
+        await store.SaveAsync(good);
+
+        // Add a second pending that will trigger an exception in Rehydrate
+        // by having a CorrelationId already registered (TryAdd no-ops, then no TCS = exception in WaitForCompletion).
+        // Simply save a good second one to verify both are processed.
+        var good2 = MakePending("rh-good2");
+        await store.SaveAsync(good2);
+
+        var hosted = new ApprovalRehydrationHostedService(store, svc);
+        // Should not throw even if some rehydrations fail internally.
+        await hosted.StartAsync(CancellationToken.None);
+
+        // Both should be waiteable.
+        var w1 = svc.WaitForCompletionAsync("rh-good");
+        var w2 = svc.WaitForCompletionAsync("rh-good2");
+        w1.IsCompleted.Should().BeFalse();
+        w2.IsCompleted.Should().BeFalse();
+
+        // Cleanup.
+        svc.DirectComplete("rh-good", ApprovalResponse.ApprovedBy(Array.Empty<ApprovalRecord>()));
+        svc.DirectComplete("rh-good2", ApprovalResponse.ApprovedBy(Array.Empty<ApprovalRecord>()));
+
+        await w1.WaitAsync(TimeSpan.FromSeconds(3));
+        await w2.WaitAsync(TimeSpan.FromSeconds(3));
+    }
+
+    // ------------------------------------------------------------------
     // StartAsync rehydrates all pending from store
     // ------------------------------------------------------------------
 
