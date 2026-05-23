@@ -1,5 +1,7 @@
 using FluentAssertions;
 using NSubstitute;
+using PatternKit.Messaging;
+using PatternKit.Messaging.Transformation;
 using WorkflowFramework.Extensions.Integration.Abstractions;
 using WorkflowFramework.Extensions.Integration.Transformation;
 using Xunit;
@@ -93,14 +95,14 @@ public class TransformationPatternTests
     [Fact]
     public void ClaimCheckStep_NullStore_Throws()
     {
-        var act = () => new ClaimCheckStep(null!, ctx => "payload");
+        var act = () => new ClaimCheckStep((IClaimCheckStore<object>)null!, ctx => "payload");
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
     public void ClaimCheckStep_NullSelector_Throws()
     {
-        var store = Substitute.For<IClaimCheckStore>();
+        var store = Substitute.For<IClaimCheckStore<object>>();
         var act = () => new ClaimCheckStep(store, null!);
         act.Should().Throw<ArgumentNullException>();
     }
@@ -108,13 +110,14 @@ public class TransformationPatternTests
     [Fact]
     public void ClaimRetrieveStep_NullStore_Throws()
     {
-        var act = () => new ClaimRetrieveStep(null!);
+        var act = () => new ClaimRetrieveStep((IClaimCheckStore<object>)null!);
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
     public async Task ClaimCheck_RoundTrip()
     {
+        // Phase 3: use PatternKit InMemoryClaimCheckStore<object> directly.
         var store = new InMemoryClaimCheckStore();
         var payload = new { Data = "large" };
         var checkStep = new ClaimCheckStep(store, ctx => ctx.Properties["payload"]!);
@@ -153,10 +156,10 @@ public class TransformationPatternTests
     }
 
     [Fact]
-    public void ClaimCheckStep_Name() => new ClaimCheckStep(Substitute.For<IClaimCheckStore>(), ctx => "x").Name.Should().Be("ClaimCheck");
+    public void ClaimCheckStep_Name() => new ClaimCheckStep(Substitute.For<IClaimCheckStore<object>>(), ctx => "x").Name.Should().Be("ClaimCheck");
 
     [Fact]
-    public void ClaimRetrieveStep_Name() => new ClaimRetrieveStep(Substitute.For<IClaimCheckStore>()).Name.Should().Be("ClaimRetrieve");
+    public void ClaimRetrieveStep_Name() => new ClaimRetrieveStep(Substitute.For<IClaimCheckStore<object>>()).Name.Should().Be("ClaimRetrieve");
 
     #endregion
 
@@ -275,17 +278,22 @@ public class TransformationPatternTests
         public Task ExecuteAsync(IWorkflowContext context) => action?.Invoke(context) ?? Task.CompletedTask;
     }
 
-    private sealed class InMemoryClaimCheckStore : IClaimCheckStore
+    // Phase 3: implement PatternKit IClaimCheckStore<object> (typed) instead of the deprecated WF IClaimCheckStore.
+    private sealed class InMemoryClaimCheckStore : IClaimCheckStore<object>
     {
-        private readonly Dictionary<string, object> _store = new();
-        public Task<string> StoreAsync(object payload, CancellationToken cancellationToken = default)
+        private readonly Dictionary<string, ClaimCheckStoredPayload<object>> _store = new();
+
+        public ValueTask StoreAsync(string claimId, object payload, MessageHeaders headers, CancellationToken cancellationToken = default)
         {
-            var ticket = Guid.NewGuid().ToString("N");
-            _store[ticket] = payload;
-            return Task.FromResult(ticket);
+            _store[claimId] = new ClaimCheckStoredPayload<object>(payload, headers);
+            return default;
         }
-        public Task<object> RetrieveAsync(string claimTicket, CancellationToken cancellationToken = default)
-            => Task.FromResult(_store[claimTicket]);
+
+        public ValueTask<ClaimCheckStoredPayload<object>?> TryLoadAsync(string claimId, CancellationToken cancellationToken = default)
+        {
+            _store.TryGetValue(claimId, out var stored);
+            return new ValueTask<ClaimCheckStoredPayload<object>?>(stored);
+        }
     }
 
     #endregion

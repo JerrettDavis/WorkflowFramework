@@ -1,3 +1,4 @@
+using PatternKit.Messaging.Transformation;
 using WorkflowFramework.Builder;
 using WorkflowFramework.Extensions.Integration.Abstractions;
 using WorkflowFramework.Extensions.Integration.Channel;
@@ -105,20 +106,43 @@ public static class IntegrationBuilderExtensions
     }
 
     /// <summary>
-    /// Adds a scatter-gather step.
+    /// Adds a scatter-gather step with typed recipients.
+    /// </summary>
+    /// <param name="builder">The workflow builder.</param>
+    /// <param name="recipients">The typed recipients to scatter to.</param>
+    /// <param name="aggregator">Function to aggregate results.</param>
+    /// <param name="timeout">Maximum wait time.</param>
+    /// <returns>This builder for chaining.</returns>
+    public static IWorkflowBuilder ScatterGather(
+        this IWorkflowBuilder builder,
+        IEnumerable<ScatterGatherStep.Recipient> recipients,
+        Func<IReadOnlyList<object?>, IWorkflowContext, Task> aggregator,
+        TimeSpan timeout)
+    {
+        return builder.Step(new ScatterGatherStep(recipients, aggregator, timeout));
+    }
+
+    /// <summary>
+    /// Adds a scatter-gather step with legacy IStep handlers (deprecated).
     /// </summary>
     /// <param name="builder">The workflow builder.</param>
     /// <param name="handlers">The handler steps to scatter to.</param>
     /// <param name="aggregator">Function to aggregate results.</param>
     /// <param name="timeout">Maximum wait time.</param>
     /// <returns>This builder for chaining.</returns>
+    [Obsolete(
+        "Use ScatterGather(IEnumerable<ScatterGatherStep.Recipient>, ...) instead. " +
+        "The IEnumerable<IStep> overload is deprecated and will be removed in the next major version.",
+        error: false)]
     public static IWorkflowBuilder ScatterGather(
         this IWorkflowBuilder builder,
         IEnumerable<IStep> handlers,
         Func<IReadOnlyList<object?>, IWorkflowContext, Task> aggregator,
         TimeSpan timeout)
     {
+#pragma warning disable CS0618 // suppress deprecated ScatterGatherStep overload
         return builder.Step(new ScatterGatherStep(handlers, aggregator, timeout));
+#pragma warning restore CS0618
     }
 
     /// <summary>
@@ -165,33 +189,75 @@ public static class IntegrationBuilderExtensions
     }
 
     /// <summary>
-    /// Adds claim check (store) and retrieve steps.
+    /// Adds a claim check (store) step consuming
+    /// <see cref="IClaimCheckStore{TPayload}">PatternKit IClaimCheckStore&lt;object&gt;</see>.
     /// </summary>
     /// <param name="builder">The workflow builder.</param>
-    /// <param name="store">The claim check store.</param>
+    /// <param name="store">The PatternKit typed claim check store.</param>
     /// <param name="payloadSelector">Function to select the payload to store.</param>
     /// <returns>This builder for chaining.</returns>
     public static IWorkflowBuilder ClaimCheck(
         this IWorkflowBuilder builder,
-        IClaimCheckStore store,
+        IClaimCheckStore<object> store,
         Func<IWorkflowContext, object> payloadSelector)
     {
         return builder.Step(new ClaimCheckStep(store, payloadSelector));
     }
 
     /// <summary>
-    /// Adds a claim retrieve step.
+    /// Adds a claim check (store) step using a legacy <see cref="WorkflowFramework.Extensions.Integration.Abstractions.IClaimCheckStore"/> (deprecated).
+    /// </summary>
+    [Obsolete(
+        "Use ClaimCheck(IClaimCheckStore<object>, ...) instead. " +
+        "The untyped WF IClaimCheckStore is obsolete. Wrap with LegacyClaimCheckStoreAdapter for one release.",
+        error: false)]
+    public static IWorkflowBuilder ClaimCheck(
+        this IWorkflowBuilder builder,
+#pragma warning disable CS0618
+        WorkflowFramework.Extensions.Integration.Abstractions.IClaimCheckStore store,
+#pragma warning restore CS0618
+        Func<IWorkflowContext, object> payloadSelector)
+    {
+#pragma warning disable CS0618
+        var adapter = new LegacyClaimCheckStoreAdapter(store);
+#pragma warning restore CS0618
+        return builder.Step(new ClaimCheckStep(adapter, payloadSelector));
+    }
+
+    /// <summary>
+    /// Adds a claim retrieve step consuming
+    /// <see cref="IClaimCheckStore{TPayload}">PatternKit IClaimCheckStore&lt;object&gt;</see>.
     /// </summary>
     /// <param name="builder">The workflow builder.</param>
-    /// <param name="store">The claim check store.</param>
+    /// <param name="store">The PatternKit typed claim check store.</param>
     /// <param name="resultKey">Property key for retrieved payload.</param>
     /// <returns>This builder for chaining.</returns>
     public static IWorkflowBuilder ClaimRetrieve(
         this IWorkflowBuilder builder,
-        IClaimCheckStore store,
+        IClaimCheckStore<object> store,
         string resultKey = "__ClaimPayload")
     {
         return builder.Step(new ClaimRetrieveStep(store, resultKey));
+    }
+
+    /// <summary>
+    /// Adds a claim retrieve step using a legacy <see cref="WorkflowFramework.Extensions.Integration.Abstractions.IClaimCheckStore"/> (deprecated).
+    /// </summary>
+    [Obsolete(
+        "Use ClaimRetrieve(IClaimCheckStore<object>, ...) instead. " +
+        "The untyped WF IClaimCheckStore is obsolete. Wrap with LegacyClaimCheckStoreAdapter for one release.",
+        error: false)]
+    public static IWorkflowBuilder ClaimRetrieve(
+        this IWorkflowBuilder builder,
+#pragma warning disable CS0618
+        WorkflowFramework.Extensions.Integration.Abstractions.IClaimCheckStore store,
+#pragma warning restore CS0618
+        string resultKey = "__ClaimPayload")
+    {
+#pragma warning disable CS0618
+        var adapter = new LegacyClaimCheckStoreAdapter(store);
+#pragma warning restore CS0618
+        return builder.Step(new ClaimRetrieveStep(adapter, resultKey));
     }
 
     /// <summary>
