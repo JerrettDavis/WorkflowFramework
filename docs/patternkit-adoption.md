@@ -1,7 +1,7 @@
 # PatternKit Adoption Inventory
 
-**PatternKit version:** 0.105.0  
-**Last updated:** 2026-05-22 (Phase I coverage tightening)
+**PatternKit version:** 0.112.0  
+**Last updated:** 2026-05-22 (feat/consume-patternkit-0.112 — WireTapStep adopted)
 
 This document lists every point in the WorkflowFramework codebase where a PatternKit primitive is used, and every point where a step is intentionally kept bespoke with the rationale for that decision. This is the canonical reference for Phase I and future phases.
 
@@ -43,6 +43,19 @@ This document lists every point in the WorkflowFramework codebase where a Patter
 | **Phase introduced** | Phase G.1 |
 | **Test coverage** | `tests/WorkflowFramework.Tests.TinyBDD/Integration/Routing/ContentBasedRouterStepScenarios.cs` |
 | **Public API change** | None — swap is internal-only. |
+
+### 4. `WireTapStep` — Wire tap channel pattern
+
+| Item | Detail |
+|------|--------|
+| **File** | `src/WorkflowFramework.Extensions.Integration/Channel/WireTapStep.cs` |
+| **PatternKit namespace** | `PatternKit.Messaging.Channels` |
+| **Primitive** | `AsyncWireTap<IWorkflowContext>` |
+| **Purpose** | Wraps the caller-supplied `Func<IWorkflowContext, Task>` into a PatternKit tap handler. The `swallowErrors` constructor parameter maps to `TapErrorPolicy.Swallow` / `TapErrorPolicy.Propagate`. The `IWorkflowContext` is wrapped in a `Message<IWorkflowContext>` for transit and unwrapped inside the tap lambda — no public API or behavioral change. |
+| **Phase introduced** | feat/consume-patternkit-0.112 |
+| **Test coverage** | `tests/WorkflowFramework.Tests.TinyBDD/Integration/Channel/WireTapStepScenarios.cs` — all 8 Phase G.3 scenarios pass without modification. |
+| **Public API change** | None — swap is internal-only. |
+| **Net delta** | −15 lines of bespoke logic (try/catch error-swallowing replaced by `TapErrorPolicy`). |
 
 ---
 
@@ -146,13 +159,9 @@ The following EIP steps and other components were evaluated against PatternKit 0
 | **Rationale** | PatternKit `AsyncAdapter<TIn,TOut>` is a type-mapping pattern (produce `TOut` from `TIn`). `ChannelAdapterStep` is a side-effect operation (send/receive via `IChannelAdapter`). The send/receive contract doesn't fit the adapt-a-type signature. |
 | **Test coverage** | Phase G.3 characterization tests |
 
-#### `WireTapStep`
+#### ~~`WireTapStep`~~ — **Adopted in feat/consume-patternkit-0.112**
 
-| Item | Detail |
-|------|--------|
-| **File** | `src/WorkflowFramework.Extensions.Integration/Channel/WireTapStep.cs` |
-| **Rationale** | Core contract (run a side-effect without disrupting the main flow, with optional error swallowing) is simpler than PatternKit's `AsyncActionDecorator` pipeline. `AsyncActionDecorator` wraps a component and transforms/intercepts results; `WireTapStep` purely fires-and-forgets a side channel. |
-| **Test coverage** | Phase G.3 characterization tests |
+Moved to the **Adopted** section above. Now delegates to `PatternKit.Messaging.Channels.AsyncWireTap<IWorkflowContext>`.
 
 #### `MessageBridgeStep`
 
@@ -186,12 +195,18 @@ When evaluating a bespoke component for PatternKit adoption, the following crite
 
 ## Future Evaluation Targets
 
-The following components are candidates for PatternKit adoption in later phases if suitable primitives become available:
+The following components are candidates for PatternKit adoption in later phases if suitable primitives become available or interface alignment is achieved:
 
-| Component | Potential Primitive | Blocking Reason Today |
+| Component | Potential Primitive | Blocking Reason (assessed against 0.112.0) |
 |-----------|--------------------|-----------------------|
-| `AggregatorStep` | PatternKit Aggregator (future) | No primitive in 0.105.0 |
-| `ScatterGatherStep` | PatternKit ScatterGather (future) | No primitive in 0.105.0 |
+| `NormalizerStep` | `Normalizer<TRaw,TCanonical>` (now in 0.112.0) | Behavioral mismatch: PatternKit uses content predicates (first match wins); bespoke uses O(1) dictionary keyed dispatch. Error message format differs — test pins format name in exception text. See `docs/patternkit-followup.md`. |
+| `ContentEnricherStep` | `AsyncContentEnricher<TPayload>` (now in 0.112.0) | Semantic mismatch: PatternKit returns an enriched payload copy; bespoke mutates `IWorkflowContext` in place via a `Func<IWorkflowContext, Task>`. Wrapping adds indirection for zero functional benefit. |
+| `IdempotentReceiverStep` | `IdempotentReceiver<TPayload,TResult>` (now in 0.112.0) | Behavioral breaking change: PatternKit marks failed attempts as `Failed` in the store (allowing retry); bespoke registers the ID in a `HashSet` before calling inner, so a failed first attempt DOES suppress the second. Test `ReAttemptAfterExceptionIsSkipped` pins this behavior. |
+| `ClaimCheckStep` / `ClaimRetrieveStep` | `ClaimCheck<TPayload>` (now in 0.112.0) | Interface mismatch: bespoke `IClaimCheckStore` is untyped (`object`); PatternKit `IClaimCheckStore<TPayload>` is typed. Bridging requires an adapter class, adding indirection without deleting complexity. |
+| `PollingConsumerStep` | `AsyncPollingConsumer<TPayload>` (now in 0.112.0) | Semantic mismatch: PatternKit is a continuous polling loop (run until cancelled); bespoke is a single-shot poll (`PollAsync` → store results → return). Incompatible lifecycle models. |
+| `ScatterGatherStep` | `AsyncScatterGather<TRequest,TResponse,TResult>` (now in 0.112.0) | Integration complexity: handlers mutate a shared `IWorkflowContext` and write results to named context keys; PatternKit's per-recipient isolation model returns typed `TResponse` values. Adapting while preserving the `__Result_{handler.Name}` and `ResultsKey` contract would re-implement the existing complexity via a wrapper, defeating the purpose. |
+| `TransactionalOutboxStep` | `IOutboxStore<TPayload>` (now in 0.112.0) | Interface mismatch: bespoke `IOutboxStore` uses `SaveAsync(object) → string`; PatternKit `IOutboxStore<TPayload>` uses `EnqueueAsync(Message<TPayload>) → OutboxMessage<TPayload>`. Different return types and message wrapper model. |
+| `AggregatorStep` | PatternKit Aggregator (future) | No Aggregator primitive in 0.112.0 |
 | `PluginManager` | `Strategy` + `AbstractFactory` | Phase H.8 — not yet started |
 | `AgentLoopStep` / `AgentDecisionStep` | TypeDispatcher | Phase H.7 — not yet started |
 | `ResilienceMiddleware` (Polly) | `RetryPolicy` | Phase F pilot option B — deferred |
