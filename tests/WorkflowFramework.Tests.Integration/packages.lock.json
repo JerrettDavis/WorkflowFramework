@@ -169,7 +169,7 @@
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
-          "PatternKit.Core": "[0.105.0, )"
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.dependencyinjection": {
@@ -201,7 +201,7 @@
       "workflowframework.extensions.polly": {
         "type": "Project",
         "dependencies": {
-          "PatternKit.Core": "[0.105.0, )",
+          "PatternKit.Core": "[0.113.0, )",
           "Polly.Core": "[8.6.0, )",
           "WorkflowFramework": "[1.0.0, )"
         }
@@ -252,9 +252,9 @@
       },
       "PatternKit.Core": {
         "type": "CentralTransitive",
-        "requested": "[0.105.0, )",
-        "resolved": "0.105.0",
-        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       },
       "Polly.Core": {
         "type": "CentralTransitive",
@@ -432,7 +432,7 @@
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
-          "PatternKit.Core": "[0.105.0, )"
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.dependencyinjection": {
@@ -465,7 +465,7 @@
       "workflowframework.extensions.polly": {
         "type": "Project",
         "dependencies": {
-          "PatternKit.Core": "[0.105.0, )",
+          "PatternKit.Core": "[0.113.0, )",
           "Polly.Core": "[8.6.0, )",
           "WorkflowFramework": "[1.0.0, )"
         }
@@ -517,9 +517,9 @@
       },
       "PatternKit.Core": {
         "type": "CentralTransitive",
-        "requested": "[0.105.0, )",
-        "resolved": "0.105.0",
-        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       },
       "Polly.Core": {
         "type": "CentralTransitive",
@@ -703,7 +703,7 @@
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
           "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
-          "PatternKit.Core": "[0.105.0, )"
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.dependencyinjection": {
@@ -736,7 +736,7 @@
       "workflowframework.extensions.polly": {
         "type": "Project",
         "dependencies": {
-          "PatternKit.Core": "[0.105.0, )",
+          "PatternKit.Core": "[0.113.0, )",
           "Polly.Core": "[8.6.0, )",
           "WorkflowFramework": "[1.0.0, )"
         }
@@ -788,9 +788,9 @@
       },
       "PatternKit.Core": {
         "type": "CentralTransitive",
-        "requested": "[0.105.0, )",
-        "resolved": "0.105.0",
-        "contentHash": "ajdoXIVxeDeTi1NhS0ykTQHk4u/FpdvYrGx9DKvpwzc3z65rSBIWSOLn1vOG2O2tYnZQTxaDC3TSno1MyLhjBg=="
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       },
       "Polly.Core": {
         "type": "CentralTransitive",

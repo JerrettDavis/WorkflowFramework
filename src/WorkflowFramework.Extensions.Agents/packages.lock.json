@@ -139,13 +139,25 @@
         }
       },
       "workflowframework": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "PatternKit.Core": "[0.113.0, )"
+        }
       },
       "workflowframework.extensions.ai": {
         "type": "Project",
         "dependencies": {
           "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q==",
+        "dependencies": {
+          "System.Threading.Tasks.Extensions": "4.6.3"
         }
       }
     },
@@ -227,7 +239,10 @@
         }
       },
       "workflowframework": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "PatternKit.Core": "[0.113.0, )"
+        }
       },
       "workflowframework.extensions.ai": {
         "type": "Project",
@@ -235,6 +250,12 @@
           "System.Text.Json": "[10.0.1, )",
           "WorkflowFramework": "[1.0.0, )"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       }
     },
     "net10.0": {
@@ -443,7 +464,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.ai": {
@@ -503,6 +525,12 @@
           "Microsoft.SemanticKernel.Connectors.AzureOpenAI": "1.71.0",
           "Microsoft.SemanticKernel.Core": "1.71.0"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       }
     },
     "net8.0": {
@@ -750,7 +778,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.ai": {
@@ -811,6 +840,12 @@
           "Microsoft.SemanticKernel.Connectors.AzureOpenAI": "1.71.0",
           "Microsoft.SemanticKernel.Core": "1.71.0"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       },
       "System.Text.Json": {
         "type": "CentralTransitive",
@@ -1068,7 +1103,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.ai": {
@@ -1129,6 +1165,12 @@
           "Microsoft.SemanticKernel.Connectors.AzureOpenAI": "1.71.0",
           "Microsoft.SemanticKernel.Core": "1.71.0"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       },
       "System.Text.Json": {
         "type": "CentralTransitive",

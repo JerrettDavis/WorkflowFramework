@@ -1,7 +1,7 @@
 # PatternKit Adoption Inventory
 
-**PatternKit version:** 0.112.0  
-**Last updated:** 2026-05-22 (feat/consume-patternkit-0.112 — WireTapStep adopted)
+**PatternKit version:** 0.113.0  
+**Last updated:** 2026-05-22 (feat/iter2-minor-refactors — NormalizerStep / PollingConsumerStep / IdempotentReceiverStep adopted)
 
 This document lists every point in the WorkflowFramework codebase where a PatternKit primitive is used, and every point where a step is intentionally kept bespoke with the rationale for that decision. This is the canonical reference for Phase I and future phases.
 
@@ -56,6 +56,46 @@ This document lists every point in the WorkflowFramework codebase where a Patter
 | **Test coverage** | `tests/WorkflowFramework.Tests.TinyBDD/Integration/Channel/WireTapStepScenarios.cs` — all 8 Phase G.3 scenarios pass without modification. |
 | **Public API change** | None — swap is internal-only. |
 | **Net delta** | −15 lines of bespoke logic (try/catch error-swallowing replaced by `TapErrorPolicy`). |
+
+### 5. `NormalizerStep` — Keyed normalizer pattern
+
+| Item | Detail |
+|------|--------|
+| **File** | `src/WorkflowFramework.Extensions.Integration/Transformation/NormalizerStep.cs` |
+| **PatternKit namespace** | `PatternKit.Messaging.Transformation` |
+| **Primitive** | `KeyedNormalizer<string, IWorkflowContext, IWorkflowContext>` (new in 0.113.0) |
+| **Purpose** | Delegates O(1) key-based dispatch to `KeyedNormalizer`. Each `IStep` translator is wrapped as an async handler. The original `InvalidOperationException` contract is preserved by catching `KeyNotFoundException` from the PatternKit miss path and wrapping it with the bespoke message. |
+| **Phase introduced** | feat/iter2-minor-refactors |
+| **Test coverage** | `tests/WorkflowFramework.Tests.TinyBDD/Integration/Transformation/NormalizerStepScenarios.cs` — all 9 scenarios pass without modification. |
+| **Public API change** | None — swap is internal-only. |
+| **Net delta** | −10 lines of bespoke dict-lookup logic (absorbed into KeyedNormalizer). |
+
+### 6. `PollingConsumerStep` — Async polling consumer pattern
+
+| Item | Detail |
+|------|--------|
+| **File** | `src/WorkflowFramework.Extensions.Integration/Endpoint/PollingConsumerStep.cs` |
+| **PatternKit namespace** | `PatternKit.Messaging.Consumers` |
+| **Primitive** | `AsyncPollingConsumer<IReadOnlyList<T>>.PollOnceAsync` (new in 0.113.0) |
+| **Purpose** | Bridges `IPollingSource<T>` (which returns `IReadOnlyList<T>`) to `AsyncPollingConsumer`'s `AsyncPollSource` delegate via `WithSource`. Calls `PollOnceAsync` for a single-shot poll without entering the consumer's run loop. The `ResultKey` write contract and `IReadOnlyList<T>` output type are unchanged. |
+| **Phase introduced** | feat/iter2-minor-refactors |
+| **Test coverage** | `tests/WorkflowFramework.Tests.TinyBDD/Integration/Endpoint/PollingConsumerStepScenarios.cs` — all 8 scenarios pass without modification. |
+| **Public API change** | None — swap is internal-only. |
+| **Net delta** | −4 lines (bespoke poll call replaced by consumer delegation). |
+
+### 7. `IdempotentReceiverStep` — Idempotent receiver pattern
+
+| Item | Detail |
+|------|--------|
+| **File** | `src/WorkflowFramework.Extensions.Integration/Endpoint/IdempotentReceiverStep.cs` |
+| **PatternKit namespace** | `PatternKit.Messaging.Reliability` |
+| **Primitive** | `IIdempotencyStore` (in 0.112.0+) with `TryClaimAsync` / `MarkCompletedAsync` / `MarkFailedAsync` |
+| **Purpose** | Replaces the bespoke `HashSet<string>` with claim/complete/fail semantics. The default store (`RetryAfterFailureIdempotencyStore`) resets Failed keys to Processing on re-claim, allowing retry after transient failure. Completed keys are still suppressed, preserving the successful-dedup contract. |
+| **Phase introduced** | feat/iter2-minor-refactors |
+| **Behavior change** | **BUG FIX:** Previously, a step failure permanently locked the idempotency key, preventing retries. A transient inner-step failure should not lock future attempts. The new semantics: `Failed` → retry allowed; `Completed` → deduplicated. |
+| **Test coverage** | `tests/WorkflowFramework.Tests.TinyBDD/Integration/Endpoint/IdempotentReceiverStepScenarios.cs` — 9 scenarios; `ReAttemptAfterExceptionIsSkipped` renamed to `ReAttemptAfterExceptionIsAllowed` with assertion flipped. |
+| **Public API change** | Added optional `IIdempotencyStore` overload in the constructor. Default two-arg constructor preserved. |
+| **Net delta** | +83 lines net (bespoke `HashSet` replaced by `IIdempotencyStore` + internal default impl). |
 
 ---
 
@@ -197,16 +237,15 @@ When evaluating a bespoke component for PatternKit adoption, the following crite
 
 The following components are candidates for PatternKit adoption in later phases if suitable primitives become available or interface alignment is achieved:
 
-| Component | Potential Primitive | Blocking Reason (assessed against 0.112.0) |
+| Component | Potential Primitive | Blocking Reason (assessed against 0.113.0) |
 |-----------|--------------------|-----------------------|
-| `NormalizerStep` | `Normalizer<TRaw,TCanonical>` (now in 0.112.0) | Behavioral mismatch: PatternKit uses content predicates (first match wins); bespoke uses O(1) dictionary keyed dispatch. Error message format differs — test pins format name in exception text. See `docs/patternkit-followup.md`. |
-| `ContentEnricherStep` | `AsyncContentEnricher<TPayload>` (now in 0.112.0) | Semantic mismatch: PatternKit returns an enriched payload copy; bespoke mutates `IWorkflowContext` in place via a `Func<IWorkflowContext, Task>`. Wrapping adds indirection for zero functional benefit. |
-| `IdempotentReceiverStep` | `IdempotentReceiver<TPayload,TResult>` (now in 0.112.0) | Behavioral breaking change: PatternKit marks failed attempts as `Failed` in the store (allowing retry); bespoke registers the ID in a `HashSet` before calling inner, so a failed first attempt DOES suppress the second. Test `ReAttemptAfterExceptionIsSkipped` pins this behavior. |
-| `ClaimCheckStep` / `ClaimRetrieveStep` | `ClaimCheck<TPayload>` (now in 0.112.0) | Interface mismatch: bespoke `IClaimCheckStore` is untyped (`object`); PatternKit `IClaimCheckStore<TPayload>` is typed. Bridging requires an adapter class, adding indirection without deleting complexity. |
-| `PollingConsumerStep` | `AsyncPollingConsumer<TPayload>` (now in 0.112.0) | Semantic mismatch: PatternKit is a continuous polling loop (run until cancelled); bespoke is a single-shot poll (`PollAsync` → store results → return). Incompatible lifecycle models. |
-| `ScatterGatherStep` | `AsyncScatterGather<TRequest,TResponse,TResult>` (now in 0.112.0) | Integration complexity: handlers mutate a shared `IWorkflowContext` and write results to named context keys; PatternKit's per-recipient isolation model returns typed `TResponse` values. Adapting while preserving the `__Result_{handler.Name}` and `ResultsKey` contract would re-implement the existing complexity via a wrapper, defeating the purpose. |
-| `TransactionalOutboxStep` | `IOutboxStore<TPayload>` (now in 0.112.0) | Interface mismatch: bespoke `IOutboxStore` uses `SaveAsync(object) → string`; PatternKit `IOutboxStore<TPayload>` uses `EnqueueAsync(Message<TPayload>) → OutboxMessage<TPayload>`. Different return types and message wrapper model. |
-| `AggregatorStep` | PatternKit Aggregator (future) | No Aggregator primitive in 0.112.0 |
+| `ContentEnricherStep` | `AsyncContentEnricher<TPayload>` (now in 0.113.0) | Path C — intentionally bespoke. PatternKit returns an enriched payload copy; bespoke mutates `IWorkflowContext` in place via a `Func<IWorkflowContext, Task>`. Wrapping adds indirection for zero functional benefit. See `.plan/patternkit-iteration-2.md` §2. |
+| `ClaimCheckStep` / `ClaimRetrieveStep` | `ClaimCheck<TPayload>` (now in 0.113.0) | Interface mismatch: bespoke `IClaimCheckStore` is untyped (`object`); PatternKit `IClaimCheckStore<TPayload>` is typed. Deferred to Iteration 2 Phase 3 — requires adapter + interface migration. |
+| `ScatterGatherStep` | `AsyncScatterGather<TRequest,TResponse,TResult>` (now in 0.113.0) | Integration complexity: handlers mutate a shared `IWorkflowContext` and write results to named context keys; PatternKit's per-recipient isolation model returns typed `TResponse` values. Deferred to Iteration 2 Phase 3. |
+| `TransactionalOutboxStep` | `IOutboxStore<TPayload>` (now in 0.113.0) | Interface mismatch: bespoke `IOutboxStore` uses `SaveAsync(object) → string`; PatternKit `IOutboxStore<TPayload>` uses `EnqueueAsync(Message<TPayload>) → OutboxMessage<TPayload>`. Deferred to Iteration 2 Phase 3. |
+| `AggregatorStep` | PatternKit Aggregator (future) | No Aggregator primitive in 0.113.0 |
 | `PluginManager` | `Strategy` + `AbstractFactory` | Phase H.8 — not yet started |
 | `AgentLoopStep` / `AgentDecisionStep` | TypeDispatcher | Phase H.7 — not yet started |
 | `ResilienceMiddleware` (Polly) | `RetryPolicy` | Phase F pilot option B — deferred |
+
+**Adopted in feat/iter2-minor-refactors (Iteration 2 Phase 2):** `NormalizerStep` (→ `KeyedNormalizer`), `PollingConsumerStep` (→ `PollOnceAsync`), `IdempotentReceiverStep` (→ `IIdempotencyStore` claim/complete/fail — includes bug fix).

@@ -23,7 +23,10 @@
         "contentHash": "dk9JPxTCIevS75HyEQ0E4OVAFhB2N+V9ShCXf8Q6FkUQZDkgLI12y679Nym1YqsiSysuQskT7Z+6nUf3yab6Vw=="
       },
       "workflowframework": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "PatternKit.Core": "[0.113.0, )"
+        }
       },
       "workflowframework.extensions.dependencyinjection": {
         "type": "Project",
@@ -44,6 +47,12 @@
         "dependencies": {
           "WorkflowFramework": "[1.0.0, )"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       }
     }
   }
