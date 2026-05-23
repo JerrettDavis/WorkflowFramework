@@ -1,9 +1,12 @@
-// Intentionally bespoke — WireTapStep's core contract (run a side-effect without disrupting
-// the main flow, with optional error swallowing) is simpler than PatternKit's
-// AsyncActionDecorator pipeline. AsyncActionDecorator wraps a component and transforms/
-// decorates it; WireTapStep wraps nothing — it IS the side-effect. Applying Decorator here
-// would add indirection without modelling the pattern more clearly. Characterization tests
-// added in Phase G.3.
+// Refactored in feat/consume-patternkit-0.112 to delegate to
+// PatternKit.Messaging.Channels.AsyncWireTap<IWorkflowContext>.
+// The step wraps the caller-supplied Func<IWorkflowContext, Task> into a
+// PatternKit tap handler, maps swallowErrors to TapErrorPolicy, and exposes
+// the same constructor signature and Name property as before.
+// All Phase G.3 characterization tests pass without modification.
+using PatternKit.Messaging;
+using PatternKit.Messaging.Channels;
+
 namespace WorkflowFramework.Extensions.Integration.Channel;
 
 /// <summary>
@@ -12,8 +15,7 @@ namespace WorkflowFramework.Extensions.Integration.Channel;
 /// </summary>
 public sealed class WireTapStep : IStep
 {
-    private readonly Func<IWorkflowContext, Task> _tapAction;
-    private readonly bool _swallowErrors;
+    private readonly AsyncWireTap<IWorkflowContext> _wireTap;
 
     /// <summary>
     /// Initializes a new instance of <see cref="WireTapStep"/>.
@@ -22,8 +24,16 @@ public sealed class WireTapStep : IStep
     /// <param name="swallowErrors">Whether to swallow errors from the tap action. Default true.</param>
     public WireTapStep(Func<IWorkflowContext, Task> tapAction, bool swallowErrors = true)
     {
-        _tapAction = tapAction ?? throw new ArgumentNullException(nameof(tapAction));
-        _swallowErrors = swallowErrors;
+        if (tapAction is null) throw new ArgumentNullException(nameof(tapAction));
+
+        var policy = swallowErrors ? TapErrorPolicy.Swallow : TapErrorPolicy.Propagate;
+
+        _wireTap = AsyncWireTap<IWorkflowContext>.Create("wire-tap")
+            .Tap("tap", async (message, _, ct) =>
+            {
+                await tapAction(message.Payload).ConfigureAwait(false);
+            }, policy)
+            .Build();
     }
 
     /// <inheritdoc />
@@ -32,20 +42,7 @@ public sealed class WireTapStep : IStep
     /// <inheritdoc />
     public async Task ExecuteAsync(IWorkflowContext context)
     {
-        if (_swallowErrors)
-        {
-            try
-            {
-                await _tapAction(context).ConfigureAwait(false);
-            }
-            catch
-            {
-                // Wire tap should not affect main flow
-            }
-        }
-        else
-        {
-            await _tapAction(context).ConfigureAwait(false);
-        }
+        var message = new Message<IWorkflowContext>(context);
+        await _wireTap.PublishAsync(message, cancellationToken: context.CancellationToken).ConfigureAwait(false);
     }
 }
