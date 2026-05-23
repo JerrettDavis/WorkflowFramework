@@ -401,6 +401,12 @@
           "WorkflowFramework": "[1.0.0, )"
         }
       },
+      "workflowframework.serialization": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
       "workflowframework.testing": {
         "type": "Project",
         "dependencies": {
@@ -907,6 +913,12 @@
         }
       },
       "workflowframework.extensions.scheduling": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.serialization": {
         "type": "Project",
         "dependencies": {
           "WorkflowFramework": "[1.0.0, )"
@@ -1435,6 +1447,12 @@
         }
       },
       "workflowframework.extensions.scheduling": {
+        "type": "Project",
+        "dependencies": {
+          "WorkflowFramework": "[1.0.0, )"
+        }
+      },
+      "workflowframework.serialization": {
         "type": "Project",
         "dependencies": {
           "WorkflowFramework": "[1.0.0, )"
