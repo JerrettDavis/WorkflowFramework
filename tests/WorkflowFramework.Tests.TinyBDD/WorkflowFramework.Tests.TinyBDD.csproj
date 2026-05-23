@@ -14,6 +14,7 @@
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Plugins\WorkflowFramework.Extensions.Plugins.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Integration\WorkflowFramework.Extensions.Integration.csproj" />
     <ProjectReference Include="..\..\src\WorkflowFramework.Extensions.Agents\WorkflowFramework.Extensions.Agents.csproj" />
+    <ProjectReference Include="..\..\src\WorkflowFramework.Serialization\WorkflowFramework.Serialization.csproj" />
 
     <!-- Test frameworks -->
     <PackageReference Include="TinyBDD" />

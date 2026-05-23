@@ -233,6 +233,137 @@ public sealed class PersistentApprovalServiceTests
     }
 
     // ------------------------------------------------------------------
+    // RequestApprovalAsync validation guards
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task RequestApprovalAsync_RequiredApproversZero_ThrowsArgumentException()
+    {
+        var (svc, _, _) = Build();
+        // Construct directly bypassing builder validation to hit service-level guard
+        var request = new ApprovalRequest(
+            Title: "Test",
+            Description: null,
+            Context: new Dictionary<string, object?>(),
+            RequiredApprovers: 0, // invalid — below service guard threshold of 1
+            Timeout: TimeSpan.FromSeconds(5),
+            AllowedRoles: null);
+
+        var act = async () => await svc.RequestApprovalAsync(request);
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task RequestApprovalAsync_TimeoutZero_ThrowsArgumentException()
+    {
+        var (svc, _, _) = Build();
+        // Construct directly bypassing builder validation to hit service-level guard
+        var request = new ApprovalRequest(
+            Title: "Test",
+            Description: null,
+            Context: new Dictionary<string, object?>(),
+            RequiredApprovers: 1,
+            Timeout: TimeSpan.Zero, // invalid
+            AllowedRoles: null);
+
+        var act = async () => await svc.RequestApprovalAsync(request);
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task RequestApprovalAsync_EmptyTitle_ThrowsArgumentException()
+    {
+        var (svc, _, _) = Build();
+        var request = new ApprovalRequest(
+            Title: "   ", // whitespace only — invalid
+            Description: null,
+            Context: new Dictionary<string, object?>(),
+            RequiredApprovers: 1,
+            Timeout: TimeSpan.FromSeconds(5),
+            AllowedRoles: null);
+
+        var act = async () => await svc.RequestApprovalAsync(request);
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    // ------------------------------------------------------------------
+    // ResolveExternalAsync - no correlation found throws
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task ResolveExternalAsync_NoInflightCorrelation_ThrowsInvalidOperation()
+    {
+        var (svc, _, _) = Build();
+        var act = async () => await svc.ResolveExternalAsync("ghost", Vote("user1"));
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*ghost*");
+    }
+
+    // ------------------------------------------------------------------
+    // WaitForCompletionAsync - no correlation found throws
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task WaitForCompletionAsync_NoInflightCorrelation_ThrowsInvalidOperation()
+    {
+        var (svc, _, _) = Build();
+        var act = async () => await svc.WaitForCompletionAsync("ghost");
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*ghost*");
+    }
+
+    // ------------------------------------------------------------------
+    // DirectComplete - no-op when correlation not found
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void DirectComplete_NoInflightCorrelation_IsNoOp()
+    {
+        var (svc, _, _) = Build();
+        // Should not throw even when correlation doesn't exist.
+        svc.DirectComplete("ghost", ApprovalResponse.ApprovedBy(Array.Empty<ApprovalRecord>()));
+    }
+
+    // ------------------------------------------------------------------
+    // Rehydrate - skips completed approvals
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task Rehydrate_CompletedApproval_ReturnsEarlyWithoutRegisteringTcs()
+    {
+        var (svc, _, _) = Build();
+        var request = MakeRequest();
+        var completed = new PendingApproval(
+            CorrelationId: request.CorrelationId,
+            Request: request,
+            PrimaryChannel: "test",
+            CreatedAt: DateTimeOffset.UtcNow.AddMinutes(-5),
+            DeadlineAt: DateTimeOffset.UtcNow.AddMinutes(-1),
+            Votes: Array.Empty<ApprovalRecord>(),
+            EscalationChannel: null,
+            TimeoutAction: OnTimeoutAction.AutoReject,
+            IsComplete: true);
+
+        // Should not throw; TCS should NOT be registered.
+        svc.Rehydrate(completed);
+
+        // WaitForCompletion should throw since no TCS was registered.
+        var act = async () => await svc.WaitForCompletionAsync(request.CorrelationId);
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    // ------------------------------------------------------------------
+    // Rehydrate - null guard
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public void Rehydrate_NullPending_ThrowsArgumentNullException()
+    {
+        var (svc, _, _) = Build();
+        var act = () => svc.Rehydrate(null!);
+        act.Should().Throw<ArgumentNullException>().WithParameterName("pending");
+    }
+
+    // ------------------------------------------------------------------
     // Completion calls IApprovalStore.CompleteAsync
     // ------------------------------------------------------------------
 

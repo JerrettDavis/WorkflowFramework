@@ -145,4 +145,56 @@ public sealed class InMemoryApprovalStoreTests
         loaded!.IsComplete.Should().BeTrue();
         loaded.Final.Should().Be(final);
     }
+
+    // ------------------------------------------------------------------
+    // SaveAsync duplicate key guard
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task SaveAsync_DuplicateCorrelationId_ThrowsInvalidOperation()
+    {
+        var store = new InMemoryApprovalStore();
+        var pending = MakePending("corr-dup");
+        await store.SaveAsync(pending);
+
+        var act = async () => await store.SaveAsync(pending);
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    // ------------------------------------------------------------------
+    // SaveAsync null guard
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task SaveAsync_NullPending_ThrowsArgumentNullException()
+    {
+        var store = new InMemoryApprovalStore();
+        var act = async () => await store.SaveAsync(null!);
+        await act.Should().ThrowAsync<ArgumentNullException>();
+    }
+
+    // ------------------------------------------------------------------
+    // CompleteAsync missing correlation guard
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task CompleteAsync_MissingCorrelation_ThrowsInvalidOperation()
+    {
+        var store = new InMemoryApprovalStore();
+        var final = ApprovalResponse.ApprovedBy(Array.Empty<ApprovalRecord>());
+        var act = async () => await store.CompleteAsync("ghost-complete", final);
+        await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    // ------------------------------------------------------------------
+    // ListPendingAsync empty store
+    // ------------------------------------------------------------------
+
+    [Fact]
+    public async Task ListPendingAsync_EmptyStore_ReturnsEmpty()
+    {
+        var store = new InMemoryApprovalStore();
+        var result = await store.ListPendingAsync();
+        result.Should().BeEmpty();
+    }
 }

@@ -183,4 +183,72 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
             })
             .AssertPassed();
     }
+
+    [Scenario("Handler that throws OperationCanceledException is swallowed and returns null"), Fact]
+    public async Task HandlerOperationCanceledException_IsSwallowed()
+    {
+        IReadOnlyList<object?>? received = null;
+
+        var cancelling = Substitute.For<IStep>();
+        cancelling.Name.Returns("cancelling");
+        cancelling.ExecuteAsync(Arg.Any<IWorkflowContext>())
+            .Returns<Task>(_ => Task.FromException(new OperationCanceledException()));
+
+        var sut = new ScatterGatherStep(
+            new[] { cancelling },
+            (results, _) => { received = results; return Task.CompletedTask; },
+            TimeSpan.FromSeconds(5));
+
+        await sut.ExecuteAsync(new WorkflowContext());
+
+        await Given("results after handler throws OperationCanceledException", () => received)
+            .Then("aggregator receives null result for cancelled handler", r =>
+            {
+                r.Should().NotBeNull().And.ContainSingle(v => v == null);
+                return true;
+            })
+            .AssertPassed();
+    }
+
+    [Scenario("Timeout fires and aggregator receives partial results"), Fact]
+    public async Task Timeout_AggregatorsReceivesPartialResults()
+    {
+        IReadOnlyList<object?>? received = null;
+
+        var fast = Substitute.For<IStep>();
+        fast.Name.Returns("fast");
+        fast.ExecuteAsync(Arg.Any<IWorkflowContext>())
+            .Returns(ci =>
+            {
+                ((IWorkflowContext)ci[0]).Properties["__Result_fast"] = "done";
+                return Task.CompletedTask;
+            });
+
+        var slow = Substitute.For<IStep>();
+        slow.Name.Returns("slow");
+        slow.ExecuteAsync(Arg.Any<IWorkflowContext>())
+            .Returns(async _ =>
+            {
+                // Delay longer than the ScatterGatherStep timeout (50ms) but bounded
+                // so the task eventually completes and doesn't orphan the testhost.
+                await Task.Delay(500).ConfigureAwait(false);
+            });
+
+        // Very short timeout to trigger partial results path.
+        var sut = new ScatterGatherStep(
+            new[] { fast, slow },
+            (results, _) => { received = results; return Task.CompletedTask; },
+            TimeSpan.FromMilliseconds(50));
+
+        var ctx = new WorkflowContext();
+        await sut.ExecuteAsync(ctx);
+
+        await Given("partial results after scatter-gather timeout", () => received)
+            .Then("aggregator received partial results (not null, from completed handlers)", r =>
+            {
+                r.Should().NotBeNull();
+                return true;
+            })
+            .AssertPassed();
+    }
 }
