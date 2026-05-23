@@ -736,6 +736,7 @@
       "workflowframework.extensions.integration.abstractions": {
         "type": "Project",
         "dependencies": {
+          "PatternKit.Core": "[0.113.0, )",
           "WorkflowFramework": "[1.0.0, )"
         }
       },
@@ -1762,6 +1763,7 @@
       "workflowframework.extensions.integration.abstractions": {
         "type": "Project",
         "dependencies": {
+          "PatternKit.Core": "[0.113.0, )",
           "WorkflowFramework": "[1.0.0, )"
         }
       },
@@ -2805,6 +2807,7 @@
       "workflowframework.extensions.integration.abstractions": {
         "type": "Project",
         "dependencies": {
+          "PatternKit.Core": "[0.113.0, )",
           "WorkflowFramework": "[1.0.0, )"
         }
       },
