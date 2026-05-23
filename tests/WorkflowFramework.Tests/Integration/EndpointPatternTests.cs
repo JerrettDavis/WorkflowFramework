@@ -1,5 +1,7 @@
 using FluentAssertions;
 using NSubstitute;
+using PatternKit.Messaging;
+using PatternKit.Messaging.Reliability;
 using WorkflowFramework.Extensions.Integration.Abstractions;
 using WorkflowFramework.Extensions.Integration.Endpoint;
 using Xunit;
@@ -125,32 +127,42 @@ public class EndpointPatternTests
     [Fact]
     public void TransactionalOutbox_NullStore_Throws()
     {
-        var act = () => new TransactionalOutboxStep(null!, ctx => "msg");
+        // Phase 3: step now accepts IOutboxStore<object> (PatternKit typed store).
+        var act = () => new TransactionalOutboxStep((IOutboxStore<object>)null!, ctx => "msg");
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
     public void TransactionalOutbox_NullSelector_Throws()
     {
-        var act = () => new TransactionalOutboxStep(Substitute.For<IOutboxStore>(), null!);
+        var act = () => new TransactionalOutboxStep(Substitute.For<IOutboxStore<object>>(), null!);
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
     public async Task TransactionalOutbox_SavesAndStoresId()
     {
-        var outbox = Substitute.For<IOutboxStore>();
-        outbox.SaveAsync(Arg.Any<object>(), Arg.Any<CancellationToken>()).Returns("outbox-123");
+        // Phase 3: internally uses EnqueueObjectAsync (PatternKit extension).
+        // The outbox ID comes from the returned OutboxMessage<object>.Id.
+        var outbox = Substitute.For<IOutboxStore<object>>();
+        var stored = new OutboxMessage<object>("outbox-123", new Message<object>("payload", MessageHeaders.Empty), DateTimeOffset.UtcNow);
+        outbox.EnqueueAsync(
+                Arg.Any<Message<object>>(),
+                Arg.Any<string?>(),
+                Arg.Any<DateTimeOffset?>(),
+                Arg.Any<CancellationToken>())
+             .Returns(new ValueTask<OutboxMessage<object>>(stored));
+
         var step = new TransactionalOutboxStep(outbox, ctx => ctx.Properties["msg"]!);
         var context = new WorkflowContext();
         context.Properties["msg"] = "payload";
         await step.ExecuteAsync(context);
         context.Properties[TransactionalOutboxStep.OutboxIdKey].Should().Be("outbox-123");
-        await outbox.Received(1).SaveAsync("payload", Arg.Any<CancellationToken>());
+        await outbox.Received(1).EnqueueAsync(Arg.Any<Message<object>>(), Arg.Any<string?>(), Arg.Any<DateTimeOffset?>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public void TransactionalOutbox_Name() => new TransactionalOutboxStep(Substitute.For<IOutboxStore>(), ctx => "x").Name.Should().Be("TransactionalOutbox");
+    public void TransactionalOutbox_Name() => new TransactionalOutboxStep(Substitute.For<IOutboxStore<object>>(), ctx => "x").Name.Should().Be("TransactionalOutbox");
 
     #endregion
 
