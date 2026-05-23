@@ -922,14 +922,17 @@ public class WorkflowPluginContextExtendedTests
 
 public class ScatterGatherStepExtendedTests
 {
+    // Phase 3: migrated to typed-recipient API (ScatterGatherStep.Recipient).
+    private static ScatterGatherStep.Recipient Rec(string name, object? result)
+        => new(name, (_, _) => new ValueTask<object?>(result));
+
     [Fact]
     public async Task ExecuteAsync_AllHandlersComplete()
     {
-        var h1 = new ResultStep("H1", "result1");
-        var h2 = new ResultStep("H2", "result2");
+        // Phase 3: typed recipients return results directly.
         object?[]? gathered = null;
         var step = new ScatterGatherStep(
-            new IStep[] { h1, h2 },
+            new[] { Rec("H1", "result1"), Rec("H2", "result2") },
             (results, ctx) => { gathered = results.ToArray(); return Task.CompletedTask; },
             TimeSpan.FromSeconds(5));
 
@@ -942,31 +945,35 @@ public class ScatterGatherStepExtendedTests
     [Fact]
     public async Task ExecuteAsync_HandlerThrows_ReturnsNull()
     {
-        var h1 = new ThrowingStep("H1");
-        var h2 = new ResultStep("H2", "ok");
+        // Phase 3: faulting typed recipient maps to null in aggregated results.
+        // Note: PatternKit AsyncScatterGather uses ConcurrentBag; ordering is non-deterministic.
         var step = new ScatterGatherStep(
-            new IStep[] { h1, h2 },
+            new ScatterGatherStep.Recipient[]
+            {
+                new("H1", (_, _) => ValueTask.FromException<object?>(new InvalidOperationException("boom"))),
+                Rec("H2", "ok"),
+            },
             (results, _) => Task.CompletedTask,
             TimeSpan.FromSeconds(5));
 
         var ctx = new WorkflowContext();
         await step.ExecuteAsync(ctx);
-        var results = (object?[])ctx.Properties[ScatterGatherStep.ResultsKey]!;
+        var results = ((IReadOnlyList<object?>)ctx.Properties[ScatterGatherStep.ResultsKey]!).ToArray();
         results.Should().HaveCount(2);
-        results[0].Should().BeNull(); // failed handler
+        results.Should().ContainSingle(v => v == null); // faulting recipient maps to null
     }
 
     [Fact]
     public void Constructor_NullHandlers_Throws()
     {
-        var act = () => new ScatterGatherStep(null!, (_, _) => Task.CompletedTask, TimeSpan.FromSeconds(1));
+        var act = () => new ScatterGatherStep((IEnumerable<ScatterGatherStep.Recipient>)null!, (_, _) => Task.CompletedTask, TimeSpan.FromSeconds(1));
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
     public void Constructor_NullAggregator_Throws()
     {
-        var act = () => new ScatterGatherStep(Array.Empty<IStep>(), null!, TimeSpan.FromSeconds(1));
+        var act = () => new ScatterGatherStep(Array.Empty<ScatterGatherStep.Recipient>(), null!, TimeSpan.FromSeconds(1));
         act.Should().Throw<ArgumentNullException>();
     }
 
@@ -975,29 +982,13 @@ public class ScatterGatherStepExtendedTests
     {
         object?[]? gathered = null;
         var step = new ScatterGatherStep(
-            Array.Empty<IStep>(),
+            Array.Empty<ScatterGatherStep.Recipient>(),
             (results, ctx) => { gathered = results.ToArray(); return Task.CompletedTask; },
             TimeSpan.FromSeconds(5));
 
         var ctx = new WorkflowContext();
         await step.ExecuteAsync(ctx);
         gathered.Should().BeEmpty();
-    }
-
-    private class ThrowingStep(string name) : IStep
-    {
-        public string Name => name;
-        public Task ExecuteAsync(IWorkflowContext context) => throw new InvalidOperationException("boom");
-    }
-
-    private class ResultStep(string name, string result) : IStep
-    {
-        public string Name => name;
-        public Task ExecuteAsync(IWorkflowContext context)
-        {
-            context.Properties[$"__Result_{Name}"] = result;
-            return Task.CompletedTask;
-        }
     }
 
     private class SlowStep(string name, TimeSpan delay) : IStep
