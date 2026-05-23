@@ -9,12 +9,12 @@ using WorkflowFramework.Extensions.Integration.Endpoint;
 
 namespace WorkflowFramework.Tests.TinyBDD.Integration.Endpoint;
 
-// Bespoke kept: IdempotentReceiverStep manages mutable state (a HashSet of processed IDs
-// behind a lock) that has no direct analogue in PatternKit's structural/behavioural catalog.
-// PatternKit does not expose an idempotency-filter primitive. Characterization-only coverage
-// is provided here to lock in the current contract.
+// Iteration 2: IdempotentReceiverStep now delegates to PatternKit IIdempotencyStore with
+// claim → invoke → complete/fail semantics. The prior bespoke HashSet.Add-before-invoke
+// behaviour permanently locked the key on failure (latent bug). PatternKit's model correctly
+// allows retry after a failed attempt. See .plan/patternkit-iteration-2.md §4.
 
-[Feature("IdempotentReceiverStep — characterization (Phase G.4)")]
+[Feature("IdempotentReceiverStep — characterization (Phase G.4 / Iter2)")]
 public class IdempotentReceiverStepScenarios : TinyBddTestBase
 {
     public IdempotentReceiverStepScenarios(ITestOutputHelper output) : base(output) { }
@@ -168,7 +168,7 @@ public class IdempotentReceiverStepScenarios : TinyBddTestBase
             .AssertPassed();
     }
 
-    [Scenario("Inner step exception propagates and does not mark the ID as seen"), Fact]
+    [Scenario("Inner step exception propagates to caller"), Fact]
     public async Task InnerExceptionPropagatesToCaller()
     {
         var callCount = 0;
@@ -183,8 +183,6 @@ public class IdempotentReceiverStepScenarios : TinyBddTestBase
         var sut = new IdempotentReceiverStep(inner, _ => "err-id");
         var ctx = new WorkflowContext();
 
-        // NOTE: The ID is added to the set BEFORE calling inner, so a second call IS skipped
-        // even if inner threw. This characterizes the current bespoke implementation.
         Exception? caught = null;
         try { await sut.ExecuteAsync(ctx); }
         catch (InvalidOperationException ex) { caught = ex; }
@@ -199,8 +197,13 @@ public class IdempotentReceiverStepScenarios : TinyBddTestBase
             .AssertPassed();
     }
 
-    [Scenario("Re-attempt after exception is silently skipped (ID was already registered)"), Fact]
-    public async Task ReAttemptAfterExceptionIsSkipped()
+    // This is a deliberate bug fix in Iteration 2. Prior behavior was permanent dedup on failure
+    // (latent bug — failure should not lock future attempts). PatternKit's IIdempotencyStore
+    // provides claim/complete/fail semantics; the default RetryAfterFailureIdempotencyStore
+    // resets a Failed key to Processing on the next TryClaim, correctly allowing retry.
+    // See .plan/patternkit-iteration-2.md §4.
+    [Scenario("Re-attempt after exception is allowed (failure releases the idempotency key)"), Fact]
+    public async Task ReAttemptAfterExceptionIsAllowed()
     {
         var callCount = 0;
         var inner = Substitute.For<IStep>();
@@ -211,16 +214,16 @@ public class IdempotentReceiverStepScenarios : TinyBddTestBase
                 throw new InvalidOperationException("boom");
             });
 
-        var sut = new IdempotentReceiverStep(inner, _ => "sticky-id");
+        var sut = new IdempotentReceiverStep(inner, _ => "retry-id");
         var ctx = new WorkflowContext();
 
-        try { await sut.ExecuteAsync(ctx); } catch { /* expected */ }
-        try { await sut.ExecuteAsync(ctx); } catch { /* second attempt — should be skipped */ }
+        try { await sut.ExecuteAsync(ctx); } catch { /* expected — first attempt fails */ }
+        try { await sut.ExecuteAsync(ctx); } catch { /* second attempt — now allowed */ }
 
         await Given("call count after first-attempt failure then second attempt", () => callCount)
-            .Then("inner was called only once (ID was registered before the throw)", count =>
+            .Then("inner was called twice (failure released the key, allowing retry)", count =>
             {
-                count.Should().Be(1);
+                count.Should().Be(2);
                 return true;
             })
             .AssertPassed();

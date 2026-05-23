@@ -52,6 +52,27 @@
           "Castle.Core": "5.1.1"
         }
       },
+      "TinyBDD": {
+        "type": "Direct",
+        "requested": "[0.19.16, )",
+        "resolved": "0.19.16",
+        "contentHash": "H9FEUkilavosn+wNDUItTPxOYRtQXzyt0dz+1wTyUKeijvois0FX2fkHEde08ockkOpebqffJxSleIH+7jZe7w==",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection": "10.0.5",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5"
+        }
+      },
+      "TinyBDD.Xunit": {
+        "type": "Direct",
+        "requested": "[0.19.16, )",
+        "resolved": "0.19.16",
+        "contentHash": "DgqB3Il3xiidn065cOga4HbyXWRV3hdgrKQKWThaXCWH40XkyWMt6ZttRuVs4LgFf73OSIsgxjrt3Tm7731O1g==",
+        "dependencies": {
+          "TinyBDD": "0.19.16",
+          "xunit.abstractions": "2.0.3",
+          "xunit.extensibility.core": "2.9.3"
+        }
+      },
       "xunit": {
         "type": "Direct",
         "requested": "[2.9.3, )",
@@ -190,7 +211,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.approvals": {
@@ -254,6 +276,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       }
     },
     "net8.0": {
@@ -305,6 +333,27 @@
         "contentHash": "lJ47Cps5Qzr86N99lcwd+OUvQma7+fBgr8+Mn+aOC0WrlqMNkdivaYD9IvnZ5Mqo6Ky3LS7ZI+tUq1/s9ERd0Q==",
         "dependencies": {
           "Castle.Core": "5.1.1"
+        }
+      },
+      "TinyBDD": {
+        "type": "Direct",
+        "requested": "[0.19.16, )",
+        "resolved": "0.19.16",
+        "contentHash": "H9FEUkilavosn+wNDUItTPxOYRtQXzyt0dz+1wTyUKeijvois0FX2fkHEde08ockkOpebqffJxSleIH+7jZe7w==",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection": "10.0.5",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5"
+        }
+      },
+      "TinyBDD.Xunit": {
+        "type": "Direct",
+        "requested": "[0.19.16, )",
+        "resolved": "0.19.16",
+        "contentHash": "DgqB3Il3xiidn065cOga4HbyXWRV3hdgrKQKWThaXCWH40XkyWMt6ZttRuVs4LgFf73OSIsgxjrt3Tm7731O1g==",
+        "dependencies": {
+          "TinyBDD": "0.19.16",
+          "xunit.abstractions": "2.0.3",
+          "xunit.extensibility.core": "2.9.3"
         }
       },
       "xunit": {
@@ -446,7 +495,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.approvals": {
@@ -511,6 +561,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       },
       "System.Diagnostics.DiagnosticSource": {
         "type": "CentralTransitive",
@@ -570,6 +626,27 @@
           "Castle.Core": "5.1.1"
         }
       },
+      "TinyBDD": {
+        "type": "Direct",
+        "requested": "[0.19.16, )",
+        "resolved": "0.19.16",
+        "contentHash": "H9FEUkilavosn+wNDUItTPxOYRtQXzyt0dz+1wTyUKeijvois0FX2fkHEde08ockkOpebqffJxSleIH+7jZe7w==",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection": "10.0.5",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5"
+        }
+      },
+      "TinyBDD.Xunit": {
+        "type": "Direct",
+        "requested": "[0.19.16, )",
+        "resolved": "0.19.16",
+        "contentHash": "DgqB3Il3xiidn065cOga4HbyXWRV3hdgrKQKWThaXCWH40XkyWMt6ZttRuVs4LgFf73OSIsgxjrt3Tm7731O1g==",
+        "dependencies": {
+          "TinyBDD": "0.19.16",
+          "xunit.abstractions": "2.0.3",
+          "xunit.extensibility.core": "2.9.3"
+        }
+      },
       "xunit": {
         "type": "Direct",
         "requested": "[2.9.3, )",
@@ -709,7 +786,8 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.5, )",
-          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )"
+          "Microsoft.Extensions.Hosting.Abstractions": "[10.0.5, )",
+          "PatternKit.Core": "[0.113.0, )"
         }
       },
       "workflowframework.extensions.approvals": {
@@ -774,6 +852,12 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5"
         }
+      },
+      "PatternKit.Core": {
+        "type": "CentralTransitive",
+        "requested": "[0.113.0, )",
+        "resolved": "0.113.0",
+        "contentHash": "gnHABPF+MK6UmTm3Q0q6UjN1ZLx+A260nDHdk8nq6BTL9m3oZXACmDDiBaYJV4lQjQj5Bg1uEUGqlzSLCBrX0Q=="
       },
       "System.Diagnostics.DiagnosticSource": {
         "type": "CentralTransitive",
