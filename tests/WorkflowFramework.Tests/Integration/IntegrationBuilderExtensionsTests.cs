@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NSubstitute;
+using PatternKit.Messaging.Transformation;
 using WorkflowFramework.Builder;
 using WorkflowFramework.Extensions.Integration.Abstractions;
 using WorkflowFramework.Extensions.Integration.Builder;
@@ -154,8 +155,8 @@ public class IntegrationBuilderExtensionsTests
     [Fact]
     public async Task ClaimCheck_AddsClaimCheckStep()
     {
-        var store = Substitute.For<IClaimCheckStore>();
-        store.StoreAsync(Arg.Any<object>(), Arg.Any<CancellationToken>()).Returns("ticket-1");
+        // Phase 3: use PatternKit InMemoryClaimCheckStore<object> directly.
+        var store = new InMemoryClaimCheckStore<object>();
         var workflow = new WorkflowBuilder()
             .WithName("Test")
             .Step("setup", ctx => { ctx.Properties["payload"] = "data"; return Task.CompletedTask; })
@@ -163,15 +164,14 @@ public class IntegrationBuilderExtensionsTests
             .Build();
         var context = new WorkflowContext();
         await workflow.ExecuteAsync(context);
-        await store.Received(1).StoreAsync("data", Arg.Any<CancellationToken>());
+        context.Properties.Should().ContainKey(WorkflowFramework.Extensions.Integration.Transformation.ClaimCheckStep.ClaimTicketKey);
     }
 
     [Fact]
     public async Task ClaimRetrieve_AddsClaimRetrieveStep()
     {
-        var store = Substitute.For<IClaimCheckStore>();
-        store.StoreAsync(Arg.Any<object>(), Arg.Any<CancellationToken>()).Returns("ticket-1");
-        store.RetrieveAsync("ticket-1", Arg.Any<CancellationToken>()).Returns((object)"payload");
+        // Phase 3: use PatternKit InMemoryClaimCheckStore<object> directly for round-trip.
+        var store = new InMemoryClaimCheckStore<object>();
         var workflow = new WorkflowBuilder()
             .WithName("Test")
             .Step("setup", ctx => { ctx.Properties["payload"] = "data"; return Task.CompletedTask; })
@@ -180,7 +180,7 @@ public class IntegrationBuilderExtensionsTests
             .Build();
         var context = new WorkflowContext();
         await workflow.ExecuteAsync(context);
-        context.Properties["result"].Should().Be("payload");
+        context.Properties["result"].Should().Be("data");
     }
 
     [Fact]

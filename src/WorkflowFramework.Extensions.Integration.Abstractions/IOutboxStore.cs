@@ -3,6 +3,19 @@ namespace WorkflowFramework.Extensions.Integration.Abstractions;
 /// <summary>
 /// Transactional outbox store for reliable message publishing.
 /// </summary>
+/// <remarks>
+/// <b>DEPRECATED:</b> Use <c>PatternKit.Messaging.Reliability.IOutboxStore&lt;TPayload&gt;</c>
+/// directly. This interface is retained for one release as a back-compat shim and will be removed
+/// in the next major version. Migrate to <c>IOutboxStore&lt;object&gt;</c> (or a typed variant)
+/// and update DI registrations accordingly. See <c>LegacyOutboxStoreAdapter</c> for a bridge.
+/// </remarks>
+[Obsolete(
+    "WorkflowFramework.Extensions.Integration.Abstractions.IOutboxStore is obsolete. " +
+    "Migrate to PatternKit.Messaging.Reliability.IOutboxStore<TPayload> " +
+    "(use IOutboxStore<object> for untyped payloads). " +
+    "A legacy adapter LegacyOutboxStoreAdapter is available for one release. " +
+    "This interface will be removed in the next major version.",
+    error: false)]
 public interface IOutboxStore
 {
     /// <summary>

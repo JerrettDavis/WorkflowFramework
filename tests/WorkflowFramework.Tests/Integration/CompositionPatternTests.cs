@@ -8,28 +8,32 @@ public class CompositionPatternTests
 {
     #region ScatterGather
 
+    // Phase 3: ScatterGather tests migrated to typed-recipient API (ScatterGatherStep.Recipient).
+
+    private static ScatterGatherStep.Recipient R(string name, object? value)
+        => new(name, (_, _) => new ValueTask<object?>(value));
+
     [Fact]
     public void ScatterGather_NullHandlers_Throws()
     {
-        var act = () => new ScatterGatherStep(null!, (r, c) => Task.CompletedTask, TimeSpan.FromSeconds(1));
+        var act = () => new ScatterGatherStep((IEnumerable<ScatterGatherStep.Recipient>)null!, (r, c) => Task.CompletedTask, TimeSpan.FromSeconds(1));
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
     public void ScatterGather_NullAggregator_Throws()
     {
-        var act = () => new ScatterGatherStep(Array.Empty<IStep>(), null!, TimeSpan.FromSeconds(1));
+        var act = () => new ScatterGatherStep(Array.Empty<ScatterGatherStep.Recipient>(), null!, TimeSpan.FromSeconds(1));
         act.Should().Throw<ArgumentNullException>();
     }
 
     [Fact]
     public async Task ScatterGather_AllRespond()
     {
-        var h1 = new TestStep("H1", ctx => { ctx.Properties["__Result_H1"] = "r1"; return Task.CompletedTask; });
-        var h2 = new TestStep("H2", ctx => { ctx.Properties["__Result_H2"] = "r2"; return Task.CompletedTask; });
+        // Phase 3: typed recipients return results directly — no shared-context mutation.
         object?[]? results = null;
         var step = new ScatterGatherStep(
-            new[] { h1, h2 },
+            new[] { R("H1", "r1"), R("H2", "r2") },
             (r, c) => { results = r.ToArray(); return Task.CompletedTask; },
             TimeSpan.FromSeconds(5));
         var context = new WorkflowContext();
@@ -40,21 +44,26 @@ public class CompositionPatternTests
     [Fact]
     public async Task ScatterGather_HandlerException_ReturnsNull()
     {
-        var h1 = new TestStep("H1", ctx => throw new Exception("boom"));
-        var h2 = new TestStep("H2", ctx => { ctx.Properties["__Result_H2"] = "ok"; return Task.CompletedTask; });
+        // Phase 3: faulting recipient maps to null in aggregated results.
+        // Note: PatternKit AsyncScatterGather uses ConcurrentBag so ordering is non-deterministic;
+        // assert any null exists rather than pinning index 0.
         object?[]? results = null;
         var step = new ScatterGatherStep(
-            new[] { h1, h2 },
+            new ScatterGatherStep.Recipient[]
+            {
+                new("H1", (_, _) => ValueTask.FromException<object?>(new Exception("boom"))),
+                R("H2", "ok"),
+            },
             (r, c) => { results = r.ToArray(); return Task.CompletedTask; },
             TimeSpan.FromSeconds(5));
         var context = new WorkflowContext();
         await step.ExecuteAsync(context);
         results.Should().HaveCount(2);
-        results![0].Should().BeNull();
+        results.Should().ContainSingle(v => v == null); // faulting recipient maps to null
     }
 
     [Fact]
-    public void ScatterGather_Name() => new ScatterGatherStep(Array.Empty<IStep>(), (r, c) => Task.CompletedTask, TimeSpan.FromSeconds(1)).Name.Should().Be("ScatterGather");
+    public void ScatterGather_Name() => new ScatterGatherStep(Array.Empty<ScatterGatherStep.Recipient>(), (r, c) => Task.CompletedTask, TimeSpan.FromSeconds(1)).Name.Should().Be("ScatterGather");
 
     #endregion
 

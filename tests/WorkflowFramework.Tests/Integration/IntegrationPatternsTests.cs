@@ -8,6 +8,9 @@ using WorkflowFramework.Extensions.Integration.Transformation;
 using WorkflowFramework.Extensions.Integration.Builder;
 using FluentAssertions;
 using NSubstitute;
+using PatternKit.Messaging;
+using PatternKit.Messaging.Transformation;
+using PatternKit.Messaging.Reliability;
 using Xunit;
 
 namespace WorkflowFramework.Tests.Integration;
@@ -559,18 +562,26 @@ public class IntegrationPatternsTests
     [Fact]
     public async Task TransactionalOutbox_SavesMessage()
     {
-        var outbox = Substitute.For<IOutboxStore>();
-        outbox.SaveAsync(Arg.Any<object>(), Arg.Any<CancellationToken>()).Returns("msg-123");
+        // Phase 3: step now consumes IOutboxStore<object> (PatternKit typed store).
+        var outbox = Substitute.For<IOutboxStore<object>>();
+        var payload = new { OrderId = 1 };
+        var stored = new OutboxMessage<object>("msg-123", new Message<object>(payload, MessageHeaders.Empty), DateTimeOffset.UtcNow);
+        outbox.EnqueueAsync(
+                Arg.Any<Message<object>>(),
+                Arg.Any<string?>(),
+                Arg.Any<DateTimeOffset?>(),
+                Arg.Any<CancellationToken>())
+             .Returns(new ValueTask<OutboxMessage<object>>(stored));
 
         var step = new TransactionalOutboxStep(outbox, ctx => ctx.Properties["message"]!);
 
         var context = new WorkflowContext();
-        context.Properties["message"] = new { OrderId = 1 };
+        context.Properties["message"] = payload;
 
         await step.ExecuteAsync(context);
 
         context.Properties[TransactionalOutboxStep.OutboxIdKey].Should().Be("msg-123");
-        await outbox.Received(1).SaveAsync(Arg.Any<object>(), Arg.Any<CancellationToken>());
+        await outbox.Received(1).EnqueueAsync(Arg.Any<Message<object>>(), Arg.Any<string?>(), Arg.Any<DateTimeOffset?>(), Arg.Any<CancellationToken>());
     }
 
     #endregion
@@ -583,20 +594,21 @@ public class IntegrationPatternsTests
         public Task ExecuteAsync(IWorkflowContext context) => action(context);
     }
 
-    private sealed class InMemoryClaimCheckStore : IClaimCheckStore
+    // Phase 3: implement PatternKit IClaimCheckStore<object> (typed) instead of the deprecated WF IClaimCheckStore.
+    private sealed class InMemoryClaimCheckStore : IClaimCheckStore<object>
     {
-        private readonly Dictionary<string, object> _store = new();
+        private readonly Dictionary<string, ClaimCheckStoredPayload<object>> _store = new();
 
-        public Task<string> StoreAsync(object payload, CancellationToken cancellationToken = default)
+        public ValueTask StoreAsync(string claimId, object payload, MessageHeaders headers, CancellationToken cancellationToken = default)
         {
-            var ticket = Guid.NewGuid().ToString("N");
-            _store[ticket] = payload;
-            return Task.FromResult(ticket);
+            _store[claimId] = new ClaimCheckStoredPayload<object>(payload, headers);
+            return default;
         }
 
-        public Task<object> RetrieveAsync(string claimTicket, CancellationToken cancellationToken = default)
+        public ValueTask<ClaimCheckStoredPayload<object>?> TryLoadAsync(string claimId, CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(_store[claimTicket]);
+            _store.TryGetValue(claimId, out var stored);
+            return new ValueTask<ClaimCheckStoredPayload<object>?>(stored);
         }
     }
 

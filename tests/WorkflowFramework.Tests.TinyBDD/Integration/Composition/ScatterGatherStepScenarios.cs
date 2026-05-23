@@ -9,16 +9,43 @@ using WorkflowFramework.Extensions.Integration.Composition;
 
 namespace WorkflowFramework.Tests.TinyBDD.Integration.Composition;
 
-[Feature("ScatterGatherStep — characterization (Phase G.2)")]
+// Phase 3 — re-rooted on PatternKit AsyncScatterGather<TRequest, TResponse, TResult>.
+//
+// Recipient contract change:
+//   Each recipient is now a ScatterGatherStep.Recipient (typed name + ValueTask-returning handler)
+//   rather than an IStep that writes results to shared context keys (__Result_{Name}).
+//   The shared-context mutation pattern was a concurrency hazard — handlers racing to write
+//   different keys on the same IWorkflowContext were not safely isolated.
+//
+// Public output contract is preserved:
+//   ResultsKey is still written with IReadOnlyList<object?> of per-recipient results.
+//   The aggregator still receives IReadOnlyList<object?> and IWorkflowContext.
+//
+// Legacy back-compat:
+//   A deprecated IEnumerable<IStep> overload is retained for one release. Tests that cover
+//   the new typed-recipient API are marked clearly. The legacy-overload tests are marked
+//   [Obsolete] suppressed and document the migration path.
+//
+// See .plan/patternkit-iteration-2.md §6.
+
+[Feature("ScatterGatherStep — characterization (Phase G.2, updated Phase 3)")]
 public class ScatterGatherStepScenarios : TinyBddTestBase
 {
     public ScatterGatherStepScenarios(ITestOutputHelper output) : base(output) { }
+
+    // Helper: create a typed recipient from a name and a synchronous result value.
+    private static ScatterGatherStep.Recipient TypedRecipient(string name, object? result)
+        => new(name, (_, _) => new ValueTask<object?>(result));
+
+    // Helper: create a typed recipient that throws.
+    private static ScatterGatherStep.Recipient FaultingRecipient(string name, Exception ex)
+        => new(name, (_, _) => ValueTask.FromException<object?>(ex));
 
     [Scenario("ScatterGatherStep Name returns 'ScatterGather'"), Fact]
     public async Task NameIsScatterGather()
     {
         var sut = new ScatterGatherStep(
-            Array.Empty<IStep>(),
+            Array.Empty<ScatterGatherStep.Recipient>(),
             (_, _) => Task.CompletedTask,
             TimeSpan.FromSeconds(5));
 
@@ -31,30 +58,25 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
             .AssertPassed();
     }
 
-    [Scenario("All handlers execute and aggregator receives their results"), Fact]
+    [Scenario("All typed recipients execute and aggregator receives their results"), Fact]
     public async Task AllHandlersRunAndAggregatorReceivesResults()
     {
+        // Phase 3: typed recipients return results directly — no shared-context mutation.
         var aggregatedResults = new List<object?>();
 
-        var h1 = Substitute.For<IStep>();
-        h1.Name.Returns("h1");
-        h1.ExecuteAsync(Arg.Any<IWorkflowContext>())
-            .Returns(ci => { ((IWorkflowContext)ci[0]).Properties["__Result_h1"] = "result1"; return Task.CompletedTask; });
-
-        var h2 = Substitute.For<IStep>();
-        h2.Name.Returns("h2");
-        h2.ExecuteAsync(Arg.Any<IWorkflowContext>())
-            .Returns(ci => { ((IWorkflowContext)ci[0]).Properties["__Result_h2"] = "result2"; return Task.CompletedTask; });
-
         var sut = new ScatterGatherStep(
-            new[] { h1, h2 },
+            new[]
+            {
+                TypedRecipient("h1", "result1"),
+                TypedRecipient("h2", "result2"),
+            },
             (results, _) => { aggregatedResults.AddRange(results); return Task.CompletedTask; },
             TimeSpan.FromSeconds(5));
 
         var ctx = new WorkflowContext();
         await sut.ExecuteAsync(ctx);
 
-        await Given("aggregated results after scatter-gather with two handlers", () => (aggregatedResults, ctx))
+        await Given("aggregated results after scatter-gather with two typed recipients", () => (aggregatedResults, ctx))
             .Then("two results were collected and ResultsKey is set on context", state =>
             {
                 state.aggregatedResults.Should().HaveCount(2);
@@ -64,29 +86,26 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
             .AssertPassed();
     }
 
-    [Scenario("Failing handler does not prevent aggregator from being called"), Fact]
+    [Scenario("Failing typed recipient does not prevent aggregator from being called"), Fact]
     public async Task FailingHandlerDoesNotBlockAggregator()
     {
+        // Phase 3: PatternKit AsyncScatterGather isolates per-branch errors. A faulting
+        // recipient produces a Failure envelope; the aggregator still receives all envelopes
+        // (succeeded and failed), so it is always called with partial/full results.
         var aggregatorCalled = false;
 
-        var faulting = Substitute.For<IStep>();
-        faulting.Name.Returns("bad");
-        faulting.ExecuteAsync(Arg.Any<IWorkflowContext>())
-            .Returns<Task>(_ => throw new InvalidOperationException("branch failure"));
-
-        var good = Substitute.For<IStep>();
-        good.Name.Returns("good");
-        good.ExecuteAsync(Arg.Any<IWorkflowContext>())
-            .Returns(ci => { ((IWorkflowContext)ci[0]).Properties["__Result_good"] = "ok"; return Task.CompletedTask; });
-
         var sut = new ScatterGatherStep(
-            new[] { faulting, good },
+            new[]
+            {
+                FaultingRecipient("bad", new InvalidOperationException("branch failure")),
+                TypedRecipient("good", "ok"),
+            },
             (_, _) => { aggregatorCalled = true; return Task.CompletedTask; },
             TimeSpan.FromSeconds(5));
 
         await sut.ExecuteAsync(new WorkflowContext());
 
-        await Given("whether aggregator was called despite faulting handler", () => aggregatorCalled)
+        await Given("whether aggregator was called despite faulting recipient", () => aggregatorCalled)
             .Then("aggregator was still called", called =>
             {
                 called.Should().BeTrue();
@@ -107,14 +126,14 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
             .AssertPassed();
     }
 
-    [Scenario("Null handlers throws ArgumentNullException"), Fact]
+    [Scenario("Null recipients throws ArgumentNullException"), Fact]
     public async Task NullHandlersThrows()
     {
         Exception? caught = null;
-        try { _ = new ScatterGatherStep(null!, (_, _) => Task.CompletedTask, TimeSpan.FromSeconds(1)); }
+        try { _ = new ScatterGatherStep((IEnumerable<ScatterGatherStep.Recipient>)null!, (_, _) => Task.CompletedTask, TimeSpan.FromSeconds(1)); }
         catch (ArgumentNullException ex) { caught = ex; }
 
-        await Given("construction with null handlers", () => caught)
+        await Given("construction with null recipients", () => caught)
             .Then("ArgumentNullException is thrown", ex =>
             {
                 ex.Should().NotBeNull().And.BeOfType<ArgumentNullException>();
@@ -127,7 +146,7 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
     public async Task NullAggregatorThrows()
     {
         Exception? caught = null;
-        try { _ = new ScatterGatherStep(Array.Empty<IStep>(), null!, TimeSpan.FromSeconds(1)); }
+        try { _ = new ScatterGatherStep(Array.Empty<ScatterGatherStep.Recipient>(), null!, TimeSpan.FromSeconds(1)); }
         catch (ArgumentNullException ex) { caught = ex; }
 
         await Given("construction with null aggregator", () => caught)
@@ -139,23 +158,19 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
             .AssertPassed();
     }
 
-    [Scenario("Single handler result is stored under ResultsKey"), Fact]
+    [Scenario("Single typed recipient result is stored under ResultsKey"), Fact]
     public async Task SingleHandlerResultStored()
     {
-        var h = Substitute.For<IStep>();
-        h.Name.Returns("solo");
-        h.ExecuteAsync(Arg.Any<IWorkflowContext>())
-            .Returns(ci => { ((IWorkflowContext)ci[0]).Properties["__Result_solo"] = 42; return Task.CompletedTask; });
-
+        // Phase 3: recipient returns 42 directly; no shared-context __Result_ key needed.
         var sut = new ScatterGatherStep(
-            new[] { h },
+            new[] { TypedRecipient("solo", 42) },
             (results, ctx) => { ctx.Properties["aggregated"] = results[0]; return Task.CompletedTask; },
             TimeSpan.FromSeconds(5));
 
         var ctx = new WorkflowContext();
         await sut.ExecuteAsync(ctx);
 
-        await Given("aggregated property after scatter-gather with solo handler", () => ctx)
+        await Given("aggregated property after scatter-gather with solo typed recipient", () => ctx)
             .Then("aggregated is 42", c =>
             {
                 c.Properties["aggregated"].Should().Be(42);
@@ -164,18 +179,18 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
             .AssertPassed();
     }
 
-    [Scenario("Empty handlers list calls aggregator with empty results"), Fact]
+    [Scenario("Empty typed recipients list calls aggregator with empty results"), Fact]
     public async Task EmptyHandlersCallsAggregatorWithEmptyList()
     {
         IReadOnlyList<object?>? received = null;
         var sut = new ScatterGatherStep(
-            Array.Empty<IStep>(),
+            Array.Empty<ScatterGatherStep.Recipient>(),
             (results, _) => { received = results; return Task.CompletedTask; },
             TimeSpan.FromSeconds(5));
 
         await sut.ExecuteAsync(new WorkflowContext());
 
-        await Given("results received by aggregator with empty handler list", () => received)
+        await Given("results received by aggregator with empty recipient list", () => received)
             .Then("aggregator was called with empty list", r =>
             {
                 r.Should().NotBeNull().And.BeEmpty();
@@ -184,27 +199,40 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
             .AssertPassed();
     }
 
-    [Scenario("Handler that throws OperationCanceledException is swallowed and returns null"), Fact]
+    [Scenario("Typed recipient that throws OperationCanceledException produces no result in aggregator"), Fact]
     public async Task HandlerOperationCanceledException_IsSwallowed()
     {
+        // Behavior change (Phase 3): PatternKit AsyncScatterGather swallows non-caller-initiated
+        // OperationCanceledException internally WITHOUT recording an envelope for that recipient.
+        // Unlike the old bespoke implementation (which returned null for cancelled recipients),
+        // PatternKit simply omits the cancelled recipient from the result set entirely.
+        //
+        // When ALL recipients are cancelled/omitted and no envelopes are produced,
+        // DispatchAsync returns a Rejected result and the step writes an empty list to ResultsKey.
+        //
+        // Rationale: PatternKit distinguishes caller cancellation (surfaces as failure envelope)
+        // from timeout/early-exit cancellation (swallowed silently). This is the correct behavior:
+        // a non-caller-cancelled branch timed out; it is not a "failure" to report.
+        // See PatternKit.Messaging.Routing.AsyncScatterGather RunRecipientAsync and .plan §6.
         IReadOnlyList<object?>? received = null;
 
-        var cancelling = Substitute.For<IStep>();
-        cancelling.Name.Returns("cancelling");
-        cancelling.ExecuteAsync(Arg.Any<IWorkflowContext>())
-            .Returns<Task>(_ => Task.FromException(new OperationCanceledException()));
-
         var sut = new ScatterGatherStep(
-            new[] { cancelling },
+            new[]
+            {
+                new ScatterGatherStep.Recipient("cancelling", (_, ct) =>
+                    ValueTask.FromException<object?>(new OperationCanceledException())),
+            },
             (results, _) => { received = results; return Task.CompletedTask; },
             TimeSpan.FromSeconds(5));
 
         await sut.ExecuteAsync(new WorkflowContext());
 
-        await Given("results after handler throws OperationCanceledException", () => received)
-            .Then("aggregator receives null result for cancelled handler", r =>
+        await Given("results after typed recipient throws OperationCanceledException", () => received)
+            .Then("aggregator receives empty results (cancelled branch is omitted, not null-padded)", r =>
             {
-                r.Should().NotBeNull().And.ContainSingle(v => v == null);
+                r.Should().NotBeNull();
+                // PatternKit omits non-caller-cancelled branches entirely rather than null-padding.
+                r!.Should().BeEmpty();
                 return true;
             })
             .AssertPassed();
@@ -213,30 +241,20 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
     [Scenario("Timeout fires and aggregator receives partial results"), Fact]
     public async Task Timeout_AggregatorsReceivesPartialResults()
     {
+        // Phase 3: PatternKit AllOrTimeout strategy fires after the timeout;
+        // recipients that finished are aggregated, slow ones produce no result.
         IReadOnlyList<object?>? received = null;
 
-        var fast = Substitute.For<IStep>();
-        fast.Name.Returns("fast");
-        fast.ExecuteAsync(Arg.Any<IWorkflowContext>())
-            .Returns(ci =>
-            {
-                ((IWorkflowContext)ci[0]).Properties["__Result_fast"] = "done";
-                return Task.CompletedTask;
-            });
-
-        var slow = Substitute.For<IStep>();
-        slow.Name.Returns("slow");
-        slow.ExecuteAsync(Arg.Any<IWorkflowContext>())
-            .Returns(async _ =>
-            {
-                // Delay longer than the ScatterGatherStep timeout (50ms) but bounded
-                // so the task eventually completes and doesn't orphan the testhost.
-                await Task.Delay(500).ConfigureAwait(false);
-            });
-
-        // Very short timeout to trigger partial results path.
         var sut = new ScatterGatherStep(
-            new[] { fast, slow },
+            new[]
+            {
+                TypedRecipient("fast", "done"),
+                new ScatterGatherStep.Recipient("slow", async (_, _) =>
+                {
+                    await Task.Delay(500).ConfigureAwait(false);
+                    return (object?)null;
+                }),
+            },
             (results, _) => { received = results; return Task.CompletedTask; },
             TimeSpan.FromMilliseconds(50));
 
@@ -244,7 +262,7 @@ public class ScatterGatherStepScenarios : TinyBddTestBase
         await sut.ExecuteAsync(ctx);
 
         await Given("partial results after scatter-gather timeout", () => received)
-            .Then("aggregator received partial results (not null, from completed handlers)", r =>
+            .Then("aggregator received results (not null)", r =>
             {
                 r.Should().NotBeNull();
                 return true;
