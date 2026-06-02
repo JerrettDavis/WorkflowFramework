@@ -26,5 +26,9 @@ jobs:
       - uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-      - run: dotnet build WorkflowFramework.slnx -c Release
+      - name: Restore
+        run: dotnet restore src/WorkflowFramework/WorkflowFramework.csproj --use-lock-file
+      - name: Build
+        timeout-minutes: 10
+        run: dotnet build src/WorkflowFramework/WorkflowFramework.csproj -c Release --no-restore /p:ContinuousIntegrationBuild=true
       - uses: github/codeql-action/analyze@v3
