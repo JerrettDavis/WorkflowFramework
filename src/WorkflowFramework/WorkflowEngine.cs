@@ -1,3 +1,4 @@
+using PatternKit.Behavioral.Chain;
 using WorkflowFramework.Internal;
 using WfEvent = WorkflowFramework.Internal.WorkflowStatusMachine.WorkflowEvent;
 
@@ -10,6 +11,7 @@ public sealed class WorkflowEngine : IWorkflow
 {
     private readonly IStep[] _steps;
     private readonly IWorkflowMiddleware[] _middleware;
+    private readonly AsyncActionChain<MiddlewareInvocationState> _middlewareChain;
     private readonly IWorkflowEvents[] _events;
     private readonly bool _enableCompensation;
 
@@ -31,6 +33,7 @@ public sealed class WorkflowEngine : IWorkflow
         Name = name ?? throw new ArgumentNullException(nameof(name));
         _steps = steps ?? throw new ArgumentNullException(nameof(steps));
         _middleware = middleware ?? throw new ArgumentNullException(nameof(middleware));
+        _middlewareChain = BuildMiddlewareChain(_middleware);
         _events = events ?? throw new ArgumentNullException(nameof(events));
         _enableCompensation = enableCompensation;
     }
@@ -123,23 +126,49 @@ public sealed class WorkflowEngine : IWorkflow
 
     private async Task ExecuteWithMiddlewareAsync(IWorkflowContext context, IStep step)
     {
-        if (_middleware.Length == 0)
+        var state = new MiddlewareInvocationState(context, step);
+        await _middlewareChain.ExecuteAsync(state, context.CancellationToken).ConfigureAwait(false);
+    }
+
+    private static AsyncActionChain<MiddlewareInvocationState> BuildMiddlewareChain(
+        IReadOnlyList<IWorkflowMiddleware> middleware)
+    {
+        var builder = AsyncActionChain<MiddlewareInvocationState>.Create();
+
+        foreach (var item in middleware)
         {
-            await step.ExecuteAsync(context).ConfigureAwait(false);
-            return;
+            builder.Use(async (state, ct, next) =>
+            {
+                await item.InvokeAsync(
+                    state.Context,
+                    state.Step,
+                    InvokeNextAsync).ConfigureAwait(false);
+
+                async Task InvokeNextAsync(IWorkflowContext ctx)
+                {
+                    await next(new MiddlewareInvocationState(ctx, state.Step), ct).ConfigureAwait(false);
+                }
+            });
         }
 
-        // Build middleware chain
-        StepDelegate current = ctx => step.ExecuteAsync(ctx);
-
-        for (var i = _middleware.Length - 1; i >= 0; i--)
+        builder.Finally(async (state, _) =>
         {
-            var middleware = _middleware[i];
-            var next = current;
-            current = ctx => middleware.InvokeAsync(ctx, step, next);
+            await state.Step.ExecuteAsync(state.Context).ConfigureAwait(false);
+        });
+
+        return builder.Build();
+    }
+
+    private sealed class MiddlewareInvocationState
+    {
+        public MiddlewareInvocationState(IWorkflowContext context, IStep step)
+        {
+            Context = context;
+            Step = step;
         }
 
-        await current(context).ConfigureAwait(false);
+        public IWorkflowContext Context { get; }
+        public IStep Step { get; }
     }
 
     private static async Task CompensateAsync(IWorkflowContext context, List<IStep> completedSteps)

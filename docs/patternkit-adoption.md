@@ -32,6 +32,18 @@ This document lists every point in the WorkflowFramework codebase where a Patter
 | **Test coverage** | `tests/WorkflowFramework.Tests.TinyBDD/Core/WorkflowStatusMachineScenarios.cs` |
 | **Limitation note** | The `Running→Compensated` transition is driven by compensation event from `WorkflowEngine` rather than a built-in PatternKit saga hook — PatternKit's state machine builder does not expose a compensation lifecycle hook, so the event is fired manually by the engine. |
 
+### 2a. `WorkflowEngine` middleware pipeline — Chain of responsibility pattern
+
+| Item | Detail |
+|------|--------|
+| **File** | `src/WorkflowFramework/WorkflowEngine.cs` |
+| **PatternKit namespace** | `PatternKit.Behavioral.Chain` |
+| **Primitive** | `AsyncActionChain<MiddlewareInvocationState>` |
+| **Purpose** | Composes registered `IWorkflowMiddleware` instances in registration order around each step execution. The public `IWorkflowMiddleware` and `StepDelegate` contracts are unchanged; PatternKit owns the runtime chain execution and short-circuit behavior. |
+| **Phase introduced** | PatternKit dogfood pass / issue #28 |
+| **Test coverage** | `tests/WorkflowFramework.Tests.TinyBDD/Core/Engine/WorkflowEngineScenarios.cs` — middleware order, short-circuit, and context mutation scenarios. |
+| **Public API change** | None — swap is internal-only. |
+
 ### 3. `ContentBasedRouterStep` — Strategy pattern
 
 | Item | Detail |

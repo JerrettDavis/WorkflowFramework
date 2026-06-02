@@ -393,6 +393,32 @@ public class WorkflowEngineScenarios : TinyBddTestBase
             .AssertPassed();
     }
 
+    [Scenario("Middleware chain preserves context mutations around step execution"), Fact]
+    public async Task MiddlewareChainPreservesContextMutationsAroundStepExecution()
+    {
+        var wf = Workflow.Create("mw-context")
+            .Use(new ContextMutationMiddleware())
+            .Step("step", ctx =>
+            {
+                ctx.Properties["step-saw-before"] = ctx.Properties["before"];
+                return Task.CompletedTask;
+            })
+            .Build();
+        var context = new WorkflowContext();
+
+        var result = await wf.ExecuteAsync(context);
+
+        await Given("a workflow middleware mutates context before and after next", () => (result, context.Properties))
+            .Then("the step sees the before mutation and after mutation is retained", t =>
+            {
+                t.result.IsSuccess.Should().BeTrue();
+                t.Properties["step-saw-before"].Should().Be(true);
+                t.Properties["after"].Should().Be(true);
+                return true;
+            })
+            .AssertPassed();
+    }
+
     [Scenario("Workflow name is exposed on the IWorkflow interface"), Fact]
     public async Task WorkflowNameIsExposed()
     {
@@ -493,5 +519,15 @@ public class WorkflowEngineScenarios : TinyBddTestBase
     private sealed class ShortCircuitMiddleware : IWorkflowMiddleware
     {
         public Task InvokeAsync(IWorkflowContext ctx, IStep step, StepDelegate next) => Task.CompletedTask;
+    }
+
+    private sealed class ContextMutationMiddleware : IWorkflowMiddleware
+    {
+        public async Task InvokeAsync(IWorkflowContext ctx, IStep step, StepDelegate next)
+        {
+            ctx.Properties["before"] = true;
+            await next(ctx);
+            ctx.Properties["after"] = true;
+        }
     }
 }
