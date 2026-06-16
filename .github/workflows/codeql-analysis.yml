@@ -1,4 +1,4 @@
-﻿name: CodeQL Analysis
+name: CodeQL Analysis
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
       - name: Restore
@@ -31,4 +31,4 @@ jobs:
       - name: Build
         timeout-minutes: 10
         run: dotnet build src/WorkflowFramework/WorkflowFramework.csproj -c Release --no-restore /p:ContinuousIntegrationBuild=true
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
