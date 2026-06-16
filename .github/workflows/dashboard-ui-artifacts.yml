@@ -57,7 +57,7 @@ jobs:
         run: .\eng\generate-dashboard-ui-report.ps1
 
       - name: Upload dashboard UI artifact bundle
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: dashboard-ui-artifacts
           path: TestResults\dashboard-ui\latest
